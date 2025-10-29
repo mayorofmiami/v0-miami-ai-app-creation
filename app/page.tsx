@@ -773,33 +773,20 @@ export default function Home() {
               </div>
 
               <div className="w-full max-w-3xl px-4 space-y-4 sm:space-y-6">
-                {/* Category Tags */}
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <span className="text-xs text-muted-foreground font-medium">Try searching:</span>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {["Technology", "Science", "Business", "Health", "News"].map((category) => (
-                      <span
-                        key={category}
-                        className="px-3 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground border border-border/50"
-                      >
-                        {category}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Example Search Queries */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {[
-                    { query: "Explain quantum computing in simple terms", category: "Technology" },
-                    { query: "What are the latest developments in AI?", category: "Technology" },
-                    { query: "Compare renewable energy sources", category: "Science" },
-                    { query: "Summarize recent breakthroughs in medicine", category: "Health" },
+                    { query: "What are the best tech startups in Miami right now?", category: "Miami Business" },
+                    { query: "Compare Miami's real estate market to other major cities", category: "Real Estate" },
+                    { query: "What's happening in Miami's AI and tech scene?", category: "Technology" },
+                    { query: "Best practices for hurricane preparedness in South Florida", category: "Local Living" },
+                    { query: "Explain the latest developments in quantum computing", category: "Technology" },
+                    { query: "What are the environmental challenges facing Miami Beach?", category: "Environment" },
                   ].map((example, index) => (
                     <button
                       key={index}
                       onClick={() => handleSearch(example.query, mode)}
-                      className="group relative p-3 sm:p-4 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left"
+                      className="group relative p-3 sm:p-4 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10"
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
