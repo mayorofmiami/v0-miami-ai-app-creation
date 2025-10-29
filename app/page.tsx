@@ -701,7 +701,7 @@ export default function Home() {
           className={`flex-1 container mx-auto sm:px-6 lg:px-8 px-4 py-12 max-w-full overflow-x-hidden ${hasSearched ? "pb-32 pt-24" : ""}`}
         >
           {!hasSearched ? (
-            <div className="flex flex-col items-center min-h-[60vh] space-y-8 animate-in fade-in duration-700 justify-center">
+            <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] space-y-6 sm:space-y-8 animate-in fade-in duration-700 justify-center">
               <div className="text-center">
                 <div className="flex justify-center">
                   <Image
@@ -737,7 +737,7 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="w-full max-w-3xl px-4 space-y-6">
+              <div className="w-full max-w-3xl px-4 space-y-4 sm:space-y-6">
                 {/* Category Tags */}
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <span className="text-xs text-muted-foreground font-medium">Try searching:</span>
@@ -754,7 +754,7 @@ export default function Home() {
                 </div>
 
                 {/* Example Search Queries */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {[
                     { query: "Explain quantum computing in simple terms", category: "Technology" },
                     { query: "What are the latest developments in AI?", category: "Technology" },
@@ -764,7 +764,7 @@ export default function Home() {
                     <button
                       key={index}
                       onClick={() => handleSearch(example.query, mode)}
-                      className="group relative p-4 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left"
+                      className="group relative p-3 sm:p-4 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left"
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
