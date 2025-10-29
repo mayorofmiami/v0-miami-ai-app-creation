@@ -21,6 +21,9 @@ export interface User {
   name: string | null
   created_at: string
   role?: string
+  oauth_provider?: string
+  oauth_id?: string
+  avatar_url?: string
 }
 
 export interface Session {
@@ -89,7 +92,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
     const sql = getSQL()
     const result = await sql`
-      SELECT u.id, u.email, u.name, u.created_at, u.role
+      SELECT u.id, u.email, u.name, u.created_at, u.role, u.oauth_provider, u.oauth_id, u.avatar_url
       FROM sessions s
       JOIN users u ON s.user_id = u.id
       WHERE s.id = ${sessionId}
@@ -200,4 +203,85 @@ export async function requireAdmin(): Promise<User> {
     redirect("/")
   }
   return user
+}
+
+export async function createOrUpdateOAuthUser(
+  provider: string,
+  providerId: string,
+  email: string,
+  name: string,
+  avatarUrl?: string,
+): Promise<{ success: boolean; error?: string; userId?: string }> {
+  try {
+    const sql = getSQL()
+
+    // Check if user exists with this OAuth provider
+    const existingOAuth = await sql`
+      SELECT id FROM users 
+      WHERE oauth_provider = ${provider} 
+      AND oauth_id = ${providerId}
+    `
+
+    if (existingOAuth.length > 0) {
+      // User exists, update their info
+      await sql`
+        UPDATE users 
+        SET name = ${name}, 
+            avatar_url = ${avatarUrl || null},
+            email = ${email}
+        WHERE id = ${existingOAuth[0].id}
+      `
+      return { success: true, userId: existingOAuth[0].id }
+    }
+
+    // Check if user exists with this email (link accounts)
+    const existingEmail = await sql`
+      SELECT id FROM users WHERE email = ${email}
+    `
+
+    if (existingEmail.length > 0) {
+      // Link OAuth to existing account
+      await sql`
+        UPDATE users 
+        SET oauth_provider = ${provider},
+            oauth_id = ${providerId},
+            avatar_url = ${avatarUrl || null},
+            name = COALESCE(name, ${name})
+        WHERE id = ${existingEmail[0].id}
+      `
+      return { success: true, userId: existingEmail[0].id }
+    }
+
+    // Create new user
+    const userId = crypto.randomUUID()
+    const role = email === "spencer@miami.ai" ? "owner" : "user"
+
+    await sql`
+      INSERT INTO users (
+        id, 
+        email, 
+        name, 
+        oauth_provider, 
+        oauth_id, 
+        avatar_url,
+        role,
+        created_at
+      )
+      VALUES (
+        ${userId}, 
+        ${email}, 
+        ${name}, 
+        ${provider}, 
+        ${providerId}, 
+        ${avatarUrl || null},
+        ${role},
+        NOW()
+      )
+    `
+
+    return { success: true, userId }
+  } catch (error) {
+    console.error("[v0] OAuth user creation error:", error)
+    return { success: false, error: "Failed to create or update user" }
+  }
 }
