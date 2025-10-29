@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 
-export const runtime = "edge"
-
 export async function GET() {
   try {
     console.log("[v0] /api/user GET request - checking authentication")
@@ -10,7 +8,7 @@ export async function GET() {
     const user = await getCurrentUser()
 
     if (user) {
-      console.log("[v0] User authenticated:", user.email)
+      console.log("[v0] User authenticated:", user.email, "role:", user.role)
     } else {
       console.log("[v0] No authenticated user found")
     }

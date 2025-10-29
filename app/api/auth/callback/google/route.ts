@@ -42,6 +42,8 @@ export async function GET(request: Request): Promise<Response> {
     // Create session
     await createSession(result.userId)
 
+    console.log("[v0] OAuth session created, redirecting to home")
+
     // Clear OAuth cookies
     cookieStore.delete("google_oauth_state")
     cookieStore.delete("google_code_verifier")

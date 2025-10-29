@@ -77,8 +77,11 @@ export async function createSession(userId: string): Promise<string> {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
     expires: expiresAt,
   })
+
+  console.log("[v0] Session created for user:", userId, "sessionId:", sessionId)
 
   return sessionId
 }
