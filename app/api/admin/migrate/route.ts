@@ -7,6 +7,11 @@ export async function GET() {
   try {
     await sql`
       ALTER TABLE users 
+      ALTER COLUMN password_hash DROP NOT NULL
+    `
+
+    await sql`
+      ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS oauth_provider TEXT,
       ADD COLUMN IF NOT EXISTS oauth_id TEXT,
       ADD COLUMN IF NOT EXISTS avatar_url TEXT
