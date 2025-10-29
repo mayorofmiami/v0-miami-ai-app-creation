@@ -752,27 +752,22 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="w-full max-w-3xl px-4 space-y-4">
-                <SearchInput
-                  ref={searchInputRef}
-                  onSearch={handleSearch}
-                  isLoading={isLoading}
-                  mode={mode}
-                  onModeChange={setMode}
-                  onCancel={handleCancelSearch}
-                  recentSearches={recentSearches}
-                  user={user}
-                  selectedModel={selectedModel}
-                  onModelChange={handleModelChange}
-                />
-                {rateLimitInfo && (
-                  <div className="text-center text-xs text-muted-foreground">
-                    {rateLimitInfo.remaining} of {rateLimitInfo.limit} queries remaining today
-                  </div>
-                )}
-              </div>
-
               <div className="w-full max-w-3xl px-4 space-y-4 sm:space-y-6">
+                <div className="w-full">
+                  <SearchInput
+                    ref={searchInputRef}
+                    onSearch={handleSearch}
+                    isLoading={isLoading}
+                    mode={mode}
+                    onModeChange={setMode}
+                    onCancel={handleCancelSearch}
+                    recentSearches={recentSearches}
+                    user={user}
+                    selectedModel={selectedModel}
+                    onModelChange={handleModelChange}
+                  />
+                </div>
+
                 {/* Example Search Queries */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   {[
@@ -786,7 +781,7 @@ export default function Home() {
                     <button
                       key={index}
                       onClick={() => handleSearch(example.query, mode)}
-                      className="group relative p-3 sm:p-4 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10"
+                      className={`group relative p-3 sm:p-4 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10 ${index >= 3 ? "hidden sm:block" : ""}`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-2 h-2 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
