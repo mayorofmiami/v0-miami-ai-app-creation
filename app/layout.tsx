@@ -11,7 +11,17 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Miami.ai - AI-Powered Search Engine",
   description: "Get instant answers with real-time web research and citations",
-    generator: 'v0.app'
+  generator: "v0.app",
+  applicationName: "Miami.ai",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Miami.ai",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  manifest: "/manifest.json",
 }
 
 export const viewport: Viewport = {
