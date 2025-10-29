@@ -5,6 +5,9 @@ export type AIModel =
   | "openai/gpt-4o"
   | "anthropic/claude-3.5-sonnet"
   | "anthropic/claude-3.5-haiku"
+  | "google/gemini-2.0-flash"
+  | "groq/llama-3.1-8b"
+  | "groq/llama-3.3-70b"
 
 export interface ModelInfo {
   id: AIModel
@@ -23,6 +26,30 @@ export const AVAILABLE_MODELS: Record<AIModel, ModelInfo> = {
     bestFor: ["quick questions", "simple tasks", "conversational queries"],
     speed: "fast",
     quality: "good",
+  },
+  "google/gemini-2.0-flash": {
+    id: "google/gemini-2.0-flash",
+    name: "Gemini 2.0 Flash",
+    description: "Fast and cost-effective with excellent quality",
+    bestFor: ["general queries", "quick analysis", "cost-effective searches"],
+    speed: "fast",
+    quality: "great",
+  },
+  "groq/llama-3.1-8b": {
+    id: "groq/llama-3.1-8b",
+    name: "Llama 3.1 8B",
+    description: "Ultra-fast and affordable for simple queries",
+    bestFor: ["simple questions", "quick facts", "basic queries"],
+    speed: "fast",
+    quality: "good",
+  },
+  "groq/llama-3.3-70b": {
+    id: "groq/llama-3.3-70b",
+    name: "Llama 3.3 70B",
+    description: "Fast reasoning with strong performance",
+    bestFor: ["complex reasoning", "analysis", "balanced tasks"],
+    speed: "fast",
+    quality: "great",
   },
   "openai/gpt-4o": {
     id: "openai/gpt-4o",
@@ -144,10 +171,17 @@ function scoreModel(model: AIModel, analysis: QueryAnalysis, mode: "quick" | "de
     // Complex queries benefit from better models
     if (model === "openai/gpt-4o" || model === "anthropic/claude-3.5-sonnet") {
       score += 2
+    } else if (model === "groq/llama-3.3-70b") {
+      score += 1
     }
   } else {
     // Simple queries can use faster models
-    if (model === "openai/gpt-4o-mini" || model === "anthropic/claude-3.5-haiku") {
+    if (
+      model === "google/gemini-2.0-flash" ||
+      model === "groq/llama-3.1-8b" ||
+      model === "openai/gpt-4o-mini" ||
+      model === "anthropic/claude-3.5-haiku"
+    ) {
       score += 2
     }
   }
@@ -156,6 +190,8 @@ function scoreModel(model: AIModel, analysis: QueryAnalysis, mode: "quick" | "de
   if (analysis.isAnalytical) {
     if (model === "openai/gpt-4o" || model === "anthropic/claude-3.5-sonnet") {
       score += 2
+    } else if (model === "groq/llama-3.3-70b") {
+      score += 1
     }
   }
 
@@ -166,9 +202,11 @@ function scoreModel(model: AIModel, analysis: QueryAnalysis, mode: "quick" | "de
     }
   }
 
-  // Factual queries
+  // Factual queries - prefer cheaper, faster models
   if (analysis.isFactual && !analysis.isAnalytical) {
-    if (model === "openai/gpt-4o-mini" || model === "anthropic/claude-3.5-haiku") {
+    if (model === "google/gemini-2.0-flash" || model === "groq/llama-3.1-8b") {
+      score += 2
+    } else if (model === "openai/gpt-4o-mini" || model === "anthropic/claude-3.5-haiku") {
       score += 1
     }
   }
@@ -191,6 +229,9 @@ export function selectModel(query: string, mode: "quick" | "deep"): ModelSelecti
   // Score all models
   const scores: Record<AIModel, number> = {
     "openai/gpt-4o-mini": scoreModel("openai/gpt-4o-mini", analysis, mode),
+    "google/gemini-2.0-flash": scoreModel("google/gemini-2.0-flash", analysis, mode),
+    "groq/llama-3.1-8b": scoreModel("groq/llama-3.1-8b", analysis, mode),
+    "groq/llama-3.3-70b": scoreModel("groq/llama-3.3-70b", analysis, mode),
     "openai/gpt-4o": scoreModel("openai/gpt-4o", analysis, mode),
     "anthropic/claude-3.5-sonnet": scoreModel("anthropic/claude-3.5-sonnet", analysis, mode),
     "anthropic/claude-3.5-haiku": scoreModel("anthropic/claude-3.5-haiku", analysis, mode),

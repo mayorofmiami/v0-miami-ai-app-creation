@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Check, Sparkles, Zap, Brain, Feather } from "lucide-react"
+import { Check, Sparkles, Zap, Brain, Feather, Flame } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -21,6 +21,9 @@ export type ModelId =
   | "openai/gpt-4o"
   | "anthropic/claude-3.5-sonnet"
   | "anthropic/claude-3.5-haiku"
+  | "google/gemini-2.0-flash"
+  | "groq/llama-3.1-8b"
+  | "groq/llama-3.3-70b"
 
 interface ModelOption {
   id: ModelId
@@ -49,9 +52,27 @@ const MODEL_OPTIONS: ModelOption[] = [
     icon: <Feather className="h-4 w-4" />,
   },
   {
+    id: "groq/llama-3.3-70b",
+    name: "Llama 3.3 70B",
+    description: "Fast & powerful reasoning",
+    icon: <Flame className="h-4 w-4" />,
+  },
+  {
+    id: "google/gemini-2.0-flash",
+    name: "Gemini Flash",
+    description: "Fast & cost-effective",
+    icon: <Flame className="h-4 w-4" />,
+  },
+  {
     id: "openai/gpt-4o-mini",
     name: "GPT-4o Mini",
     description: "Fast, general queries",
+    icon: <Zap className="h-4 w-4" />,
+  },
+  {
+    id: "groq/llama-3.1-8b",
+    name: "Llama 3.1 8B",
+    description: "Ultra-fast & affordable",
     icon: <Zap className="h-4 w-4" />,
   },
   {

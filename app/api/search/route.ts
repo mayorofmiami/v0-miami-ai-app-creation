@@ -3,6 +3,9 @@ import { searchWeb, formatSearchContext } from "@/lib/web-search"
 import { checkRateLimit, incrementRateLimit, createSearchHistory } from "@/lib/db"
 import { selectModel, getModelById } from "@/lib/model-selection"
 import { initializeDatabase } from "@/lib/db-init"
+import { getCachedResponse, setCachedResponse } from "@/lib/cache"
+import { checkRateLimit as checkModelRateLimit } from "@/lib/rate-limiter"
+import { trackModelUsage } from "@/lib/cost-tracker"
 
 export const maxDuration = 30
 
@@ -28,6 +31,63 @@ export async function POST(req: Request) {
 
     if (!query || typeof query !== "string") {
       return Response.json({ error: "Query is required" }, { status: 400 })
+    }
+
+    const cached = await getCachedResponse(query, mode)
+    if (cached) {
+      console.log("[v0] Returning cached response")
+
+      // Create SSE stream with cached data
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            // Send citations
+            const citationsData = JSON.stringify({
+              type: "citations",
+              content: cached.sources,
+            })
+            controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`))
+
+            // Send model info
+            const modelData = JSON.stringify({
+              type: "model",
+              content: {
+                model: cached.model,
+                reason: "Cached response",
+                autoSelected: false,
+              },
+            })
+            controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
+
+            // Send cached text
+            const chunkSize = 50
+            for (let i = 0; i < cached.answer.length; i += chunkSize) {
+              const chunk = cached.answer.slice(i, i + chunkSize)
+              const textData = JSON.stringify({
+                type: "text",
+                content: chunk,
+              })
+              controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
+              await new Promise((resolve) => setTimeout(resolve, 10))
+            }
+
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"))
+            controller.close()
+          } catch (error) {
+            console.error("[v0] Error in cached stream:", error)
+            controller.error(error)
+          }
+        },
+      })
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        },
+      })
     }
 
     const ipAddress = getClientIp(req)
@@ -74,6 +134,20 @@ export async function POST(req: Request) {
       }
     }
 
+    if (userId) {
+      const modelRateLimit = await checkModelRateLimit(userId, modelSelection.model, "free")
+      if (!modelRateLimit.allowed) {
+        return Response.json(
+          {
+            error: `Rate limit exceeded for ${modelSelection.model}. Please try a different model or upgrade to Pro.`,
+            remaining: modelRateLimit.remaining,
+            resetAt: modelRateLimit.resetAt,
+          },
+          { status: 429 },
+        )
+      }
+    }
+
     console.log(`[v0] Using model: ${modelSelection.model} (${modelSelection.reason})`)
 
     console.log("[v0] Performing web search for:", query, "mode:", mode)
@@ -97,11 +171,30 @@ ${searchContext}
 Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"} answer, citing the sources you use.`
 
     try {
-      const { text } = await generateText({
+      const { text, usage } = await generateText({
         model: modelSelection.model,
         prompt: combinedPrompt,
         maxTokens: mode === "deep" ? 2000 : 800,
         temperature: mode === "deep" ? 0.7 : 0.5,
+      })
+
+      if (usage) {
+        await trackModelUsage(
+          userId || null,
+          modelSelection.model,
+          usage.promptTokens || 0,
+          usage.completionTokens || 0,
+        )
+      }
+
+      await setCachedResponse(query, mode, {
+        answer: text,
+        sources: searchResults.map((result, index) => ({
+          title: result.title,
+          url: result.url,
+          snippet: result.text?.substring(0, 200) || "",
+        })),
+        model: modelSelection.model,
       })
 
       if (userId && typeof userId === "string" && userId.length > 0) {
@@ -123,11 +216,9 @@ Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"
           console.log("[v0] Search saved to history for user:", userId)
         } catch (error) {
           console.error("[v0] Failed to save search to history:", error)
-          // Don't fail the request if history save fails
         }
       }
 
-      // Increment rate limit
       await incrementRateLimit(userId && typeof userId === "string" && userId.length > 0 ? userId : null, ipAddress)
 
       // Create SSE stream in the format the client expects

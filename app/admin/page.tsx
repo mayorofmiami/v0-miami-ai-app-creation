@@ -24,6 +24,13 @@ interface AdminStats {
   dailyTrends: Array<{ date: string; count: number }>
   topQueries: Array<{ query: string; count: number }>
   userGrowth: Array<{ date: string; count: number }>
+  modelUsage?: Array<{
+    model: string
+    request_count: number
+    total_input_tokens: number
+    total_output_tokens: number
+    total_cost: number
+  }>
 }
 
 interface RecentSearch {
@@ -262,6 +269,29 @@ export default function AdminDashboard() {
                 <p className="text-xs text-muted-foreground mt-1">This month</p>
               </div>
             </div>
+
+            {/* Model Usage Breakdown */}
+            {stats?.modelUsage && stats.modelUsage.length > 0 && (
+              <div className="bg-muted/50 border border-border rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4">Model Usage & Costs (30 Days)</h3>
+                <div className="space-y-3">
+                  {stats.modelUsage.map((usage, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-background rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">{usage.model}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {usage.request_count} requests • {Math.round(Number(usage.total_input_tokens) / 1000)}K input
+                          • {Math.round(Number(usage.total_output_tokens) / 1000)}K output
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg">${Number(usage.total_cost).toFixed(4)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Top Queries */}
             {stats?.topQueries && stats.topQueries.length > 0 && (

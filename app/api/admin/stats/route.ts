@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless"
 import { requireAdmin } from "@/lib/auth"
 import { logAdminAction } from "@/lib/admin-logger"
+import { getModelUsageStats } from "@/lib/cost-tracker"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -88,8 +89,9 @@ export async function GET(req: Request) {
       LIMIT 10
     `
 
-    // Calculate estimated API costs (mock calculation)
-    const estimatedCost = (totalSearches * 0.02).toFixed(2) // $0.02 per search estimate
+    const modelUsageStats = await getModelUsageStats(30)
+    const totalCost = modelUsageStats.reduce((sum: number, stat: any) => sum + Number(stat.total_cost || 0), 0)
+    const estimatedCost = totalCost.toFixed(2)
 
     return Response.json({
       stats: {
@@ -103,6 +105,7 @@ export async function GET(req: Request) {
         dailyTrends: trendsResult,
         topQueries: topQueriesResult,
         userGrowth: userGrowthResult,
+        modelUsage: modelUsageStats,
       },
       recentSearches,
     })
