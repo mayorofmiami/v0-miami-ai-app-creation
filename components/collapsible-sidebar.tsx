@@ -1,0 +1,235 @@
+"use client"
+import { Logo } from "@/components/logo"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Button } from "@/components/ui/button"
+import { User, LogOut, Plus, Clock, Sun, Moon, Palmtree, ChevronLeft, Shield } from "lucide-react"
+import Link from "next/link"
+import { useTheme } from "next-themes"
+
+interface CollapsibleSidebarProps {
+  user: { id: string; email: string; name: string | null; role?: string } | null
+  isLoadingUser: boolean
+  recentSearches: string[]
+  onNewChat: () => void
+  onSearchSelect: (search: string) => void
+  onToggleHistory: () => void
+  onLogout: () => void
+  isCollapsed: boolean
+  onToggleCollapse: () => void
+}
+
+export function CollapsibleSidebar({
+  user,
+  isLoadingUser,
+  recentSearches,
+  onNewChat,
+  onSearchSelect,
+  onToggleHistory,
+  onLogout,
+  isCollapsed,
+  onToggleCollapse,
+}: CollapsibleSidebarProps) {
+  const { theme, setTheme } = useTheme()
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
+
+  const isAdmin = user?.role === "owner" || user?.role === "admin"
+
+  return (
+    <aside
+      className={`hidden md:flex fixed left-0 top-0 h-screen bg-background border-r border-border flex-col transition-all duration-300 z-50 ${
+        isCollapsed ? "w-16" : "w-64"
+      }`}
+    >
+      {/* Header with Logo and Toggle */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        {!isCollapsed && (
+          <div className="flex-1">
+            <Logo />
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggleCollapse}
+          className="h-8 w-8 hover:bg-muted"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <Palmtree className="h-5 w-5 text-miami-aqua" />
+          ) : (
+            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+          )}
+        </Button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 flex flex-col gap-2 p-3 overflow-y-auto">
+        {/* New Chat */}
+        <Button
+          variant="ghost"
+          className={`justify-start h-10 ${isCollapsed ? "px-0 justify-center" : ""}`}
+          onClick={onNewChat}
+          title="New Chat"
+        >
+          <Plus className={`h-5 w-5 ${isCollapsed ? "" : "mr-3"}`} />
+          {!isCollapsed && <span>New Chat</span>}
+        </Button>
+
+        {isAdmin && (
+          <Link href="/admin">
+            <Button
+              variant="ghost"
+              className={`w-full justify-start h-10 ${isCollapsed ? "px-0 justify-center" : ""} text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10`}
+              title="Admin Dashboard"
+            >
+              <Shield className={`h-5 w-5 ${isCollapsed ? "" : "mr-3"}`} />
+              {!isCollapsed && <span>Admin</span>}
+            </Button>
+          </Link>
+        )}
+
+        {/* Recent Chats */}
+        {recentSearches.length > 0 && (
+          <div className={`pt-4 ${isCollapsed ? "" : "border-t border-border"}`}>
+            {!isCollapsed && (
+              <div className="flex items-center justify-between px-3 mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Chats</p>
+                <button
+                  onClick={onToggleHistory}
+                  className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                >
+                  See All
+                </button>
+              </div>
+            )}
+            <div className="space-y-1">
+              {(isCollapsed ? recentSearches.slice(0, 3) : recentSearches.slice(0, 5)).map((search, index) => (
+                <button
+                  key={index}
+                  onClick={() => onSearchSelect(search)}
+                  className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
+                    isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
+                  }`}
+                  title={isCollapsed ? search : undefined}
+                >
+                  {isCollapsed ? (
+                    <Clock className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                        {search}
+                      </span>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Theme Toggle */}
+        <div className={`pt-4 mt-auto ${isCollapsed ? "" : "border-t border-border"}`}>
+          {isCollapsed ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="w-full h-10"
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+          ) : (
+            <div className="flex items-center justify-between px-3 py-3">
+              <span className="text-sm text-muted-foreground">Theme</span>
+              <ThemeToggle />
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* Account Section */}
+      <div className="border-t p-3">
+        {isLoadingUser ? (
+          <div className={`flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
+            <div className="w-8 h-8 rounded-full bg-muted/50 animate-pulse" />
+            {!isCollapsed && (
+              <div className="flex-1 space-y-2">
+                <div className="h-3 bg-muted/50 rounded w-20 animate-pulse" />
+                <div className="h-2 bg-muted/50 rounded w-24 animate-pulse" />
+              </div>
+            )}
+          </div>
+        ) : user ? (
+          <>
+            <Link href="/profile">
+              <div
+                className={`flex items-center gap-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group ${
+                  isCollapsed ? "justify-center p-2" : "p-2"
+                }`}
+                title={isCollapsed ? user.name || user.email : undefined}
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
+                  <User className="w-4 h-4 text-miami-aqua" />
+                </div>
+                {!isCollapsed && (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate group-hover:text-miami-aqua transition-colors">
+                      {user.name || "User"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                )}
+              </div>
+            </Link>
+            {!isCollapsed && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-xs h-8 mt-2 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                onClick={onLogout}
+              >
+                <LogOut className="w-3 h-3 mr-2" />
+                Sign Out
+              </Button>
+            )}
+            {isCollapsed && (
+              <Button variant="ghost" size="icon" className="w-full h-8 mt-2" onClick={onLogout} title="Sign Out">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            )}
+          </>
+        ) : (
+          <div className={`flex flex-col gap-2 ${isCollapsed ? "items-center" : ""}`}>
+            {isCollapsed ? (
+              <>
+                <Link href="/login" className="w-full">
+                  <Button size="icon" className="w-full h-9 bg-miami-aqua hover:bg-miami-aqua/90" title="Sign In">
+                    <User className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="w-full">
+                  <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white text-xs h-9">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup" className="w-full">
+                  <Button variant="outline" className="w-full text-xs h-9 border-2 bg-transparent">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </aside>
+  )
+}

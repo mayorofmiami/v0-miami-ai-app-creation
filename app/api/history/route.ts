@@ -1,0 +1,19 @@
+import { getSearchHistory } from "@/lib/db"
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const userId = searchParams.get("userId")
+
+    if (!userId) {
+      return Response.json({ error: "User ID required" }, { status: 400 })
+    }
+
+    const history = await getSearchHistory(userId, 50)
+
+    return Response.json({ history })
+  } catch (error) {
+    console.error("[v0] History API error:", error)
+    return Response.json({ error: "Failed to fetch history" }, { status: 500 })
+  }
+}
