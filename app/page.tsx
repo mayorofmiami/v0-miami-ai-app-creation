@@ -737,18 +737,46 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground px-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-miami-aqua animate-pulse" />
-                  <span>Quick answers in seconds</span>
+              <div className="w-full max-w-3xl px-4 space-y-6">
+                {/* Category Tags */}
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <span className="text-xs text-muted-foreground font-medium">Try searching:</span>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {["Technology", "Science", "Business", "Health", "News"].map((category) => (
+                      <span
+                        key={category}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground border border-border/50"
+                      >
+                        {category}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-miami-pink animate-pulse" />
-                  <span>Deep research mode</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-miami-aqua animate-pulse" />
-                  <span>Verified sources</span>
+
+                {/* Example Search Queries */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { query: "Explain quantum computing in simple terms", category: "Technology" },
+                    { query: "What are the latest developments in AI?", category: "Technology" },
+                    { query: "Compare renewable energy sources", category: "Science" },
+                    { query: "Summarize recent breakthroughs in medicine", category: "Health" },
+                  ].map((example, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSearch(example.query, mode)}
+                      className="group relative p-4 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2">
+                            {example.query}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">{example.category}</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
