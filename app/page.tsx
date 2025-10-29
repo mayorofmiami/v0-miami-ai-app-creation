@@ -15,7 +15,7 @@ import type { ModelId } from "@/components/model-selector"
 import { ModelBadge } from "@/components/model-badge"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { User, Menu, LogOut, Plus, Clock } from "lucide-react"
+import { User, Menu, LogOut, Plus, Clock, Shield } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import type { SearchHistory } from "@/lib/db"
@@ -446,6 +446,18 @@ export default function Home() {
                       New Chat
                     </Button>
 
+                    {isAdmin && (
+                      <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-lg sm:text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-14 sm:h-12"
+                        >
+                          <Shield className="w-7 h-7 sm:w-6 sm:h-6 mr-3" />
+                          Admin Dashboard
+                        </Button>
+                      </Link>
+                    )}
+
                     {recentSearches.length > 0 && (
                       <div className="pt-4 border-t border-border">
                         <div className="flex items-center justify-between px-3 mb-2">
@@ -605,6 +617,18 @@ export default function Home() {
                     <Plus className="w-7 h-7 sm:w-6 sm:h-6 mr-3" />
                     New Chat
                   </Button>
+
+                  {isAdmin && (
+                    <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-lg sm:text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-14 sm:h-12"
+                      >
+                        <Shield className="w-7 h-7 sm:w-6 sm:h-6 mr-3" />
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  )}
 
                   {recentSearches.length > 0 && (
                     <div className="pt-4 border-t border-border">
