@@ -2,7 +2,24 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, forwardRef } from "react"
-import { Search, Sparkles, X, Clock, Mic, MicOff } from "lucide-react"
+import { Search, Sparkles, X, Clock, Mic, MicOff, Settings2, Check } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import type { ModelId } from "@/components/model-selector"
+
+const MODEL_OPTIONS = [
+  { id: "auto" as ModelId, name: "Auto", description: "Let us choose" },
+  { id: "openai/gpt-4o" as ModelId, name: "GPT-4o", description: "Complex analysis" },
+  { id: "anthropic/claude-3.5-sonnet" as ModelId, name: "Claude Sonnet", description: "Long-form content" },
+  { id: "openai/gpt-4o-mini" as ModelId, name: "GPT-4o Mini", description: "Fast queries" },
+  { id: "anthropic/claude-3.5-haiku" as ModelId, name: "Claude Haiku", description: "Balanced" },
+]
 
 interface SearchInputProps {
   onSearch: (query: string, mode: "quick" | "deep") => void
@@ -11,10 +28,23 @@ interface SearchInputProps {
   onModeChange: (mode: "quick" | "deep") => void
   onCancel?: () => void
   recentSearches?: string[]
+  user?: { id: string; email: string; name: string | null; role?: string } | null
+  selectedModel?: ModelId
+  onModelChange?: (model: ModelId) => void
 }
 
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput(
-  { onSearch, isLoading, mode, onModeChange, onCancel, recentSearches = [] },
+  {
+    onSearch,
+    isLoading,
+    mode,
+    onModeChange,
+    onCancel,
+    recentSearches = [],
+    user,
+    selectedModel = "auto",
+    onModelChange,
+  },
   ref,
 ) {
   const [query, setQuery] = useState("")
@@ -228,20 +258,85 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                 {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
 
-              {/* Deep Research Toggle */}
-              <button
-                type="button"
-                onClick={() => onModeChange(mode === "quick" ? "deep" : "quick")}
-                disabled={isLoading}
-                className={`p-3 rounded-lg transition-all ${
-                  mode === "deep"
-                    ? "bg-miami-pink text-miami-dark neon-border-pink"
-                    : "bg-muted text-muted-foreground hover:bg-miami-pink/20"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={mode === "deep" ? "Deep Research Mode (Active)" : "Enable Deep Research"}
-              >
-                <Sparkles className="w-5 h-5" />
-              </button>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      className={`p-3 rounded-lg transition-all ${
+                        mode === "deep"
+                          ? "bg-miami-pink text-miami-dark neon-border-pink"
+                          : "bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      title="Search Options"
+                    >
+                      <Settings2 className="w-5 h-5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                      Search Options
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+
+                    {/* Deep Research Toggle */}
+                    <DropdownMenuItem
+                      onClick={() => onModeChange(mode === "quick" ? "deep" : "quick")}
+                      className="flex items-start gap-3 py-3 cursor-pointer"
+                    >
+                      <div className="flex h-5 w-5 items-center justify-center">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Deep Research</span>
+                          {mode === "deep" && <Check className="h-4 w-4 text-primary" />}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {mode === "deep" ? "Active - Comprehensive analysis" : "Enable for detailed research"}
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                      AI Model
+                    </DropdownMenuLabel>
+
+                    {/* Model Options */}
+                    {MODEL_OPTIONS.map((model) => (
+                      <DropdownMenuItem
+                        key={model.id}
+                        onClick={() => onModelChange?.(model.id)}
+                        className="flex items-start gap-3 py-3 cursor-pointer"
+                      >
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">{model.name}</span>
+                            {selectedModel === model.id && <Check className="h-4 w-4 text-primary" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{model.description}</p>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onModeChange(mode === "quick" ? "deep" : "quick")}
+                  disabled={isLoading}
+                  className={`p-3 rounded-lg transition-all ${
+                    mode === "deep"
+                      ? "bg-miami-pink text-miami-dark neon-border-pink"
+                      : "bg-muted text-muted-foreground hover:bg-miami-pink/20"
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title={mode === "deep" ? "Deep Research Mode (Active)" : "Enable Deep Research"}
+                >
+                  <Sparkles className="w-5 h-5" />
+                </button>
+              )}
             </>
           )}
 
@@ -263,7 +358,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
-              onClick={() => {
+              onMouseDown={(e) => {
+                e.preventDefault() // Prevent input blur
                 setQuery(suggestion)
                 onSearch(suggestion, mode)
                 setShowSuggestions(false)

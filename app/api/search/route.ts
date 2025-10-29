@@ -1,6 +1,6 @@
 import { generateText } from "ai"
 import { searchWeb, formatSearchContext } from "@/lib/web-search"
-import { checkRateLimit, incrementRateLimit, createSearchHistory } from "@/lib/db" // added createSearchHistory import
+import { checkRateLimit, incrementRateLimit, createSearchHistory } from "@/lib/db"
 import { selectModel, getModelById } from "@/lib/model-selection"
 import { initializeDatabase } from "@/lib/db-init"
 
@@ -76,14 +76,11 @@ export async function POST(req: Request) {
 
     console.log(`[v0] Using model: ${modelSelection.model} (${modelSelection.reason})`)
 
-    console.log("[v0] Cache temporarily disabled for testing")
-
     console.log("[v0] Performing web search for:", query, "mode:", mode)
     const searchResults = await searchWeb(query, mode === "deep" ? 8 : 5)
     console.log("[v0] Web search completed, found", searchResults.length, "results")
 
     const searchContext = formatSearchContext(searchResults)
-    console.log("[v0] Formatted search context, length:", searchContext.length)
 
     const systemInstruction =
       mode === "deep"
@@ -99,8 +96,6 @@ ${searchContext}
 
 Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"} answer, citing the sources you use.`
 
-    console.log("[v0] Starting AI text generation with model:", modelSelection.model)
-
     try {
       const { text } = await generateText({
         model: modelSelection.model,
@@ -108,8 +103,6 @@ Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"
         maxTokens: mode === "deep" ? 2000 : 800,
         temperature: mode === "deep" ? 0.7 : 0.5,
       })
-
-      console.log("[v0] AI generateText successful, response length:", text.length)
 
       if (userId && typeof userId === "string" && userId.length > 0) {
         try {
@@ -194,8 +187,30 @@ Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"
           Connection: "keep-alive",
         },
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("[v0] Error creating AI response:", error)
+
+      if (error.message && error.message.includes("rate_limit_exceeded")) {
+        return Response.json(
+          {
+            error:
+              "AI Gateway rate limit exceeded. Free credits have temporary rate limits due to abuse. Please try again later or purchase AI credits at https://vercel.com/ai",
+            type: "ai_gateway_rate_limit",
+          },
+          { status: 429 },
+        )
+      }
+
+      if (error.message && (error.message.includes("Free credits") || error.message.includes("rate limit"))) {
+        return Response.json(
+          {
+            error: error.message,
+            type: "ai_gateway_error",
+          },
+          { status: 429 },
+        )
+      }
+
       throw new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   } catch (error) {

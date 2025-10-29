@@ -3,8 +3,8 @@ import "server-only"
 export type AIModel =
   | "openai/gpt-4o-mini"
   | "openai/gpt-4o"
-  | "anthropic/claude-3-5-sonnet-latest"
-  | "anthropic/claude-3-5-haiku-latest"
+  | "anthropic/claude-3.5-sonnet"
+  | "anthropic/claude-3.5-haiku"
 
 export interface ModelInfo {
   id: AIModel
@@ -32,16 +32,16 @@ export const AVAILABLE_MODELS: Record<AIModel, ModelInfo> = {
     speed: "medium",
     quality: "excellent",
   },
-  "anthropic/claude-3-5-sonnet-latest": {
-    id: "anthropic/claude-3-5-sonnet-latest",
+  "anthropic/claude-3.5-sonnet": {
+    id: "anthropic/claude-3.5-sonnet",
     name: "Claude 3.5 Sonnet",
     description: "Long-form content and nuanced understanding",
     bestFor: ["long-form writing", "nuanced analysis", "creative tasks"],
     speed: "medium",
     quality: "excellent",
   },
-  "anthropic/claude-3-5-haiku-latest": {
-    id: "anthropic/claude-3-5-haiku-latest",
+  "anthropic/claude-3.5-haiku": {
+    id: "anthropic/claude-3.5-haiku",
     name: "Claude 3.5 Haiku",
     description: "Balanced speed and quality",
     bestFor: ["balanced tasks", "quick summaries", "general queries"],
@@ -142,33 +142,33 @@ function scoreModel(model: AIModel, analysis: QueryAnalysis, mode: "quick" | "de
   // Adjust based on query characteristics
   if (analysis.complexity > 3) {
     // Complex queries benefit from better models
-    if (model === "openai/gpt-4o" || model === "anthropic/claude-3-5-sonnet-latest") {
+    if (model === "openai/gpt-4o" || model === "anthropic/claude-3.5-sonnet") {
       score += 2
     }
   } else {
     // Simple queries can use faster models
-    if (model === "openai/gpt-4o-mini" || model === "anthropic/claude-3-5-haiku-latest") {
+    if (model === "openai/gpt-4o-mini" || model === "anthropic/claude-3.5-haiku") {
       score += 2
     }
   }
 
   // Analytical queries
   if (analysis.isAnalytical) {
-    if (model === "openai/gpt-4o" || model === "anthropic/claude-3-5-sonnet-latest") {
+    if (model === "openai/gpt-4o" || model === "anthropic/claude-3.5-sonnet") {
       score += 2
     }
   }
 
   // Creative queries
   if (analysis.isCreative) {
-    if (model === "anthropic/claude-3-5-sonnet-latest") {
+    if (model === "anthropic/claude-3.5-sonnet") {
       score += 2
     }
   }
 
   // Factual queries
   if (analysis.isFactual && !analysis.isAnalytical) {
-    if (model === "openai/gpt-4o-mini" || model === "anthropic/claude-3-5-haiku-latest") {
+    if (model === "openai/gpt-4o-mini" || model === "anthropic/claude-3.5-haiku") {
       score += 1
     }
   }
@@ -192,8 +192,8 @@ export function selectModel(query: string, mode: "quick" | "deep"): ModelSelecti
   const scores: Record<AIModel, number> = {
     "openai/gpt-4o-mini": scoreModel("openai/gpt-4o-mini", analysis, mode),
     "openai/gpt-4o": scoreModel("openai/gpt-4o", analysis, mode),
-    "anthropic/claude-3-5-sonnet-latest": scoreModel("anthropic/claude-3-5-sonnet-latest", analysis, mode),
-    "anthropic/claude-3-5-haiku-latest": scoreModel("anthropic/claude-3-5-haiku-latest", analysis, mode),
+    "anthropic/claude-3.5-sonnet": scoreModel("anthropic/claude-3.5-sonnet", analysis, mode),
+    "anthropic/claude-3.5-haiku": scoreModel("anthropic/claude-3.5-haiku", analysis, mode),
   }
 
   // Find the highest scoring model

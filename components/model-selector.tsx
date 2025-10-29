@@ -19,8 +19,8 @@ export type ModelId =
   | "auto"
   | "openai/gpt-4o-mini"
   | "openai/gpt-4o"
-  | "anthropic/claude-3-5-sonnet-latest"
-  | "anthropic/claude-3-5-haiku-latest"
+  | "anthropic/claude-3.5-sonnet"
+  | "anthropic/claude-3.5-haiku"
 
 interface ModelOption {
   id: ModelId
@@ -43,7 +43,7 @@ const MODEL_OPTIONS: ModelOption[] = [
     icon: <Brain className="h-4 w-4" />,
   },
   {
-    id: "anthropic/claude-3-5-sonnet-latest",
+    id: "anthropic/claude-3.5-sonnet",
     name: "Claude Sonnet",
     description: "Long-form content & nuance",
     icon: <Feather className="h-4 w-4" />,
@@ -55,7 +55,7 @@ const MODEL_OPTIONS: ModelOption[] = [
     icon: <Zap className="h-4 w-4" />,
   },
   {
-    id: "anthropic/claude-3-5-haiku-latest",
+    id: "anthropic/claude-3.5-haiku",
     name: "Claude Haiku",
     description: "Balanced speed & quality",
     icon: <Zap className="h-4 w-4" />,

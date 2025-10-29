@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/empty-state"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
-import { ModelSelector, type ModelId } from "@/components/model-selector"
+import type { ModelId } from "@/components/model-selector"
 import { ModelBadge } from "@/components/model-badge"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -222,14 +222,27 @@ export default function Home() {
       if (res.status === 429) {
         const error = await res.json()
         toast.dismiss(loadingToast)
-        toast.error(
-          "Rate Limit Exceeded",
-          error.reason ||
-            `You've reached your query limit. ${userId ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`,
-        )
-        setResponse(
-          `⚠️ Rate limit exceeded. ${userId ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
-        )
+
+        if (error.type === "ai_gateway_rate_limit" || error.type === "ai_gateway_error") {
+          toast.error(
+            "AI Service Temporarily Limited",
+            "Free AI credits have rate limits due to abuse. Please try again in a few minutes, or contact support to purchase AI credits.",
+            10000, // Show for 10 seconds
+          )
+          setResponse(
+            `⚠️ **AI Service Temporarily Limited**\n\nVercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.\n\n**What you can do:**\n- Wait a few minutes and try again\n- Try a different AI model from the settings menu\n- Contact support to purchase AI credits for unrestricted access\n\nWe apologize for the inconvenience!`,
+          )
+        } else {
+          // Our own rate limiting
+          toast.error(
+            "Rate Limit Exceeded",
+            error.reason ||
+              `You've reached your query limit. ${userId ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`,
+          )
+          setResponse(
+            `⚠️ Rate limit exceeded. ${userId ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
+          )
+        }
         setIsLoading(false)
         return
       }
@@ -716,11 +729,6 @@ export default function Home() {
               </div>
 
               <div className="w-full max-w-3xl px-4 space-y-4">
-                {user && (
-                  <div className="flex justify-center">
-                    <ModelSelector value={selectedModel} onChange={handleModelChange} />
-                  </div>
-                )}
                 <SearchInput
                   ref={searchInputRef}
                   onSearch={handleSearch}
@@ -729,6 +737,9 @@ export default function Home() {
                   onModeChange={setMode}
                   onCancel={handleCancelSearch}
                   recentSearches={recentSearches}
+                  user={user}
+                  selectedModel={selectedModel}
+                  onModelChange={handleModelChange}
                 />
                 {rateLimitInfo && (
                   <div className="text-center text-xs text-muted-foreground">
@@ -825,11 +836,6 @@ export default function Home() {
             className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-3">
-              {user && (
-                <div className="flex justify-center">
-                  <ModelSelector value={selectedModel} onChange={handleModelChange} />
-                </div>
-              )}
               <SearchInput
                 ref={searchInputRef}
                 onSearch={handleSearch}
@@ -838,6 +844,9 @@ export default function Home() {
                 onModeChange={setMode}
                 onCancel={handleCancelSearch}
                 recentSearches={recentSearches}
+                user={user}
+                selectedModel={selectedModel}
+                onModelChange={handleModelChange}
               />
               {rateLimitInfo && (
                 <div className="text-center text-xs text-muted-foreground">
