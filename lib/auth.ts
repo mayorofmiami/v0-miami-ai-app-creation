@@ -213,6 +213,7 @@ export async function createOrUpdateOAuthUser(
   avatarUrl?: string,
 ): Promise<{ success: boolean; error?: string; userId?: string }> {
   try {
+    console.log("[v0] OAuth user creation attempt:", { provider, email, name })
     const sql = getSQL()
 
     // Check if user exists with this OAuth provider
@@ -223,6 +224,7 @@ export async function createOrUpdateOAuthUser(
     `
 
     if (existingOAuth.length > 0) {
+      console.log("[v0] Found existing OAuth user, updating info")
       // User exists, update their info
       await sql`
         UPDATE users 
@@ -240,6 +242,7 @@ export async function createOrUpdateOAuthUser(
     `
 
     if (existingEmail.length > 0) {
+      console.log("[v0] Found existing email user, linking OAuth account")
       // Link OAuth to existing account
       await sql`
         UPDATE users 
@@ -249,9 +252,11 @@ export async function createOrUpdateOAuthUser(
             name = COALESCE(name, ${name})
         WHERE id = ${existingEmail[0].id}
       `
+      console.log("[v0] Successfully linked OAuth to existing account")
       return { success: true, userId: existingEmail[0].id }
     }
 
+    console.log("[v0] Creating new OAuth user")
     // Create new user
     const userId = crypto.randomUUID()
     const role = email === "spencer@miami.ai" ? "owner" : "user"
@@ -279,9 +284,10 @@ export async function createOrUpdateOAuthUser(
       )
     `
 
+    console.log("[v0] Successfully created new OAuth user")
     return { success: true, userId }
   } catch (error) {
     console.error("[v0] OAuth user creation error:", error)
-    return { success: false, error: "Failed to create or update user" }
+    return { success: false, error: error instanceof Error ? error.message : "Failed to create or update user" }
   }
 }
