@@ -1,0 +1,61 @@
+"use client"
+
+import { HelpCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { useState } from "react"
+import { AboutDialog } from "@/components/help/about-dialog"
+import { TermsDialog } from "@/components/help/terms-dialog"
+import { PrivacyDialog } from "@/components/help/privacy-dialog"
+import Link from "next/link"
+
+interface HelpMenuProps {
+  isCollapsed?: boolean
+}
+
+export function HelpMenu({ isCollapsed = false }: HelpMenuProps) {
+  const [showAbout, setShowAbout] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
+  const [showPrivacy, setShowPrivacy] = useState(false)
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          {isCollapsed ? (
+            <Button variant="ghost" size="icon" className="w-full h-10" title="Help & Support">
+              <HelpCircle className="h-5 w-5" />
+            </Button>
+          ) : (
+            <Button variant="ghost" className="w-full justify-start h-10 text-muted-foreground hover:text-foreground">
+              <HelpCircle className="h-5 w-5 mr-3" />
+              <span>Help & Support</span>
+            </Button>
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem asChild>
+            <Link href="/blog">Blog & Updates</Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setShowAbout(true)}>About Miami.ai</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowTerms(true)}>Terms of Service</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowPrivacy(true)}>Privacy Policy</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href="mailto:support@miami.ai">Contact Support</a>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AboutDialog open={showAbout} onOpenChange={setShowAbout} />
+      <TermsDialog open={showTerms} onOpenChange={setShowTerms} />
+      <PrivacyDialog open={showPrivacy} onOpenChange={setShowPrivacy} />
+    </>
+  )
+}

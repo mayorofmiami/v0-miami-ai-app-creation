@@ -86,6 +86,30 @@ export async function createSession(userId: string): Promise<string> {
   return sessionId
 }
 
+export async function getSession(): Promise<{ userId: string } | null> {
+  try {
+    const cookieStore = await cookies()
+    const sessionId = cookieStore.get("session")?.value
+
+    if (!sessionId) return null
+
+    const sql = getSQL()
+    const result = await sql`
+      SELECT user_id
+      FROM sessions
+      WHERE id = ${sessionId}
+      AND expires_at > NOW()
+    `
+
+    if (result.length === 0) return null
+
+    return { userId: result[0].user_id }
+  } catch (error) {
+    console.error("[v0] getSession error:", error)
+    return null
+  }
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies()

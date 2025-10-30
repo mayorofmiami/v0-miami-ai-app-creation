@@ -196,6 +196,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
+            <TabsTrigger value="blog" asChild>
+              <Link href="/admin/blog">Blog</Link>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8">
@@ -445,6 +448,20 @@ export default function AdminDashboard() {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Blog tab */}
+          <TabsContent value="blog" className="space-y-6">
+            <div className="bg-muted/50 border border-border rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <Shield className="w-5 h-5 text-miami-aqua" />
+                <h3 className="text-lg font-semibold">Blog Management</h3>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-center text-muted-foreground py-8">Blog content goes here</p>
               </div>
             </div>
           </TabsContent>

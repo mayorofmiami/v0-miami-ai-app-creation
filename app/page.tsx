@@ -23,6 +23,7 @@ import { toast } from "@/lib/toast"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { SkeletonSearch } from "@/components/skeleton-search"
 import { generateRelatedSearches } from "@/lib/search-suggestions"
+import { HelpMenu } from "@/components/help-menu"
 
 export default function Home() {
   const [mode, setMode] = useState<"quick" | "deep">("quick")
@@ -499,6 +500,10 @@ export default function Home() {
                         <ThemeToggle />
                       </div>
                     </div>
+
+                    <div className="border-t border-border pt-3">
+                      <HelpMenu />
+                    </div>
                   </nav>
 
                   {/* Account Section - Bottom */}
@@ -670,6 +675,10 @@ export default function Home() {
                       <span className="text-lg sm:text-base text-muted-foreground">Theme</span>
                       <ThemeToggle />
                     </div>
+                  </div>
+
+                  <div className="border-t border-border pt-3">
+                    <HelpMenu />
                   </div>
                 </nav>
 

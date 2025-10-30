@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { User, LogOut, Plus, Clock, Sun, Moon, Palmtree, ChevronLeft, Shield } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
+import { HelpMenu } from "@/components/help-menu"
 
 interface CollapsibleSidebarProps {
   user: { id: string; email: string; name: string | null; role?: string } | null
@@ -149,6 +150,11 @@ export function CollapsibleSidebar({
               <ThemeToggle />
             </div>
           )}
+        </div>
+
+        {/* Help Menu */}
+        <div className={`${isCollapsed ? "" : "border-t border-border pt-2"}`}>
+          <HelpMenu isCollapsed={isCollapsed} />
         </div>
       </nav>
 

@@ -1,0 +1,167 @@
+"use client"
+
+import { useEditor, EditorContent } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
+import Image from "@tiptap/extension-image"
+import Placeholder from "@tiptap/extension-placeholder"
+import { Button } from "@/components/ui/button"
+import { Bold, Italic, List, ListOrdered, Heading2, Quote, Code, ImageIcon, Undo, Redo } from "lucide-react"
+import { useCallback } from "react"
+
+interface RichTextEditorProps {
+  initialContent?: string
+  onChange: (content: string) => void
+}
+
+export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Image.configure({
+        HTMLAttributes: {
+          class: "max-w-full h-auto rounded-lg",
+        },
+      }),
+      Placeholder.configure({
+        placeholder: "Start writing your blog post...",
+      }),
+    ],
+    content: initialContent || "",
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML())
+    },
+    editorProps: {
+      attributes: {
+        class:
+          "prose prose-lg dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed prose-a:text-miami-aqua focus:outline-none max-w-full min-h-[500px] p-4",
+      },
+    },
+  })
+
+  const addImage = useCallback(async () => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = "image/*"
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+
+      const formData = new FormData()
+      formData.append("file", file)
+
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+        const data = await res.json()
+        if (data.url && editor) {
+          editor.chain().focus().setImage({ src: data.url }).run()
+        }
+      } catch (err) {
+        console.error("Failed to upload image:", err)
+      }
+    }
+    input.click()
+  }, [editor])
+
+  if (!editor) {
+    return null
+  }
+
+  return (
+    <div className="border border-input rounded-lg overflow-hidden">
+      {/* Toolbar */}
+      <div className="flex flex-wrap gap-1 p-2 border-b border-input bg-muted/50">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={editor.isActive("bold") ? "bg-muted" : ""}
+        >
+          <Bold className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={editor.isActive("italic") ? "bg-muted" : ""}
+        >
+          <Italic className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={editor.isActive("heading", { level: 2 }) ? "bg-muted" : ""}
+        >
+          <Heading2 className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={editor.isActive("bulletList") ? "bg-muted" : ""}
+        >
+          <List className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={editor.isActive("orderedList") ? "bg-muted" : ""}
+        >
+          <ListOrdered className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          className={editor.isActive("blockquote") ? "bg-muted" : ""}
+        >
+          <Quote className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          className={editor.isActive("codeBlock") ? "bg-muted" : ""}
+        >
+          <Code className="w-4 h-4" />
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={addImage}>
+          <ImageIcon className="w-4 h-4" />
+        </Button>
+        <div className="flex-1" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+        >
+          <Undo className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+        >
+          <Redo className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Editor */}
+      <EditorContent editor={editor} />
+    </div>
+  )
+}

@@ -47,10 +47,62 @@ export async function GET() {
       CREATE INDEX IF NOT EXISTS idx_model_usage_user_id ON model_usage(user_id)
     `
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS blog_posts (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+        slug TEXT UNIQUE NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        excerpt TEXT,
+        author_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published')),
+        published_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status)
+    `
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON blog_posts(published_at DESC)
+    `
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)
+    `
+
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_blog_posts_author ON blog_posts(author_id)
+    `
+
+    await sql`
+      CREATE OR REPLACE FUNCTION update_blog_posts_updated_at()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql
+    `
+
+    await sql`
+      DROP TRIGGER IF EXISTS blog_posts_updated_at ON blog_posts
+    `
+
+    await sql`
+      CREATE TRIGGER blog_posts_updated_at
+        BEFORE UPDATE ON blog_posts
+        FOR EACH ROW
+        EXECUTE FUNCTION update_blog_posts_updated_at()
+    `
+
     return NextResponse.json({
       success: true,
       message:
-        "Migration completed successfully! OAuth support has been added and the model_usage table has been created.",
+        "Migration completed successfully! OAuth support, model_usage table, and blog_posts table have been created.",
     })
   } catch (error: any) {
     console.error("Migration error:", error)
