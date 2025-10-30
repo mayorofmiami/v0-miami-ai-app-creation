@@ -502,7 +502,7 @@ export default function Home() {
                     </div>
 
                     <div className="border-t border-border pt-3">
-                      <HelpMenu />
+                      <HelpMenu isMobile />
                     </div>
                   </nav>
 
@@ -678,7 +678,7 @@ export default function Home() {
                   </div>
 
                   <div className="border-t border-border pt-3">
-                    <HelpMenu />
+                    <HelpMenu isMobile />
                   </div>
                 </nav>
 

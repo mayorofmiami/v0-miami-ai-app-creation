@@ -17,9 +17,10 @@ import Link from "next/link"
 
 interface HelpMenuProps {
   isCollapsed?: boolean
+  isMobile?: boolean
 }
 
-export function HelpMenu({ isCollapsed = false }: HelpMenuProps) {
+export function HelpMenu({ isCollapsed = false, isMobile = false }: HelpMenuProps) {
   const [showAbout, setShowAbout] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
@@ -33,22 +34,41 @@ export function HelpMenu({ isCollapsed = false }: HelpMenuProps) {
               <HelpCircle className="h-5 w-5" />
             </Button>
           ) : (
-            <Button variant="ghost" className="w-full justify-start h-10 text-muted-foreground hover:text-foreground">
-              <HelpCircle className="h-5 w-5 mr-3" />
+            <Button
+              variant="ghost"
+              className={`w-full justify-start text-muted-foreground hover:text-foreground ${
+                isMobile ? "h-14 sm:h-12 text-lg sm:text-base" : "h-10"
+              }`}
+            >
+              <HelpCircle className={`${isMobile ? "w-7 h-7 sm:w-6 sm:h-6" : "h-5 w-5"} mr-3`} />
               <span>Help & Support</span>
             </Button>
           )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent
+          align={isMobile ? "center" : "end"}
+          className={isMobile ? "w-[280px]" : "w-56"}
+          sideOffset={8}
+        >
           <DropdownMenuItem asChild>
-            <Link href="/blog">Blog & Updates</Link>
+            <Link href="/blog" className="cursor-pointer">
+              Blog & Updates
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setShowAbout(true)}>About Miami.ai</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowTerms(true)}>Terms of Service</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowPrivacy(true)}>Privacy Policy</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowAbout(true)} className="cursor-pointer">
+            About Miami.ai
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowTerms(true)} className="cursor-pointer">
+            Terms of Service
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowPrivacy(true)} className="cursor-pointer">
+            Privacy Policy
+          </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <a href="mailto:support@miami.ai">Contact Support</a>
+            <a href="mailto:support@miami.ai" className="cursor-pointer">
+              Contact Support
+            </a>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
