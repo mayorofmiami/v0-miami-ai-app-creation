@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { SearchInput } from "@/components/search-input"
 import { SearchResponse } from "@/components/search-response"
-import { SearchActions } from "@/components/search-actions"
 import { HistorySidebar } from "@/components/history-sidebar"
 import { RelatedSearches } from "@/components/related-searches"
 import { EmptyState } from "@/components/empty-state"
@@ -25,6 +24,7 @@ import { generateRelatedSearches } from "@/lib/search-suggestions"
 import { HelpMenu } from "@/components/help-menu"
 import { FeatureActions } from "@/components/feature-actions"
 import type { SearchInputRef } from "@/components/search-input"
+import { ResponseActions } from "@/components/response-actions"
 
 export default function Home() {
   const [mode, setMode] = useState<"quick" | "deep">("quick")
@@ -398,6 +398,12 @@ export default function Home() {
     }
   }
 
+  const handleRegenerate = () => {
+    if (currentQuery) {
+      handleSearch(currentQuery, mode)
+    }
+  }
+
   return (
     <ErrorBoundary>
       <KeyboardShortcuts
@@ -425,9 +431,9 @@ export default function Home() {
       >
         {hasSearched && (
           <div
-            className={`fixed top-6 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+            className={`fixed top-8 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
-            <div className="flex items-center justify-between max-w-full">
+            <div className="flex items-center justify-between max-w-full h-12">
               {/* Menu Button - Mobile only */}
               <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                 <SheetTrigger asChild>
@@ -570,7 +576,7 @@ export default function Home() {
               </Sheet>
 
               {/* Logo - Centered */}
-              <div className="absolute left-1/2 -translate-x-1/2">
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                 <Image
                   src="/miami-ai-logo.png"
                   alt="MIAMI.AI"
@@ -580,29 +586,15 @@ export default function Home() {
                   priority
                 />
               </div>
-
-              {/* Search Actions Button (3 dots) */}
-              {response && (
-                <div className="rounded-full bg-background/80 backdrop-blur-sm border border-border/40 hover:border-miami-aqua/40 transition-all duration-200">
-                  <SearchActions
-                    query={currentQuery}
-                    response={response}
-                    citations={citations}
-                    mode={mode}
-                    searchId={currentSearchId}
-                    userId={userId}
-                  />
-                </div>
-              )}
             </div>
           </div>
         )}
 
         {!hasSearched && user && (
           <div
-            className={`fixed top-6 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+            className={`fixed top-8 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
-            <div className="flex items-center justify-between max-w-full">
+            <div className="flex items-center justify-between max-w-full h-12">
               {/* Menu Button - Mobile only */}
               <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                 <SheetTrigger asChild>
@@ -715,7 +707,7 @@ export default function Home() {
               </Sheet>
 
               {/* Logo - Centered */}
-              <div className="absolute left-1/2 -translate-x-1/2">
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                 <Image
                   src="/miami-ai-logo.png"
                   alt="MIAMI.AI"
@@ -731,7 +723,7 @@ export default function Home() {
 
         {/* Menu Button - Home page only, mobile only, non-authenticated users */}
         {!hasSearched && !user && (
-          <div className="fixed top-6 left-6 z-50 md:hidden">
+          <div className="fixed top-8 left-6 z-50 md:hidden">
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -975,6 +967,20 @@ export default function Home() {
                       </div>
                     )}
                     <SearchResponse response={response} citations={citations} isStreaming={isLoading} />
+
+                    {!isLoading && response && (
+                      <div className="w-full max-w-3xl mx-auto">
+                        <div className="flex justify-start pt-3 pb-2">
+                          <ResponseActions
+                            query={currentQuery}
+                            response={response}
+                            searchId={currentSearchId}
+                            userId={userId}
+                            onRegenerate={handleRegenerate}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {!isLoading && response && (
                     <RelatedSearches searches={relatedSearches} onSelect={(search) => handleSearch(search, mode)} />
