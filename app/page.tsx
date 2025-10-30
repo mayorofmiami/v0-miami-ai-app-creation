@@ -961,15 +961,6 @@ export default function Home() {
               ) : response ? (
                 <>
                   <div className="space-y-4">
-                    {user && currentModelInfo && (
-                      <div className="flex justify-center">
-                        <ModelBadge
-                          model={currentModelInfo.model}
-                          reason={currentModelInfo.reason}
-                          autoSelected={currentModelInfo.autoSelected}
-                        />
-                      </div>
-                    )}
                     <SearchResponse
                       response={response}
                       citations={citations}
@@ -982,6 +973,15 @@ export default function Home() {
                             searchId={currentSearchId}
                             userId={userId}
                             onRegenerate={handleRegenerate}
+                          />
+                        ) : null
+                      }
+                      modelBadge={
+                        user && currentModelInfo ? (
+                          <ModelBadge
+                            model={currentModelInfo.model}
+                            reason={currentModelInfo.reason}
+                            autoSelected={currentModelInfo.autoSelected}
                           />
                         ) : null
                       }

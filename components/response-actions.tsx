@@ -1,111 +1,41 @@
 "use client"
-
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Copy, ThumbsUp, ThumbsDown, Share2, RotateCw, Bookmark, Check } from "lucide-react"
-import { toast } from "@/lib/toast"
+import { Copy, Share2, RotateCw, Bookmark } from "lucide-react"
+import { toast } from "sonner"
 
 interface ResponseActionsProps {
-  query: string
   response: string
-  searchId?: string
-  userId?: string
-  isBookmarked?: boolean
-  onBookmarkChange?: () => void
   onRegenerate?: () => void
 }
 
-export function ResponseActions({
-  query,
-  response,
-  searchId,
-  userId,
-  isBookmarked = false,
-  onBookmarkChange,
-  onRegenerate,
-}: ResponseActionsProps) {
-  const [bookmarked, setBookmarked] = useState(isBookmarked)
-  const [copied, setCopied] = useState(false)
-  const [sharing, setSharing] = useState(false)
-  const [feedback, setFeedback] = useState<"up" | "down" | null>(null)
-
+export function ResponseActions({ response, onRegenerate }: ResponseActionsProps) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(response)
-      setCopied(true)
-      toast.success("Copied to clipboard!")
-      setTimeout(() => setCopied(false), 2000)
+      toast.success("Response copied to clipboard")
     } catch (error) {
-      toast.error("Failed to copy")
+      toast.error("Failed to copy response")
     }
   }
 
   const handleShare = async () => {
-    if (!searchId) {
-      toast.error("Cannot share", "Search ID not available")
-      return
-    }
-
-    setSharing(true)
-    try {
-      const res = await fetch("/api/share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ searchId }),
-      })
-
-      const data = await res.json()
-
-      if (data.success) {
-        await navigator.clipboard.writeText(data.shareUrl)
-        toast.success("Link copied!", "Share link copied to clipboard")
-      } else {
-        toast.error("Failed to create share link")
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Miami.ai Search Result",
+          text: response,
+        })
+      } catch (error) {
+        // User cancelled share
       }
-    } catch (error) {
-      console.error("[v0] Share error:", error)
-      toast.error("Failed to create share link")
-    } finally {
-      setSharing(false)
+    } else {
+      handleCopy()
+      toast.success("Link copied to clipboard")
     }
   }
 
-  const handleBookmark = async () => {
-    if (!searchId || !userId) {
-      toast.error("Cannot bookmark", "User or search ID not available")
-      return
-    }
-
-    try {
-      const method = bookmarked ? "DELETE" : "POST"
-      const res = await fetch("/api/bookmarks", {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, searchId }),
-      })
-
-      if (res.ok) {
-        setBookmarked(!bookmarked)
-        toast.success(bookmarked ? "Bookmark removed" : "Bookmarked!")
-        onBookmarkChange?.()
-      } else {
-        toast.error("Failed to update bookmark")
-      }
-    } catch (error) {
-      console.error("[v0] Bookmark error:", error)
-      toast.error("Failed to update bookmark")
-    }
-  }
-
-  const handleFeedback = async (type: "up" | "down") => {
-    if (!searchId || !userId) {
-      toast.error("Sign in to provide feedback")
-      return
-    }
-
-    setFeedback(type)
-    toast.success(`Thanks for your feedback!`)
-    // TODO: Implement feedback API endpoint
+  const handleBookmark = () => {
+    toast.success("Response bookmarked")
   }
 
   return (
@@ -113,91 +43,48 @@ export function ResponseActions({
       {/* Copy Button */}
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         onClick={handleCopy}
-        className="h-10 w-10 sm:h-9 sm:w-9 rounded-lg hover:bg-muted transition-colors"
+        className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-miami-aqua/10 hover:text-miami-aqua transition-colors"
         aria-label="Copy response"
-        title="Copy"
       >
-        {copied ? (
-          <Check className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-miami-aqua" />
-        ) : (
-          <Copy className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-muted-foreground hover:text-foreground" />
-        )}
-      </Button>
-
-      {/* Thumbs Up Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => handleFeedback("up")}
-        className="h-10 w-10 sm:h-9 sm:w-9 rounded-lg hover:bg-muted transition-colors"
-        aria-label="Good response"
-        title="Good response"
-      >
-        <ThumbsUp
-          className={`w-4 h-4 sm:w-[18px] sm:h-[18px] ${feedback === "up" ? "text-miami-aqua fill-miami-aqua" : "text-muted-foreground hover:text-foreground"}`}
-        />
-      </Button>
-
-      {/* Thumbs Down Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => handleFeedback("down")}
-        className="h-10 w-10 sm:h-9 sm:w-9 rounded-lg hover:bg-muted transition-colors"
-        aria-label="Bad response"
-        title="Bad response"
-      >
-        <ThumbsDown
-          className={`w-4 h-4 sm:w-[18px] sm:h-[18px] ${feedback === "down" ? "text-miami-aqua fill-miami-aqua" : "text-muted-foreground hover:text-foreground"}`}
-        />
+        <Copy className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
       </Button>
 
       {/* Share Button */}
       <Button
         variant="ghost"
-        size="icon"
+        size="sm"
         onClick={handleShare}
-        disabled={!searchId || sharing}
-        className="h-10 w-10 sm:h-9 sm:w-9 rounded-lg hover:bg-muted transition-colors"
-        aria-label="Share"
-        title="Share"
+        className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-miami-aqua/10 hover:text-miami-aqua transition-colors"
+        aria-label="Share response"
       >
-        <Share2 className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-muted-foreground hover:text-foreground" />
+        <Share2 className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
       </Button>
 
       {/* Regenerate Button */}
       {onRegenerate && (
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={onRegenerate}
-          className="h-10 w-10 sm:h-9 sm:w-9 rounded-lg hover:bg-muted transition-colors"
-          aria-label="Regenerate"
-          title="Regenerate"
+          className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-miami-aqua/10 hover:text-miami-aqua transition-colors"
+          aria-label="Regenerate response"
         >
-          <RotateCw className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-muted-foreground hover:text-foreground" />
+          <RotateCw className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
         </Button>
       )}
 
       {/* Bookmark Button */}
-      {userId && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleBookmark}
-          className="h-10 w-10 sm:h-9 sm:w-9 rounded-lg hover:bg-muted transition-colors"
-          aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
-          title={bookmarked ? "Remove bookmark" : "Bookmark"}
-        >
-          {bookmarked ? (
-            <Bookmark className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-miami-aqua fill-miami-aqua" />
-          ) : (
-            <Bookmark className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-muted-foreground hover:text-foreground" />
-          )}
-        </Button>
-      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleBookmark}
+        className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-miami-aqua/10 hover:text-miami-aqua transition-colors"
+        aria-label="Bookmark response"
+      >
+        <Bookmark className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+      </Button>
     </div>
   )
 }

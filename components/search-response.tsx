@@ -16,9 +16,10 @@ interface SearchResponseProps {
   citations: Citation[]
   isStreaming?: boolean
   actions?: ReactNode
+  modelBadge?: ReactNode
 }
 
-export function SearchResponse({ response, citations, isStreaming, actions }: SearchResponseProps) {
+export function SearchResponse({ response, citations, isStreaming, actions, modelBadge }: SearchResponseProps) {
   const [displayedText, setDisplayedText] = useState("")
 
   const safeCitations = citations || []
@@ -128,8 +129,13 @@ export function SearchResponse({ response, citations, isStreaming, actions }: Se
         </div>
       </div>
 
-      {/* Actions */}
-      {actions && <div className="pt-2">{actions}</div>}
+      {/* Actions and Model Badge Row */}
+      {(actions || modelBadge) && (
+        <div className="flex items-center justify-between gap-4 pt-2 flex-wrap">
+          <div className="flex-1">{actions}</div>
+          {modelBadge && <div className="flex-shrink-0">{modelBadge}</div>}
+        </div>
+      )}
 
       {/* Citations */}
       {safeCitations.length > 0 && (
