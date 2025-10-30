@@ -2,7 +2,7 @@
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
-import { User, LogOut, Plus, Clock, Sun, Moon, Palmtree, ChevronLeft, Shield } from "lucide-react"
+import { User, Plus, Clock, Sun, Moon, Palmtree, ChevronLeft, Shield } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { HelpMenu } from "@/components/help-menu"
@@ -192,22 +192,6 @@ export function CollapsibleSidebar({
                 )}
               </div>
             </Link>
-            {!isCollapsed && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start text-xs h-8 mt-2 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                onClick={onLogout}
-              >
-                <LogOut className="w-3 h-3 mr-2" />
-                Sign Out
-              </Button>
-            )}
-            {isCollapsed && (
-              <Button variant="ghost" size="icon" className="w-full h-8 mt-2" onClick={onLogout} title="Sign Out">
-                <LogOut className="w-4 h-4" />
-              </Button>
-            )}
           </>
         ) : (
           <div className={`flex flex-col gap-2 ${isCollapsed ? "items-center" : ""}`}>

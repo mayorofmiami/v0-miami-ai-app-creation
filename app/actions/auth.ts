@@ -50,5 +50,4 @@ export async function signInAction(formData: FormData) {
 
 export async function logoutAction() {
   await logout()
-  redirect("/login")
 }

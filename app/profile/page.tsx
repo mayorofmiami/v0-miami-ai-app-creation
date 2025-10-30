@@ -1,11 +1,16 @@
-import { requireAuth } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
-import { logoutAction } from "@/app/actions/auth"
+import { LogoutButton } from "@/components/logout-button"
 import Link from "next/link"
-import { User, History, LogOut } from "lucide-react"
+import { User, History } from "lucide-react"
+import { redirect } from "next/navigation"
 
 export default async function ProfilePage() {
-  const user = await requireAuth()
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect("/login")
+  }
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -46,16 +51,7 @@ export default async function ProfilePage() {
                   View Search History
                 </Button>
               </Link>
-              <form action={logoutAction}>
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-500/10 bg-transparent"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-              </form>
+              <LogoutButton />
             </div>
           </div>
         </div>

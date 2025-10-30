@@ -15,7 +15,7 @@ import type { ModelId } from "@/components/model-selector"
 import { ModelBadge } from "@/components/model-badge"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { User, Menu, LogOut, Plus, Clock, Shield } from "lucide-react"
+import { User, Menu, Plus, Clock, Shield } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import type { SearchHistory } from "@/lib/db"
@@ -531,17 +531,6 @@ export default function Home() {
                             </div>
                           </div>
                         </Link>
-                        <div className="px-2 pt-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start text-sm h-9 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                            onClick={handleLogout}
-                          >
-                            <LogOut className="w-4 h-4 mr-2" />
-                            Sign Out
-                          </Button>
-                        </div>
                       </>
                     ) : (
                       <div className="flex flex-col gap-3 px-2">
@@ -707,17 +696,6 @@ export default function Home() {
                           </div>
                         </div>
                       </Link>
-                      <div className="px-2 pt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full justify-start text-sm h-9 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                          onClick={handleLogout}
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Sign Out
-                        </Button>
-                      </div>
                     </>
                   ) : (
                     <div className="flex flex-col gap-3 px-2">
