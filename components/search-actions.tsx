@@ -111,7 +111,7 @@ export function SearchActions({
         <Button
           variant="ghost"
           size="icon"
-          className="group h-14 w-14 sm:h-12 sm:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+          className="group h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
           aria-label="More options"
         >
           <MoreVertical className="w-6 h-6 sm:w-5 sm:h-5 text-miami-aqua group-hover:scale-110 transition-transform duration-200" />

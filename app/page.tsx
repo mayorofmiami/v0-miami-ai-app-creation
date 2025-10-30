@@ -596,7 +596,138 @@ export default function Home() {
           </div>
         )}
 
-        {/* Menu Button - Home page only, mobile only */}
+        {!hasSearched && user && (
+          <div
+            className={`fixed top-6 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+          >
+            <div className="flex items-center justify-between max-w-full">
+              {/* Menu Button - Mobile only */}
+              <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                    aria-label="Open menu"
+                  >
+                    <Menu className="text-miami-aqua w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
+                  <div className="flex flex-col items-center gap-4 py-4">
+                    <Image
+                      src="/miami-ai-logo.png"
+                      alt="MIAMI.AI"
+                      width={180}
+                      height={36}
+                      className="h-9 w-auto"
+                      priority
+                    />
+                  </div>
+
+                  <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
+                      onClick={handleNewChat}
+                    >
+                      <Plus className="w-5 h-5 mr-3" />
+                      New Chat
+                    </Button>
+
+                    {isAdmin && (
+                      <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
+                        >
+                          <Shield className="w-5 h-5 mr-3" />
+                          Admin Dashboard
+                        </Button>
+                      </Link>
+                    )}
+
+                    {recentSearches.length > 0 && (
+                      <div className="pt-5 border-t border-border mt-2">
+                        <div className="flex items-center justify-between px-4 mb-3">
+                          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                            Recent Chats
+                          </p>
+                          <button
+                            onClick={handleToggleHistory}
+                            className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                          >
+                            See All
+                          </button>
+                        </div>
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {recentSearches.slice(0, 5).map((search, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                handleSearch(search, mode)
+                                setIsDrawerOpen(false)
+                              }}
+                              className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                            >
+                              <div className="flex items-center gap-3">
+                                <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                                <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                                  {search}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-5 border-t border-border mt-2">
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-base text-muted-foreground">Theme</span>
+                        <ThemeToggle />
+                      </div>
+                    </div>
+
+                    <div className="border-t border-border pt-3 mt-2">
+                      <HelpMenu isMobile />
+                    </div>
+                  </nav>
+
+                  <div className="border-t pt-6 pb-8 mt-auto">
+                    <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
+                      <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
+                          <User className="w-6 h-6 text-miami-aqua" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
+                            {user.name || "User"}
+                          </p>
+                          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              {/* Logo - Centered */}
+              <div className="absolute left-1/2 -translate-x-1/2">
+                <Image
+                  src="/miami-ai-logo.png"
+                  alt="MIAMI.AI"
+                  width={140}
+                  height={28}
+                  className="h-12 w-auto"
+                  priority
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Menu Button - Home page only, mobile only, non-authenticated users */}
         {!hasSearched && !user && (
           <div className="fixed top-6 left-6 z-50 md:hidden">
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -736,129 +867,6 @@ export default function Home() {
                 </div>
               </SheetContent>
             </Sheet>
-          </div>
-        )}
-
-        {/* Hamburger Menu Button for Authenticated Users on Home Page */}
-        {!hasSearched && user && (
-          <div className="fixed top-6 left-6 z-50 md:hidden">
-            <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
-                  aria-label="Open menu"
-                >
-                  <Menu className="text-miami-aqua w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
-                <div className="flex flex-col items-center gap-4 py-4">
-                  <Image
-                    src="/miami-ai-logo.png"
-                    alt="MIAMI.AI"
-                    width={180}
-                    height={36}
-                    className="h-9 w-auto"
-                    priority
-                  />
-                </div>
-
-                <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
-                    onClick={handleNewChat}
-                  >
-                    <Plus className="w-5 h-5 mr-3" />
-                    New Chat
-                  </Button>
-
-                  {isAdmin && (
-                    <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
-                      >
-                        <Shield className="w-5 h-5 mr-3" />
-                        Admin Dashboard
-                      </Button>
-                    </Link>
-                  )}
-
-                  {recentSearches.length > 0 && (
-                    <div className="pt-5 border-t border-border mt-2">
-                      <div className="flex items-center justify-between px-4 mb-3">
-                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                          Recent Chats
-                        </p>
-                        <button
-                          onClick={handleToggleHistory}
-                          className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
-                        >
-                          See All
-                        </button>
-                      </div>
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {recentSearches.slice(0, 5).map((search, index) => (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              handleSearch(search, mode)
-                              setIsDrawerOpen(false)
-                            }}
-                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                              <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                                {search}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-5 border-t border-border mt-2">
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-base text-muted-foreground">Theme</span>
-                      <ThemeToggle />
-                    </div>
-                  </div>
-
-                  <div className="border-t border-border pt-3 mt-2">
-                    <HelpMenu isMobile />
-                  </div>
-                </nav>
-
-                <div className="border-t pt-6 pb-8 mt-auto">
-                  <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                        <User className="w-6 h-6 text-miami-aqua" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
-                          {user.name || "User"}
-                        </p>
-                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        )}
-
-        {!hasSearched && user && (
-          <div className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-center">
-              <Image src="/miami-ai-logo.png" alt="MIAMI.AI" width={120} height={24} className="h-12 w-auto" priority />
-            </div>
           </div>
         )}
 
