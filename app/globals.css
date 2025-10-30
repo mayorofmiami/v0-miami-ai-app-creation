@@ -83,6 +83,13 @@
   --color-miami-dark: #111111;
   --color-miami-darker: #0a0a0a;
 
+  /* Added extended Miami color palette for feature actions */
+  --color-miami-purple: #b794f6;
+  --color-miami-blue: #60a5fa;
+  --color-miami-green: #34d399;
+  --color-miami-yellow: #fbbf24;
+  --color-miami-orange: #fb923c;
+
   /* Design tokens */
   --color-background: var(--color-miami-dark);
   --color-foreground: #ffffff;

@@ -23,6 +23,7 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { SkeletonSearch } from "@/components/skeleton-search"
 import { generateRelatedSearches } from "@/lib/search-suggestions"
 import { HelpMenu } from "@/components/help-menu"
+import { FeatureActions } from "@/components/feature-actions"
 
 export default function Home() {
   const [mode, setMode] = useState<"quick" | "deep">("quick")
@@ -388,6 +389,24 @@ export default function Home() {
     }, 400)
   }
 
+  const handleFeatureAction = (query: string, actionMode: "quick" | "deep") => {
+    if (actionMode === "deep" && !query) {
+      // Just switch to deep mode and focus input
+      setMode("deep")
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+    } else if (query) {
+      // Focus input with pre-filled query
+      setMode(actionMode)
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+        // Optionally pre-fill the query
+        // This would require adding a prop to SearchInput to set initial value
+      }, 100)
+    }
+  }
+
   return (
     <ErrorBoundary>
       <KeyboardShortcuts
@@ -589,7 +608,7 @@ export default function Home() {
         )}
 
         {/* Menu Button - Home page only, mobile only */}
-        {!hasSearched && (
+        {!hasSearched && !user && (
           <div className="fixed top-6 left-6 z-50 md:hidden">
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <SheetTrigger asChild>
@@ -731,70 +750,100 @@ export default function Home() {
           </div>
         )}
 
+        {!hasSearched && user && (
+          <div className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-center">
+              <Image src="/miami-ai-logo.png" alt="MIAMI.AI" width={120} height={24} className="h-8 w-auto" priority />
+            </div>
+          </div>
+        )}
+
         {/* Main Content */}
         <main
-          className={`flex-1 container mx-auto sm:px-6 lg:px-8 px-4 py-12 max-w-full overflow-x-hidden ${hasSearched ? "pb-32 pt-24" : ""}`}
+          className={`flex-1 container mx-auto sm:px-6 lg:px-8 px-4 py-12 max-w-full overflow-x-hidden ${hasSearched ? "pb-32 pt-24" : user ? "pt-24" : ""}`}
         >
           {!hasSearched ? (
-            <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] space-y-6 sm:space-y-8 animate-in fade-in duration-700 justify-center">
-              <div className="text-center">
-                <div className="flex justify-center">
-                  <Image
-                    src="/miami-ai-logo.png"
-                    alt="MIAMI.AI"
-                    width={294}
-                    height={59}
-                    className="neon-glow max-w-full h-auto"
-                    priority
-                  />
-                </div>
-              </div>
+            <>
+              {!user && (
+                <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] space-y-6 sm:space-y-8 animate-in fade-in duration-700 justify-center">
+                  <div className="text-center">
+                    <div className="flex justify-center">
+                      <Image
+                        src="/miami-ai-logo.png"
+                        alt="MIAMI.AI"
+                        width={294}
+                        height={59}
+                        className="neon-glow max-w-full h-auto"
+                        priority
+                      />
+                    </div>
+                  </div>
 
-              <div className="w-full max-w-3xl px-4 space-y-4 sm:space-y-6">
-                <div className="w-full">
-                  <SearchInput
-                    ref={searchInputRef}
-                    onSearch={handleSearch}
-                    isLoading={isLoading}
-                    mode={mode}
-                    onModeChange={setMode}
-                    onCancel={handleCancelSearch}
-                    recentSearches={recentSearches}
-                    user={user}
-                    selectedModel={selectedModel}
-                    onModelChange={handleModelChange}
-                  />
-                </div>
+                  <div className="w-full max-w-3xl px-4 space-y-4 sm:space-y-6">
+                    <div className="w-full">
+                      <SearchInput
+                        ref={searchInputRef}
+                        onSearch={handleSearch}
+                        isLoading={isLoading}
+                        mode={mode}
+                        onModeChange={setMode}
+                        onCancel={handleCancelSearch}
+                        recentSearches={recentSearches}
+                        user={user}
+                        selectedModel={selectedModel}
+                        onModelChange={handleModelChange}
+                      />
+                    </div>
 
-                {/* Example Search Queries */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {[
-                    { query: "What are the best tech startups in Miami right now?", category: "Miami Business" },
-                    { query: "Compare Miami's real estate market to other major cities", category: "Real Estate" },
-                    { query: "What's happening in Miami's AI and tech scene?", category: "Technology" },
-                    { query: "Best practices for hurricane preparedness in South Florida", category: "Local Living" },
-                    { query: "Explain the latest developments in quantum computing", category: "Technology" },
-                    { query: "What are the environmental challenges facing Miami Beach?", category: "Environment" },
-                  ].map((example, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSearch(example.query, mode)}
-                      className={`group relative p-4 sm:p-5 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10 ${index >= 3 ? "hidden sm:block" : ""}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-base font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2">
-                            {example.query}
-                          </p>
-                          <p className="text-sm text-muted-foreground mt-1.5">{example.category}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                    {/* Example Search Queries */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      {[
+                        { query: "What are the best tech startups in Miami right now?", category: "Miami Business" },
+                        { query: "Compare Miami's real estate market to other major cities", category: "Real Estate" },
+                        { query: "What's happening in Miami's AI and tech scene?", category: "Technology" },
+                        {
+                          query: "Best practices for hurricane preparedness in South Florida",
+                          category: "Local Living",
+                        },
+                        { query: "Explain the latest developments in quantum computing", category: "Technology" },
+                        { query: "What are the environmental challenges facing Miami Beach?", category: "Environment" },
+                      ].map((example, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSearch(example.query, mode)}
+                          className={`group relative p-4 sm:p-5 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10 ${index >= 3 ? "hidden sm:block" : ""}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-2.5 h-2.5 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-base font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2">
+                                {example.query}
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-1.5">{example.category}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
+
+              {user && (
+                <div className="flex flex-col items-center min-h-[calc(100vh-12rem)] space-y-8 sm:space-y-12 animate-in fade-in duration-700 justify-center pb-32">
+                  {/* Personalized Greeting */}
+                  <div className="text-center space-y-3">
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple bg-clip-text text-transparent">
+                      Hello, {user.name || "there"}
+                    </h1>
+                    <p className="text-lg sm:text-xl text-muted-foreground">How can I help you today?</p>
+                  </div>
+
+                  {/* Feature Action Buttons */}
+                  <FeatureActions onActionClick={handleFeatureAction} />
+                </div>
+              )}
+            </>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {isLoading && !response ? (
@@ -835,7 +884,7 @@ export default function Home() {
         )}
 
         {/* Fixed Search Bar at Bottom - Only on results page */}
-        {hasSearched && (
+        {(hasSearched || user) && (
           <div
             className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
