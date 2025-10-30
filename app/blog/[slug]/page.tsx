@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless"
 import { Logo } from "@/components/logo"
 import { Calendar, User, ArrowLeft } from "lucide-react"
-import { Link } from "next/link"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { notFound } from "next/navigation"
 
@@ -69,12 +69,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </header>
 
       {/* Article */}
-      <main className="container mx-auto px-4 py-12">
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <article className="max-w-3xl mx-auto">
           {/* Header */}
           <header className="mb-8 pb-8 border-b border-border">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-balance">{post.title}</h1>
-            <div className="flex items-center gap-4 text-muted-foreground">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 text-balance">{post.title}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>{formatDate(post.published_at)}</span>
@@ -90,14 +90,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
           {/* Content */}
           <div
-            className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-p:text-pretty prose-p:break-words prose-a:text-miami-aqua prose-img:rounded-lg prose-img:shadow-lg prose-img:max-w-full [&>*]:break-words [&>*]:overflow-wrap-anywhere"
+            className="prose prose-sm sm:prose-base lg:prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-p:text-pretty prose-a:text-miami-aqua prose-img:rounded-lg prose-img:shadow-lg prose-img:max-w-full prose-img:h-auto [&>*]:break-words [&>*]:overflow-wrap-anywhere [&_*]:max-w-full"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
 
           {/* Footer */}
           <footer className="mt-12 pt-8 border-t border-border">
             <Link href="/blog">
-              <Button variant="outline">
+              <Button variant="outline" className="w-full sm:w-auto bg-transparent">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to All Posts
               </Button>

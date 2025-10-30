@@ -16,7 +16,11 @@ interface RichTextEditorProps {
 export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
+      }),
       Image.configure({
         HTMLAttributes: {
           class: "max-w-full h-auto rounded-lg",
@@ -33,7 +37,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
     editorProps: {
       attributes: {
         class:
-          "prose prose-lg dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed prose-a:text-miami-aqua focus:outline-none max-w-full min-h-[500px] p-4",
+          "prose prose-sm sm:prose-base lg:prose-lg dark:prose-invert prose-headings:font-bold prose-p:leading-relaxed prose-a:text-miami-aqua focus:outline-none max-w-full min-h-[400px] sm:min-h-[500px] p-4 [&_*]:max-w-full",
       },
     },
   })
@@ -60,6 +64,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
         }
       } catch (err) {
         console.error("Failed to upload image:", err)
+        alert("Failed to upload image. Please try again.")
       }
     }
     input.click()
@@ -79,6 +84,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
           className={editor.isActive("bold") ? "bg-muted" : ""}
+          title="Bold"
         >
           <Bold className="w-4 h-4" />
         </Button>
@@ -88,6 +94,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={editor.isActive("italic") ? "bg-muted" : ""}
+          title="Italic"
         >
           <Italic className="w-4 h-4" />
         </Button>
@@ -97,6 +104,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           size="sm"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           className={editor.isActive("heading", { level: 2 }) ? "bg-muted" : ""}
+          title="Heading 2"
         >
           <Heading2 className="w-4 h-4" />
         </Button>
@@ -106,6 +114,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={editor.isActive("bulletList") ? "bg-muted" : ""}
+          title="Bullet List"
         >
           <List className="w-4 h-4" />
         </Button>
@@ -115,6 +124,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={editor.isActive("orderedList") ? "bg-muted" : ""}
+          title="Numbered List"
         >
           <ListOrdered className="w-4 h-4" />
         </Button>
@@ -124,6 +134,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           size="sm"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className={editor.isActive("blockquote") ? "bg-muted" : ""}
+          title="Quote"
         >
           <Quote className="w-4 h-4" />
         </Button>
@@ -133,19 +144,21 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           size="sm"
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           className={editor.isActive("codeBlock") ? "bg-muted" : ""}
+          title="Code Block"
         >
           <Code className="w-4 h-4" />
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={addImage}>
+        <Button type="button" variant="ghost" size="sm" onClick={addImage} title="Add Image">
           <ImageIcon className="w-4 h-4" />
         </Button>
-        <div className="flex-1" />
+        <div className="flex-1 min-w-[20px]" />
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
+          title="Undo"
         >
           <Undo className="w-4 h-4" />
         </Button>
@@ -155,6 +168,7 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           size="sm"
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
+          title="Redo"
         >
           <Redo className="w-4 h-4" />
         </Button>

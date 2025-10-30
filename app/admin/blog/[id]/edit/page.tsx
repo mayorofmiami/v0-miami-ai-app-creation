@@ -117,9 +117,11 @@ export default function EditBlogPostPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title" className="mb-2 block">
+                Title
+              </Label>
               <Input
                 id="title"
                 value={title}
@@ -131,7 +133,9 @@ export default function EditBlogPostPage() {
             </div>
 
             <div>
-              <Label htmlFor="slug">Slug (URL)</Label>
+              <Label htmlFor="slug" className="mb-2 block">
+                Slug (URL)
+              </Label>
               <Input
                 id="slug"
                 value={slug}
@@ -143,7 +147,9 @@ export default function EditBlogPostPage() {
             </div>
 
             <div>
-              <Label htmlFor="excerpt">Excerpt (Optional)</Label>
+              <Label htmlFor="excerpt" className="mb-2 block">
+                Excerpt (Optional)
+              </Label>
               <Textarea
                 id="excerpt"
                 value={excerpt}
@@ -154,7 +160,9 @@ export default function EditBlogPostPage() {
             </div>
 
             <div>
-              <Label htmlFor="content">Content</Label>
+              <Label htmlFor="content" className="mb-2 block">
+                Content
+              </Label>
               <RichTextEditor initialContent={content} onChange={setContent} />
               <p className="text-xs text-muted-foreground mt-1">
                 Rich text editor with image support. Use the toolbar for formatting.
@@ -162,7 +170,7 @@ export default function EditBlogPostPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 border-t">
             <Button
               type="submit"
               variant="outline"
@@ -171,13 +179,14 @@ export default function EditBlogPostPage() {
                 setStatus("draft")
                 handleSubmit(e, false)
               }}
+              className="w-full sm:w-auto"
             >
               <Save className="w-4 h-4 mr-2" />
               Save as Draft
             </Button>
             <Button
               type="button"
-              className="bg-miami-aqua hover:bg-miami-aqua/90"
+              className="bg-miami-aqua hover:bg-miami-aqua/90 w-full sm:w-auto"
               disabled={isSubmitting}
               onClick={(e) => handleSubmit(e, true)}
             >
