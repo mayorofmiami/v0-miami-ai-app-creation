@@ -24,6 +24,7 @@ import { SkeletonSearch } from "@/components/skeleton-search"
 import { generateRelatedSearches } from "@/lib/search-suggestions"
 import { HelpMenu } from "@/components/help-menu"
 import { FeatureActions } from "@/components/feature-actions"
+import type { SearchInputRef } from "@/components/search-input"
 
 export default function Home() {
   const [mode, setMode] = useState<"quick" | "deep">("quick")
@@ -49,7 +50,7 @@ export default function Home() {
   } | null>(null)
   const [rateLimitInfo, setRateLimitInfo] = useState<{ remaining: number; limit: number } | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchInputRef = useRef<SearchInputRef>(null)
 
   const userId = user?.id || null
   const isAdmin = user?.role === "owner" || user?.role === "admin"
@@ -373,9 +374,10 @@ export default function Home() {
     handleClearSearch()
     setIsDrawerOpen(false)
 
+    searchInputRef.current?.clear()
     setTimeout(() => {
       searchInputRef.current?.focus()
-    }, 400)
+    }, 100)
   }
 
   const handleFeatureAction = (query: string, actionMode: "quick" | "deep") => {

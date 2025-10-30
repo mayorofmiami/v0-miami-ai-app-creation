@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, forwardRef } from "react"
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react"
 import { Search, Sparkles, X, Clock, Mic, MicOff, Settings2, Check } from "lucide-react"
 import {
   DropdownMenu,
@@ -36,7 +36,12 @@ interface SearchInputProps {
   onModelChange?: (model: ModelId) => void
 }
 
-export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput(
+export interface SearchInputRef {
+  focus: () => void
+  clear: () => void
+}
+
+export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function SearchInput(
   {
     onSearch,
     isLoading,
@@ -58,6 +63,26 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
   const [isListening, setIsListening] = useState(false)
   const [recognition, setRecognition] = useState<any>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current?.focus()
+    },
+    clear: () => {
+      setQuery("")
+      setShowSuggestions(false)
+      setSelectedIndex(-1)
+    },
+  }))
+
+  useEffect(() => {
+    if (typeof ref === "function") {
+      ref(inputRef.current)
+    } else if (ref) {
+      ref.current = inputRef.current
+    }
+  }, [ref])
 
   useEffect(() => {
     if (typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
@@ -116,6 +141,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
     if (query.trim() && !isLoading) {
       onSearch(query, mode)
       setShowSuggestions(false)
+      setIsFocused(false)
+      inputRef.current?.blur()
     }
   }
 
@@ -126,8 +153,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
     }
 
     setTimeout(() => {
-      if (ref && typeof ref !== "function" && ref.current) {
-        ref.current.scrollIntoView({
+      if (inputRef.current) {
+        inputRef.current.scrollIntoView({
           behavior: "smooth",
           block: "center",
           inline: "nearest",
@@ -155,6 +182,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
       onSearch(suggestions[selectedIndex], mode)
       setShowSuggestions(false)
       setSelectedIndex(-1)
+      inputRef.current?.blur()
     } else if (e.key === "Escape") {
       setShowSuggestions(false)
       setSelectedIndex(-1)
@@ -218,7 +246,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
       <form onSubmit={handleSubmit} className="relative">
         <div className="relative">
           <input
-            ref={ref}
+            ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -333,7 +361,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                   className={`p-3.5 rounded-lg transition-all ${
                     mode === "deep"
                       ? "bg-miami-pink text-miami-dark neon-border-pink"
-                      : "bg-muted text-muted-foreground hover:bg-miami-pink/20"
+                      : "bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua"
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                   title={mode === "deep" ? "Deep Research Mode (Active)" : "Enable Deep Research"}
                 >
@@ -366,6 +394,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                 setQuery(suggestion)
                 onSearch(suggestion, mode)
                 setShowSuggestions(false)
+                setIsFocused(false)
+                inputRef.current?.blur()
               }}
               className={`w-full px-5 py-4 text-left flex items-center gap-3 transition-colors ${
                 index === selectedIndex ? "bg-miami-aqua/10" : "hover:bg-muted"
