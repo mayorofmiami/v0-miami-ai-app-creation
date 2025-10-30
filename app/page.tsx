@@ -902,6 +902,7 @@ export default function Home() {
                         user={user}
                         selectedModel={selectedModel}
                         onModelChange={handleModelChange}
+                        onHistoryClick={handleToggleHistory}
                       />
                     </div>
 
@@ -1025,6 +1026,7 @@ export default function Home() {
                 user={user}
                 selectedModel={selectedModel}
                 onModelChange={handleModelChange}
+                onHistoryClick={handleToggleHistory}
               />
               {rateLimitInfo && (
                 <div className="text-center text-xs text-muted-foreground">

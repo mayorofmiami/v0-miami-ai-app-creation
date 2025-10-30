@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react"
-import { Search, Sparkles, X, Clock, Mic, MicOff, Settings2, Check } from "lucide-react"
+import { Search, Sparkles, X, Clock, Mic, MicOff, Settings2, Check, History } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,7 @@ interface SearchInputProps {
   user?: { id: string; email: string; name: string | null; role?: string } | null
   selectedModel?: ModelId
   onModelChange?: (model: ModelId) => void
+  onHistoryClick?: () => void
 }
 
 export interface SearchInputRef {
@@ -52,6 +53,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     user,
     selectedModel = "auto",
     onModelChange,
+    onHistoryClick,
   },
   ref,
 ) {
@@ -116,24 +118,22 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       const filtered = recentSearches.filter((s) => s.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
       setSuggestions(filtered)
       setShowSuggestions(filtered.length > 0)
-    } else if (query.length === 0 && isFocused && recentSearches.length > 0) {
-      setSuggestions(recentSearches.slice(0, 5))
-      setShowSuggestions(true)
     } else {
       setSuggestions([])
       setShowSuggestions(false)
     }
-  }, [query, recentSearches, isFocused])
+  }, [query, recentSearches])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        console.log("[v0] Click outside detected")
         setShowSuggestions(false)
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
+    document.addEventListener("click", handleClickOutside)
+    return () => document.removeEventListener("click", handleClickOutside)
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -147,11 +147,8 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   }
 
   const handleFocus = () => {
+    console.log("[v0] handleFocus called")
     setIsFocused(true)
-    if (suggestions.length > 0) {
-      setShowSuggestions(true)
-    }
-
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.scrollIntoView({
@@ -164,6 +161,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   }
 
   const handleBlur = () => {
+    console.log("[v0] handleBlur called")
     setIsFocused(false)
   }
 
@@ -274,6 +272,18 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             </button>
           ) : (
             <>
+              {onHistoryClick && recentSearches.length > 0 && (
+                <button
+                  type="button"
+                  onClick={onHistoryClick}
+                  disabled={isLoading}
+                  className="p-3.5 rounded-lg transition-all bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="View search history"
+                >
+                  <History className="w-5 h-5" />
+                </button>
+              )}
+
               {/* Voice Search Button */}
               <button
                 type="button"
@@ -384,17 +394,17 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         </div>
       </form>
 
-      {showSuggestions && suggestions.length > 0 && (
+      {showSuggestions && suggestions.length > 0 && query.length >= 2 && (
         <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
           {suggestions.map((suggestion, index) => (
             <button
               key={index}
-              onMouseDown={(e) => {
+              onClick={(e) => {
                 e.preventDefault()
                 setQuery(suggestion)
                 onSearch(suggestion, mode)
                 setShowSuggestions(false)
-                setIsFocused(false)
+                setSelectedIndex(-1)
                 inputRef.current?.blur()
               }}
               className={`w-full px-5 py-4 text-left flex items-center gap-3 transition-colors ${
