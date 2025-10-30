@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Logo } from "@/components/logo"
 import { SearchInput } from "@/components/search-input"
 import { SearchResponse } from "@/components/search-response"
 import { SearchActions } from "@/components/search-actions"
@@ -425,25 +424,32 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="md:hidden group relative h-14 w-14 sm:h-12 sm:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                    className="md:hidden group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
                     aria-label="Open menu"
                   >
-                    <Menu className="text-miami-aqua w-6 h-6 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-200" />
+                    <Menu className="text-miami-aqua w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
-                  <div className="flex flex-col items-center gap-6 py-6">
-                    <Logo />
+                  <div className="flex flex-col items-center gap-4 py-4">
+                    <Image
+                      src="/miami-ai-logo.png"
+                      alt="MIAMI.AI"
+                      width={180}
+                      height={36}
+                      className="h-9 w-auto"
+                      priority
+                    />
                   </div>
 
                   {/* Navigation - Top Section */}
-                  <nav className="flex-1 flex flex-col gap-3" aria-label="Main navigation">
+                  <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
                     <Button
                       variant="ghost"
-                      className="w-full justify-start text-lg sm:text-base text-muted-foreground hover:text-foreground h-14 sm:h-12"
+                      className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
                       onClick={handleNewChat}
                     >
-                      <Plus className="w-7 h-7 sm:w-6 sm:h-6 mr-3" />
+                      <Plus className="w-5 h-5 mr-3" />
                       New Chat
                     </Button>
 
@@ -451,28 +457,28 @@ export default function Home() {
                       <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
                         <Button
                           variant="ghost"
-                          className="w-full justify-start text-lg sm:text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-14 sm:h-12"
+                          className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
                         >
-                          <Shield className="w-7 h-7 sm:w-6 sm:h-6 mr-3" />
+                          <Shield className="w-5 h-5 mr-3" />
                           Admin Dashboard
                         </Button>
                       </Link>
                     )}
 
                     {recentSearches.length > 0 && (
-                      <div className="pt-4 border-t border-border">
-                        <div className="flex items-center justify-between px-3 mb-2">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <div className="pt-5 border-t border-border mt-2">
+                        <div className="flex items-center justify-between px-4 mb-3">
+                          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                             Recent Chats
                           </p>
                           <button
                             onClick={handleToggleHistory}
-                            className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                            className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
                           >
                             See All
                           </button>
                         </div>
-                        <div className="space-y-1 max-h-64 overflow-y-auto">
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
                           {recentSearches.slice(0, 5).map((search, index) => (
                             <button
                               key={index}
@@ -480,11 +486,11 @@ export default function Home() {
                                 handleSearch(search, mode)
                                 setIsDrawerOpen(false)
                               }}
-                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors group"
+                              className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
                             >
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                <span className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                              <div className="flex items-center gap-3">
+                                <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                                <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                                   {search}
                                 </span>
                               </div>
@@ -494,14 +500,14 @@ export default function Home() {
                       </div>
                     )}
 
-                    <div className="pt-4 border-t border-border">
-                      <div className="flex items-center justify-between px-3 py-3">
-                        <span className="text-lg sm:text-base text-muted-foreground">Theme</span>
+                    <div className="pt-5 border-t border-border mt-2">
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-base text-muted-foreground">Theme</span>
                         <ThemeToggle />
                       </div>
                     </div>
 
-                    <div className="border-t border-border pt-3">
+                    <div className="border-t border-border pt-3 mt-2">
                       <HelpMenu isMobile />
                     </div>
                   </nav>
@@ -509,8 +515,8 @@ export default function Home() {
                   {/* Account Section - Bottom */}
                   <div className="border-t pt-6 pb-8 mt-auto">
                     {isLoadingUser ? (
-                      <div className="flex items-center gap-3 px-2">
-                        <div className="w-10 h-10 rounded-full bg-muted/50 animate-pulse" />
+                      <div className="flex items-center gap-3 px-4">
+                        <div className="w-12 h-12 rounded-full bg-muted/50 animate-pulse" />
                         <div className="flex-1 space-y-2">
                           <div className="h-4 bg-muted/50 rounded w-24 animate-pulse" />
                           <div className="h-3 bg-muted/50 rounded w-32 animate-pulse" />
@@ -519,30 +525,30 @@ export default function Home() {
                     ) : user ? (
                       <>
                         <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
-                          <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                              <User className="w-5 h-5 text-miami-aqua" />
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
+                              <User className="w-6 h-6 text-miami-aqua" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold truncate group-hover:text-miami-aqua transition-colors">
+                              <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
                                 {user.name || "User"}
                               </p>
-                              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                             </div>
                           </div>
                         </Link>
                       </>
                     ) : (
-                      <div className="flex flex-col gap-3 px-2">
+                      <div className="flex flex-col gap-3 px-4">
                         <Link href="/login" onClick={() => setIsDrawerOpen(false)} className="block">
-                          <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-11 rounded-lg shadow-sm hover:shadow-md transition-all">
+                          <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-12 rounded-lg shadow-sm hover:shadow-md transition-all text-base">
                             Sign In
                           </Button>
                         </Link>
                         <Link href="/signup" onClick={() => setIsDrawerOpen(false)} className="block">
                           <Button
                             variant="outline"
-                            className="w-full h-11 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent"
+                            className="w-full h-12 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent text-base"
                           >
                             Sign Up
                           </Button>
@@ -558,9 +564,9 @@ export default function Home() {
                 <Image
                   src="/miami-ai-logo.png"
                   alt="MIAMI.AI"
-                  width={168}
-                  height={34}
-                  className="h-8 sm:h-10 md:h-12 w-auto"
+                  width={140}
+                  height={28}
+                  className="h-7 sm:h-8 md:h-10 w-auto"
                   priority
                 />
               </div>
@@ -590,25 +596,31 @@ export default function Home() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="group relative h-14 w-14 sm:h-12 sm:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                  className="group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
                   aria-label="Open menu"
                 >
-                  <Menu className="text-miami-aqua w-6 h-6 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform duration-200" />
+                  <Menu className="text-miami-aqua w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
-                <div className="flex flex-col items-center gap-6 py-6">
-                  <Logo />
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <Image
+                    src="/miami-ai-logo.png"
+                    alt="MIAMI.AI"
+                    width={180}
+                    height={36}
+                    className="h-9 w-auto"
+                    priority
+                  />
                 </div>
 
-                {/* Navigation - Top Section */}
-                <nav className="flex-1 flex flex-col gap-3" aria-label="Main navigation">
+                <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
                   <Button
                     variant="ghost"
-                    className="w-full justify-start text-lg sm:text-base text-muted-foreground hover:text-foreground h-14 sm:h-12"
+                    className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
                     onClick={handleNewChat}
                   >
-                    <Plus className="w-7 h-7 sm:w-6 sm:h-6 mr-3" />
+                    <Plus className="w-5 h-5 mr-3" />
                     New Chat
                   </Button>
 
@@ -616,28 +628,28 @@ export default function Home() {
                     <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-lg sm:text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-14 sm:h-12"
+                        className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
                       >
-                        <Shield className="w-7 h-7 sm:w-6 sm:h-6 mr-3" />
+                        <Shield className="w-5 h-5 mr-3" />
                         Admin Dashboard
                       </Button>
                     </Link>
                   )}
 
                   {recentSearches.length > 0 && (
-                    <div className="pt-4 border-t border-border">
-                      <div className="flex items-center justify-between px-3 mb-2">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="pt-5 border-t border-border mt-2">
+                      <div className="flex items-center justify-between px-4 mb-3">
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                           Recent Chats
                         </p>
                         <button
                           onClick={handleToggleHistory}
-                          className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                          className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
                         >
                           See All
                         </button>
                       </div>
-                      <div className="space-y-1 max-h-64 overflow-y-auto">
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
                         {recentSearches.slice(0, 5).map((search, index) => (
                           <button
                             key={index}
@@ -645,11 +657,11 @@ export default function Home() {
                               handleSearch(search, mode)
                               setIsDrawerOpen(false)
                             }}
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors group"
+                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
                           >
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                              <span className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                            <div className="flex items-center gap-3">
+                              <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                              <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                                 {search}
                               </span>
                             </div>
@@ -659,23 +671,22 @@ export default function Home() {
                     </div>
                   )}
 
-                  <div className="pt-4 border-t border-border">
-                    <div className="flex items-center justify-between px-3 py-3">
-                      <span className="text-lg sm:text-base text-muted-foreground">Theme</span>
+                  <div className="pt-5 border-t border-border mt-2">
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-base text-muted-foreground">Theme</span>
                       <ThemeToggle />
                     </div>
                   </div>
 
-                  <div className="border-t border-border pt-3">
+                  <div className="border-t border-border pt-3 mt-2">
                     <HelpMenu isMobile />
                   </div>
                 </nav>
 
-                {/* Account Section - Bottom */}
                 <div className="border-t pt-6 pb-8 mt-auto">
                   {isLoadingUser ? (
-                    <div className="flex items-center gap-3 px-2">
-                      <div className="w-10 h-10 rounded-full bg-muted/50 animate-pulse" />
+                    <div className="flex items-center gap-3 px-4">
+                      <div className="w-12 h-12 rounded-full bg-muted/50 animate-pulse" />
                       <div className="flex-1 space-y-2">
                         <div className="h-4 bg-muted/50 rounded w-24 animate-pulse" />
                         <div className="h-3 bg-muted/50 rounded w-32 animate-pulse" />
@@ -684,30 +695,30 @@ export default function Home() {
                   ) : user ? (
                     <>
                       <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
-                        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                            <User className="w-5 h-5 text-miami-aqua" />
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
+                            <User className="w-6 h-6 text-miami-aqua" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate group-hover:text-miami-aqua transition-colors">
+                            <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
                               {user.name || "User"}
                             </p>
-                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                           </div>
                         </div>
                       </Link>
                     </>
                   ) : (
-                    <div className="flex flex-col gap-3 px-2">
+                    <div className="flex flex-col gap-3 px-4">
                       <Link href="/login" onClick={() => setIsDrawerOpen(false)} className="block">
-                        <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-11 rounded-lg shadow-sm hover:shadow-md transition-all">
+                        <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-12 rounded-lg shadow-sm hover:shadow-md transition-all text-base">
                           Sign In
                         </Button>
                       </Link>
                       <Link href="/signup" onClick={() => setIsDrawerOpen(false)} className="block">
                         <Button
                           variant="outline"
-                          className="w-full h-11 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent"
+                          className="w-full h-12 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent text-base"
                         >
                           Sign Up
                         </Button>
@@ -731,8 +742,8 @@ export default function Home() {
                   <Image
                     src="/miami-ai-logo.png"
                     alt="MIAMI.AI"
-                    width={420}
-                    height={84}
+                    width={294}
+                    height={59}
                     className="neon-glow max-w-full h-auto"
                     priority
                   />
@@ -756,7 +767,7 @@ export default function Home() {
                 </div>
 
                 {/* Example Search Queries */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {[
                     { query: "What are the best tech startups in Miami right now?", category: "Miami Business" },
                     { query: "Compare Miami's real estate market to other major cities", category: "Real Estate" },
@@ -768,15 +779,15 @@ export default function Home() {
                     <button
                       key={index}
                       onClick={() => handleSearch(example.query, mode)}
-                      className={`group relative p-3 sm:p-4 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10 ${index >= 3 ? "hidden sm:block" : ""}`}
+                      className={`group relative p-4 sm:p-5 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10 ${index >= 3 ? "hidden sm:block" : ""}`}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2">
+                          <p className="text-base font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2">
                             {example.query}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">{example.category}</p>
+                          <p className="text-sm text-muted-foreground mt-1.5">{example.category}</p>
                         </div>
                       </div>
                     </button>

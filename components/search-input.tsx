@@ -227,19 +227,19 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
             onKeyDown={handleKeyDown}
             placeholder="Ask anything..."
             disabled={isLoading}
-            className={`w-full px-6 py-4 pr-44 text-foreground rounded-xl border-2 ${
+            className={`w-full px-6 py-5 pr-48 text-foreground rounded-xl border-2 ${
               mode === "quick" ? "border-miami-aqua glow-pulse-aqua" : "border-miami-pink glow-pulse-pink"
             } transition-all focus:outline-none focus:ring-0 text-lg bg-background/50 backdrop-blur-sm relative z-10 ${
               isLoading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            } placeholder:text-muted-foreground/60`}
           />
         </div>
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-20">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 z-20">
           {isListening && onCancel ? (
             <button
               type="button"
               onClick={onCancel}
-              className="p-3 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all"
+              className="p-3.5 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all"
               title="Cancel search"
             >
               <X className="w-5 h-5" />
@@ -251,7 +251,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                 type="button"
                 onClick={handleVoiceSearch}
                 disabled={isLoading}
-                className={`p-3 rounded-lg transition-all ${
+                className={`p-3.5 rounded-lg transition-all ${
                   isListening
                     ? "bg-red-500/20 text-red-500 animate-pulse"
                     : "bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua"
@@ -267,7 +267,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                     <button
                       type="button"
                       disabled={isLoading}
-                      className={`p-3 rounded-lg transition-all ${
+                      className={`p-3.5 rounded-lg transition-all ${
                         mode === "deep"
                           ? "bg-miami-pink text-miami-dark neon-border-pink"
                           : "bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua"
@@ -277,8 +277,8 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                       <Settings2 className="w-5 h-5" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64">
-                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                  <DropdownMenuContent align="end" className="w-72">
+                    <DropdownMenuLabel className="text-sm font-normal text-muted-foreground px-3 py-2">
                       Search Options
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -286,24 +286,24 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                     {/* Deep Research Toggle */}
                     <DropdownMenuItem
                       onClick={() => onModeChange(mode === "quick" ? "deep" : "quick")}
-                      className="flex items-start gap-3 py-3 cursor-pointer"
+                      className="flex items-start gap-3 py-4 px-3 cursor-pointer"
                     >
-                      <div className="flex h-5 w-5 items-center justify-center">
-                        <Sparkles className="h-4 w-4" />
+                      <div className="flex h-6 w-6 items-center justify-center">
+                        <Sparkles className="h-5 w-5" />
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Deep Research</span>
-                          {mode === "deep" && <Check className="h-4 w-4 text-primary" />}
+                          <span className="text-base font-medium">Deep Research</span>
+                          {mode === "deep" && <Check className="h-5 w-5 text-primary" />}
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm text-muted-foreground">
                           {mode === "deep" ? "Active - Comprehensive analysis" : "Enable for detailed research"}
                         </p>
                       </div>
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                    <DropdownMenuLabel className="text-sm font-normal text-muted-foreground px-3 py-2">
                       AI Model
                     </DropdownMenuLabel>
 
@@ -312,14 +312,14 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                       <DropdownMenuItem
                         key={model.id}
                         onClick={() => onModelChange?.(model.id)}
-                        className="flex items-start gap-3 py-3 cursor-pointer"
+                        className="flex items-start gap-3 py-4 px-3 cursor-pointer"
                       >
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">{model.name}</span>
-                            {selectedModel === model.id && <Check className="h-4 w-4 text-primary" />}
+                            <span className="text-base font-medium">{model.name}</span>
+                            {selectedModel === model.id && <Check className="h-5 w-5 text-primary" />}
                           </div>
-                          <p className="text-xs text-muted-foreground">{model.description}</p>
+                          <p className="text-sm text-muted-foreground">{model.description}</p>
                         </div>
                       </DropdownMenuItem>
                     ))}
@@ -330,7 +330,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                   type="button"
                   onClick={() => onModeChange(mode === "quick" ? "deep" : "quick")}
                   disabled={isLoading}
-                  className={`p-3 rounded-lg transition-all ${
+                  className={`p-3.5 rounded-lg transition-all ${
                     mode === "deep"
                       ? "bg-miami-pink text-miami-dark neon-border-pink"
                       : "bg-muted text-muted-foreground hover:bg-miami-pink/20"
@@ -347,7 +347,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
           <button
             type="submit"
             disabled={isLoading || !query.trim()}
-            className={`p-3 rounded-lg transition-all ${
+            className={`p-3.5 rounded-lg transition-all ${
               mode === "quick" ? "bg-miami-aqua hover:bg-miami-aqua/80" : "bg-miami-pink hover:bg-miami-pink/80"
             } text-miami-dark disabled:opacity-50 disabled:cursor-not-allowed`}
           >
@@ -362,24 +362,24 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
             <button
               key={index}
               onMouseDown={(e) => {
-                e.preventDefault() // Prevent input blur
+                e.preventDefault()
                 setQuery(suggestion)
                 onSearch(suggestion, mode)
                 setShowSuggestions(false)
               }}
-              className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+              className={`w-full px-5 py-4 text-left flex items-center gap-3 transition-colors ${
                 index === selectedIndex ? "bg-miami-aqua/10" : "hover:bg-muted"
               }`}
             >
-              <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm break-all">{suggestion}</span>
+              <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <span className="text-base break-all">{suggestion}</span>
             </button>
           ))}
         </div>
       )}
 
       {mode === "deep" && !isLoading && (
-        <p className="text-xs text-muted-foreground text-center mt-2">
+        <p className="text-sm text-muted-foreground text-center mt-3">
           Deep Research mode may take 30-60 seconds for comprehensive results
         </p>
       )}

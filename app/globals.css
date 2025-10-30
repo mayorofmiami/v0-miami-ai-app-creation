@@ -94,6 +94,19 @@
   --color-border: #2a2a2a;
 
   --radius: 0.75rem;
+
+  /* Mobile-optimized spacing scale */
+  --spacing-touch-target: 44px; /* Minimum touch target size */
+  --spacing-comfortable: 20px; /* Comfortable spacing between elements */
+  --spacing-section: 32px; /* Section spacing */
+
+  /* Mobile-optimized typography scale */
+  --text-xs-mobile: 0.8125rem; /* 13px */
+  --text-sm-mobile: 0.9375rem; /* 15px */
+  --text-base-mobile: 1.0625rem; /* 17px */
+  --text-lg-mobile: 1.1875rem; /* 19px */
+  --text-xl-mobile: 1.375rem; /* 22px */
+
   /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -158,16 +171,15 @@ html {
 
 /* Neon glow effect */
 .neon-glow {
-  text-shadow: 0 0 10px var(--color-miami-aqua), 0 0 20px var(--color-miami-aqua), 0 0 30px var(--color-miami-aqua);
+  text-shadow: 0 0 8px var(--color-miami-aqua), 0 0 16px var(--color-miami-aqua), 0 0 24px var(--color-miami-aqua);
 }
 
 .neon-border {
-  box-shadow: 0 0 10px var(--color-miami-aqua), 0 0 20px var(--color-miami-aqua), inset 0 0 10px rgba(2, 216, 233, 0.1);
+  box-shadow: 0 0 8px var(--color-miami-aqua), 0 0 16px var(--color-miami-aqua), inset 0 0 8px rgba(2, 216, 233, 0.08);
 }
 
 .neon-border-pink {
-  box-shadow: 0 0 10px var(--color-miami-pink), 0 0 20px var(--color-miami-pink), inset 0 0 10px
-    rgba(255, 182, 193, 0.1);
+  box-shadow: 0 0 8px var(--color-miami-pink), 0 0 16px var(--color-miami-pink), inset 0 0 8px rgba(255, 182, 193, 0.08);
 }
 
 /* Gradient text */
@@ -326,11 +338,25 @@ html {
 /* Mobile optimizations */
 @media (max-width: 768px) {
   .neon-glow {
-    text-shadow: 0 0 5px var(--color-miami-aqua), 0 0 10px var(--color-miami-aqua);
+    text-shadow: 0 0 4px var(--color-miami-aqua), 0 0 8px var(--color-miami-aqua);
   }
 
   .neon-border {
-    box-shadow: 0 0 5px var(--color-miami-aqua), inset 0 0 5px rgba(2, 216, 233, 0.1);
+    box-shadow: 0 0 4px var(--color-miami-aqua), inset 0 0 4px rgba(2, 216, 233, 0.05);
+  }
+
+  /* Mobile-specific typography improvements */
+  body {
+    font-size: var(--text-base-mobile);
+    line-height: 1.6;
+  }
+
+  h1 {
+    font-size: var(--text-xl-mobile);
+  }
+
+  h2 {
+    font-size: var(--text-lg-mobile);
   }
 }
 
