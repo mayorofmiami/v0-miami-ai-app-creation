@@ -377,7 +377,7 @@ export default function Home() {
     searchInputRef.current?.clear()
     setTimeout(() => {
       searchInputRef.current?.focus()
-    }, 100)
+    }, 500)
   }
 
   const handleFeatureAction = (query: string, actionMode: "quick" | "deep") => {
