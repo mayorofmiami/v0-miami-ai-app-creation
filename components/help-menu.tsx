@@ -46,6 +46,7 @@ export function HelpMenu({ isCollapsed = false, isMobile = false }: HelpMenuProp
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent
+          side="top"
           align={isMobile ? "center" : "end"}
           className={isMobile ? "w-[280px]" : "w-56"}
           sideOffset={8}
