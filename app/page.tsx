@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { SearchInput } from "@/components/search-input"
 import { SearchResponse } from "@/components/search-response"
 import { SearchActions } from "@/components/search-actions"
@@ -182,164 +182,153 @@ export default function Home() {
     setShowHistory((prev) => !prev)
   }
 
-  const handleSearch = async (query: string, searchMode: "quick" | "deep") => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-    }
-
-    abortControllerRef.current = new AbortController()
-
-    setIsLoading(true)
-    setHasSearched(true)
-    setResponse("")
-    setCitations([])
-    setCurrentQuery(query)
-    setCurrentSearchId(undefined)
-    setCurrentModelInfo(null) // Clear model info
-    setRelatedSearches(generateRelatedSearches(query))
-
-    const loadingToast = toast.loading(searchMode === "deep" ? "Deep research in progress..." : "Searching...")
-
-    try {
-      const body: any = { query, mode: searchMode }
-      if (userId) {
-        body.userId = userId
-        console.log("[v0] Searching with userId:", userId)
-      } else {
-        console.log("[v0] Searching without userId (not authenticated)")
+  const handleSearch = useCallback(
+    async (query: string, searchMode: "quick" | "deep") => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
       }
 
-      if (selectedModel !== "auto") {
-        body.selectedModel = selectedModel
-      }
+      abortControllerRef.current = new AbortController()
 
-      const res = await fetch("/api/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal: abortControllerRef.current.signal,
-      })
+      setIsLoading(true)
+      setHasSearched(true)
+      setResponse("")
+      setCitations([])
+      setCurrentQuery(query)
+      setCurrentSearchId(undefined)
+      setCurrentModelInfo(null)
+      setRelatedSearches(generateRelatedSearches(query))
 
-      if (res.status === 429) {
-        const error = await res.json()
-        toast.dismiss(loadingToast)
+      const loadingToast = toast.loading(searchMode === "deep" ? "Deep research in progress..." : "Searching...")
 
-        if (error.type === "ai_gateway_rate_limit" || error.type === "ai_gateway_error") {
-          toast.error(
-            "AI Service Temporarily Limited",
-            "Free AI credits have rate limits due to abuse. Please try again in a few minutes, or contact support to purchase AI credits.",
-            10000, // Show for 10 seconds
-          )
-          setResponse(
-            `⚠️ **AI Service Temporarily Limited**\n\nVercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.\n\n**What you can do:**\n- Wait a few minutes and try again\n- Try a different AI model from the settings menu\n- Contact support to purchase AI credits for unrestricted access\n\nWe apologize for the inconvenience!`,
-          )
+      try {
+        const body: any = { query, mode: searchMode }
+        if (userId) {
+          body.userId = userId
+          console.log("[v0] Searching with userId:", userId)
         } else {
-          // Our own rate limiting
-          toast.error(
-            "Rate Limit Exceeded",
-            error.reason ||
-              `You've reached your query limit. ${userId ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`,
-          )
-          setResponse(
-            `⚠️ Rate limit exceeded. ${userId ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
-          )
+          console.log("[v0] Searching without userId (not authenticated)")
         }
-        setIsLoading(false)
-        return
-      }
 
-      if (!res.ok) {
-        const error = await res.json()
-        const errorMessage = error.error || "Search failed"
+        if (selectedModel !== "auto") {
+          body.selectedModel = selectedModel
+        }
 
-        if (res.status === 503 && errorMessage.includes("API key")) {
+        const res = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: abortControllerRef.current.signal,
+        })
+
+        if (res.status === 429) {
+          const error = await res.json()
           toast.dismiss(loadingToast)
-          toast.error("Configuration Error", "Please add EXA_API_KEY to environment variables in the Vars section")
-          setResponse("⚠️ Search is not configured. Please add your EXA_API_KEY to the environment variables.")
+
+          if (error.type === "ai_gateway_rate_limit" || error.type === "ai_gateway_error") {
+            toast.error(
+              "AI Service Temporarily Limited",
+              "Free AI credits have rate limits due to abuse. Please try again in a few minutes, or contact support to purchase AI credits.",
+              10000,
+            )
+            setResponse(
+              `⚠️ **AI Service Temporarily Limited**\n\nVercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.\n\n**What you can do:**\n- Wait a few minutes and try again\n- Try a different AI model from the settings menu\n- Contact support to purchase AI credits for unrestricted access\n\nWe apologize for the inconvenience!`,
+            )
+          } else {
+            toast.error(
+              "Rate Limit Exceeded",
+              error.reason ||
+                `You've reached your query limit. ${userId ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`,
+            )
+            setResponse(
+              `⚠️ Rate limit exceeded. ${userId ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
+            )
+          }
+          setIsLoading(false)
           return
         }
 
-        throw new Error(errorMessage)
-      }
+        if (!res.ok) {
+          const error = await res.json()
+          const errorMessage = error.error || "Search failed"
 
-      const remaining = res.headers.get("X-RateLimit-Remaining")
-      const limit = res.headers.get("X-RateLimit-Limit")
-      if (remaining && limit) {
-        setRateLimitInfo({ remaining: Number.parseInt(remaining), limit: Number.parseInt(limit) })
-      }
+          if (res.status === 503 && errorMessage.includes("API key")) {
+            toast.dismiss(loadingToast)
+            toast.error("Configuration Error", "Please add EXA_API_KEY to environment variables in the Vars section")
+            setResponse("⚠️ Search is not configured. Please add your EXA_API_KEY to the environment variables.")
+            return
+          }
 
-      const reader = res.body?.getReader()
-      const decoder = new TextDecoder()
+          throw new Error(errorMessage)
+        }
 
-      if (!reader) throw new Error("No response body")
+        const remaining = res.headers.get("X-RateLimit-Remaining")
+        const limit = res.headers.get("X-RateLimit-Limit")
+        if (remaining && limit) {
+          setRateLimitInfo({ remaining: Number.parseInt(remaining), limit: Number.parseInt(limit) })
+        }
 
-      let accumulatedResponse = ""
+        const reader = res.body?.getReader()
+        const decoder = new TextDecoder()
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+        if (!reader) throw new Error("No response body")
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split("\n")
+        let accumulatedResponse = ""
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6)
-            if (data === "[DONE]") continue
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.type === "text") {
-                accumulatedResponse += parsed.content
-                setResponse(accumulatedResponse)
-              } else if (parsed.type === "citations") {
-                setCitations(parsed.content || parsed.citations || [])
-              } else if (parsed.type === "model") {
-                setCurrentModelInfo({
-                  model: parsed.content?.model || parsed.model,
-                  reason: parsed.content?.reason || parsed.reason,
-                  autoSelected: parsed.content?.autoSelected ?? parsed.autoSelected ?? true,
-                })
+          const chunk = decoder.decode(value)
+          const lines = chunk.split("\n")
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6)
+              if (data === "[DONE]") continue
+
+              try {
+                const parsed = JSON.parse(data)
+                if (parsed.type === "text") {
+                  accumulatedResponse += parsed.content
+                  setResponse(accumulatedResponse)
+                } else if (parsed.type === "citations") {
+                  setCitations(parsed.content || parsed.citations || [])
+                } else if (parsed.type === "model") {
+                  setCurrentModelInfo({
+                    model: parsed.content?.model || parsed.model,
+                    reason: parsed.content?.reason || parsed.reason,
+                    autoSelected: parsed.content?.autoSelected ?? parsed.autoSelected ?? true,
+                  })
+                }
+              } catch (e) {
+                // Skip invalid JSON
               }
-            } catch (e) {
-              // Skip invalid JSON
             }
           }
         }
-      }
 
-      toast.dismiss(loadingToast)
-      toast.success("Search complete!")
+        toast.dismiss(loadingToast)
+        toast.success("Search complete!")
 
-      setRecentSearches((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 10))
-
-      if (userId) {
-        console.log("[v0] Refreshing recent searches from database")
-        try {
-          const res = await fetch(`/api/history?userId=${userId}`)
-          const data = await res.json()
-          console.log("[v0] Refreshed recent searches:", data)
-          const recent = (data.history || []).slice(0, 10).map((h: SearchHistory) => h.query)
-          setRecentSearches(recent)
-        } catch (error) {
-          console.error("[v0] Failed to refresh recent searches:", error)
+        setRecentSearches((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 10))
+      } catch (error: any) {
+        if (error.name === "AbortError") {
+          console.log("[v0] Search aborted by user")
+          return
         }
-      }
-    } catch (error: any) {
-      if (error.name === "AbortError") {
-        console.log("[v0] Search aborted by user")
-        return
-      }
 
-      console.error("[v0] Search error:", error)
-      toast.dismiss(loadingToast)
-      toast.error("Search failed", error.message || "Please try again")
-      setResponse("Sorry, something went wrong. Please try again.")
-    } finally {
-      setIsLoading(false)
-      abortControllerRef.current = null
-    }
-  }
+        console.error("[v0] Search error:", error)
+        toast.dismiss(loadingToast)
+        toast.error("Search failed", error.message || "Please try again")
+        setResponse("Sorry, something went wrong. Please try again.")
+      } finally {
+        setIsLoading(false)
+        abortControllerRef.current = null
+      }
+    },
+    [userId, selectedModel],
+  ) // Add dependencies for useCallback
 
   const handleSelectHistory = (history: SearchHistory) => {
     if (!history.response || history.response.trim() === "") {
@@ -585,7 +574,7 @@ export default function Home() {
                   alt="MIAMI.AI"
                   width={140}
                   height={28}
-                  className="h-7 sm:h-8 md:h-10 w-auto"
+                  className="h-12 w-auto"
                   priority
                 />
               </div>
@@ -750,10 +739,125 @@ export default function Home() {
           </div>
         )}
 
+        {/* Hamburger Menu Button for Authenticated Users on Home Page */}
+        {!hasSearched && user && (
+          <div className="fixed top-6 left-6 z-50 md:hidden">
+            <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                  aria-label="Open menu"
+                >
+                  <Menu className="text-miami-aqua w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <Image
+                    src="/miami-ai-logo.png"
+                    alt="MIAMI.AI"
+                    width={180}
+                    height={36}
+                    className="h-9 w-auto"
+                    priority
+                  />
+                </div>
+
+                <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
+                    onClick={handleNewChat}
+                  >
+                    <Plus className="w-5 h-5 mr-3" />
+                    New Chat
+                  </Button>
+
+                  {isAdmin && (
+                    <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
+                      >
+                        <Shield className="w-5 h-5 mr-3" />
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  )}
+
+                  {recentSearches.length > 0 && (
+                    <div className="pt-5 border-t border-border mt-2">
+                      <div className="flex items-center justify-between px-4 mb-3">
+                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                          Recent Chats
+                        </p>
+                        <button
+                          onClick={handleToggleHistory}
+                          className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                        >
+                          See All
+                        </button>
+                      </div>
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {recentSearches.slice(0, 5).map((search, index) => (
+                          <button
+                            key={index}
+                            onClick={() => {
+                              handleSearch(search, mode)
+                              setIsDrawerOpen(false)
+                            }}
+                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                              <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                                {search}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-5 border-t border-border mt-2">
+                    <div className="flex items-center justify-between px-4 py-3">
+                      <span className="text-base text-muted-foreground">Theme</span>
+                      <ThemeToggle />
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-3 mt-2">
+                    <HelpMenu isMobile />
+                  </div>
+                </nav>
+
+                <div className="border-t pt-6 pb-8 mt-auto">
+                  <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
+                        <User className="w-6 h-6 text-miami-aqua" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
+                          {user.name || "User"}
+                        </p>
+                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
+
         {!hasSearched && user && (
           <div className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border/40">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-center">
-              <Image src="/miami-ai-logo.png" alt="MIAMI.AI" width={120} height={24} className="h-8 w-auto" priority />
+              <Image src="/miami-ai-logo.png" alt="MIAMI.AI" width={120} height={24} className="h-12 w-auto" priority />
             </div>
           </div>
         )}
