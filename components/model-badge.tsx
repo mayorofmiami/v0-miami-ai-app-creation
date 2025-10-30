@@ -26,8 +26,7 @@ function getModelName(model: string) {
   return model
 }
 
-export function ModelBadge({ model, reason, autoSelected = true, className }: ModelBadgeProps) {
-  const modelName = getModelName(model)
+export function ModelBadge({ model, reason, className }: ModelBadgeProps) {
   const icon = getModelIcon(model)
 
   return (
@@ -37,16 +36,8 @@ export function ModelBadge({ model, reason, autoSelected = true, className }: Mo
         className,
       )}
     >
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        {icon}
-        <span className="font-medium">{modelName}</span>
-      </div>
-      {reason && autoSelected && (
-        <>
-          <span className="text-border">•</span>
-          <span className="text-muted-foreground/80">{reason}</span>
-        </>
-      )}
+      {icon}
+      <span className="font-medium">{model}</span>
     </div>
   )
 }
