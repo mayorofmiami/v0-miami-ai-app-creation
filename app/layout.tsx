@@ -44,10 +44,10 @@ export default function RootLayout({
           <OnboardingModal />
           {children}
           <Toaster
-            position="bottom-right"
-            offset="100px"
+            position="top-center"
+            offset="24px"
             toastOptions={{
-              className: "mb-20",
+              className: "mt-20",
             }}
           />
         </ThemeProvider>
