@@ -1,7 +1,7 @@
 import { neon } from "@neondatabase/serverless"
 import { Logo } from "@/components/logo"
 import { Calendar, User, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Link } from "next/link"
 import { Button } from "@/components/ui/button"
 import { notFound } from "next/navigation"
 
@@ -37,8 +37,9 @@ async function getPost(slug: string): Promise<BlogPost | null> {
   }
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = await getPost(params.slug)
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const post = await getPost(slug)
 
   if (!post) {
     notFound()
@@ -89,7 +90,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
           {/* Content */}
           <div
-            className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-p:text-pretty prose-a:text-miami-aqua prose-img:rounded-lg prose-img:shadow-lg"
+            className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-p:text-pretty prose-p:break-words prose-a:text-miami-aqua prose-img:rounded-lg prose-img:shadow-lg prose-img:max-w-full [&>*]:break-words [&>*]:overflow-wrap-anywhere"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
 
