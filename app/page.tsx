@@ -431,7 +431,7 @@ export default function Home() {
       >
         {hasSearched && (
           <div
-            className={`fixed top-8 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+            className={`fixed top-4 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
             <div className="max-w-3xl mx-auto">
               <div className="flex items-center justify-between h-12 relative">
@@ -577,7 +577,7 @@ export default function Home() {
                 </Sheet>
 
                 {/* Logo - Centered within max-w-3xl container */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 md:top-2 md:translate-y-0">
                   <Image
                     src="/miami-ai-logo.png"
                     alt="MIAMI.AI"
@@ -594,7 +594,7 @@ export default function Home() {
 
         {!hasSearched && user && (
           <div
-            className={`fixed top-8 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+            className={`fixed top-4 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
             <div className="max-w-3xl mx-auto">
               <div className="flex items-center justify-between h-12 relative">
@@ -710,7 +710,7 @@ export default function Home() {
                 </Sheet>
 
                 {/* Logo - Centered within max-w-3xl container */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 md:top-2 md:translate-y-0">
                   <Image
                     src="/miami-ai-logo.png"
                     alt="MIAMI.AI"
@@ -727,7 +727,7 @@ export default function Home() {
 
         {/* Menu Button - Home page only, mobile only, non-authenticated users */}
         {!hasSearched && !user && (
-          <div className="fixed top-8 left-6 z-50 md:hidden">
+          <div className="fixed top-4 left-6 z-50 md:hidden">
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <SheetTrigger asChild>
                 <Button
