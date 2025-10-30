@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { ExternalLink } from "lucide-react"
 import type { JSX } from "react/jsx-runtime"
+import type { ReactNode } from "react"
 
 interface Citation {
   title: string
@@ -14,9 +15,10 @@ interface SearchResponseProps {
   response: string
   citations: Citation[]
   isStreaming?: boolean
+  actions?: ReactNode
 }
 
-export function SearchResponse({ response, citations, isStreaming }: SearchResponseProps) {
+export function SearchResponse({ response, citations, isStreaming, actions }: SearchResponseProps) {
   const [displayedText, setDisplayedText] = useState("")
 
   const safeCitations = citations || []
@@ -125,6 +127,9 @@ export function SearchResponse({ response, citations, isStreaming }: SearchRespo
           </p>
         </div>
       </div>
+
+      {/* Actions */}
+      {actions && <div className="pt-2">{actions}</div>}
 
       {/* Citations */}
       {safeCitations.length > 0 && (

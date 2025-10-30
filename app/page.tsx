@@ -966,11 +966,12 @@ export default function Home() {
                         />
                       </div>
                     )}
-                    <SearchResponse response={response} citations={citations} isStreaming={isLoading} />
-
-                    {!isLoading && response && (
-                      <div className="w-full max-w-3xl mx-auto">
-                        <div className="flex justify-start pt-3 pb-2">
+                    <SearchResponse
+                      response={response}
+                      citations={citations}
+                      isStreaming={isLoading}
+                      actions={
+                        !isLoading && response ? (
                           <ResponseActions
                             query={currentQuery}
                             response={response}
@@ -978,9 +979,9 @@ export default function Home() {
                             userId={userId}
                             onRegenerate={handleRegenerate}
                           />
-                        </div>
-                      </div>
-                    )}
+                        ) : null
+                      }
+                    />
                   </div>
                   {!isLoading && response && (
                     <RelatedSearches searches={relatedSearches} onSelect={(search) => handleSearch(search, mode)} />
