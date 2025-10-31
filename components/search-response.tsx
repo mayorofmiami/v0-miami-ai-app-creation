@@ -28,6 +28,7 @@ export const SearchResponse = memo(function SearchResponse({
   modelBadge,
 }: SearchResponseProps) {
   const [displayedText, setDisplayedText] = useState("")
+  const [isSourcesExpanded, setIsSourcesExpanded] = useState(false)
 
   const safeCitations = citations || []
 
@@ -216,42 +217,67 @@ export const SearchResponse = memo(function SearchResponse({
       {/* Citations */}
       {safeCitations.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Sources</h3>
-          <div className="grid gap-3" role="list" aria-label="Source citations">
-            {safeCitations.map((citation, index) => (
-              <a
-                key={index}
-                id={`citation-${index + 1}`}
-                href={citation.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-start gap-3 p-4 bg-muted/50 hover:bg-muted rounded-lg border border-border hover:border-miami-aqua/50 transition-all duration-300 max-w-full overflow-hidden hover:shadow-md hover:shadow-miami-aqua/10 hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-2 scroll-mt-20"
-                style={{ animationDelay: `${index * 100}ms` }}
-                role="listitem"
-              >
-                <div
-                  className="flex-shrink-0 w-8 h-8 rounded-full bg-miami-aqua/20 flex items-center justify-center text-miami-aqua font-bold text-sm group-hover:bg-miami-aqua/30 group-hover:scale-110 transition-all duration-300"
-                  aria-label={`Source ${index + 1}`}
+          <button
+            onClick={() => setIsSourcesExpanded(!isSourcesExpanded)}
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+            aria-expanded={isSourcesExpanded}
+            aria-controls="sources-list"
+          >
+            <span className="uppercase tracking-wide">
+              {isSourcesExpanded ? "Hide" : "View"} {safeCitations.length}{" "}
+              {safeCitations.length === 1 ? "Source" : "Sources"}
+            </span>
+            <svg
+              className={`w-4 h-4 transition-transform duration-200 ${isSourcesExpanded ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {isSourcesExpanded && (
+            <div
+              id="sources-list"
+              className="grid gap-3 animate-in fade-in slide-in-from-top-2 duration-300"
+              role="list"
+              aria-label="Source citations"
+            >
+              {safeCitations.map((citation, index) => (
+                <a
+                  key={index}
+                  id={`citation-${index + 1}`}
+                  href={citation.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-start gap-3 p-4 bg-muted/50 hover:bg-muted rounded-lg border border-border hover:border-miami-aqua/50 transition-all duration-300 max-w-full overflow-hidden hover:shadow-md hover:shadow-miami-aqua/10 hover:-translate-y-0.5 scroll-mt-20"
+                  role="listitem"
                 >
-                  {index + 1}
-                </div>
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-foreground group-hover:text-miami-aqua transition-colors break-all">
-                      {citation.title}
-                    </h4>
-                    <span className="text-muted-foreground group-hover:text-miami-aqua transition-all duration-300 flex-shrink-0 text-sm">
-                      ↗
-                    </span>
+                  <div
+                    className="flex-shrink-0 w-8 h-8 rounded-full bg-miami-aqua/20 flex items-center justify-center text-miami-aqua font-bold text-sm group-hover:bg-miami-aqua/30 group-hover:scale-110 transition-all duration-300"
+                    aria-label={`Source ${index + 1}`}
+                  >
+                    {index + 1}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2 break-all">{citation.snippet}</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1 break-all" title={citation.url}>
-                    {citation.url}
-                  </p>
-                </div>
-              </a>
-            ))}
-          </div>
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-foreground group-hover:text-miami-aqua transition-colors break-all">
+                        {citation.title}
+                      </h4>
+                      <span className="text-muted-foreground group-hover:text-miami-aqua transition-all duration-300 flex-shrink-0 text-sm">
+                        ↗
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2 break-all">{citation.snippet}</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1 break-all" title={citation.url}>
+                      {citation.url}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
