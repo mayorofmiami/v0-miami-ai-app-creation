@@ -1078,16 +1078,16 @@ export default function Home() {
               {user && (
                 <div className="flex flex-col items-center min-h-[calc(100vh-12rem)] space-y-8 sm:space-y-12 animate-in fade-in duration-700 justify-center pb-32">
                   {/* Personalized Greeting */}
-                  <div className="text-center space-y-3">
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple bg-clip-text text-transparent">
+                  <div className="text-center space-y-2">
+                    <h1 className="text-2xl sm:text-3xl font-semibold bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple bg-clip-text text-transparent">
                       Hello, {user.name || "there"}
                     </h1>
-                    <p className="text-lg sm:text-xl text-muted-foreground">How can I help you today?</p>
+                    <p className="text-base text-muted-foreground">How can I help you today?</p>
                   </div>
 
                   <div className="w-full max-w-3xl px-4">
-                    {/* Example Search Queries - Same as non-authenticated users */}
-                    <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+                    {/* Example Search Queries */}
+                    <div className="flex flex-wrap gap-2 justify-center">
                       {[
                         { query: "Which Miami AI startups raised funding in 2025?", emoji: "🤖" },
                         { query: "Is Miami real estate overvalued vs Austin?", emoji: "🏠" },
@@ -1101,12 +1101,12 @@ export default function Home() {
                         <button
                           key={index}
                           onClick={() => handleSearch(example.query, searchState.mode)}
-                          className={`group ${index >= 3 && !showAllExamples ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
+                          className={`group ${index >= 3 && !showAllExamples ? "hidden md:inline-flex" : "inline-flex"} items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-200 hover:shadow-sm hover:shadow-miami-aqua/10`}
                         >
-                          <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                          <span className="text-base group-hover:scale-110 transition-transform duration-200">
                             {example.emoji}
                           </span>
-                          <span className="text-sm font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
+                          <span className="text-xs font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
                             {example.query}
                           </span>
                         </button>
@@ -1116,10 +1116,10 @@ export default function Home() {
                       {!showAllExamples && (
                         <button
                           onClick={() => setShowAllExamples(true)}
-                          className="md:hidden group inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-miami-aqua/50 bg-miami-aqua/5 hover:bg-miami-aqua/10 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/20"
+                          className="md:hidden group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-miami-aqua/50 bg-miami-aqua/5 hover:bg-miami-aqua/10 transition-all duration-200"
                         >
-                          <span className="text-lg group-hover:scale-110 transition-transform duration-200">+</span>
-                          <span className="text-sm font-medium text-miami-aqua transition-colors whitespace-nowrap">
+                          <span className="text-base group-hover:scale-110 transition-transform duration-200">+</span>
+                          <span className="text-xs font-medium text-miami-aqua transition-colors whitespace-nowrap">
                             More
                           </span>
                         </button>
