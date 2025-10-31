@@ -318,7 +318,15 @@ export default function Home() {
             )
             dispatchSearch({
               type: "SEARCH_ERROR",
-              error: `⚠️ **AI Service Temporarily Limited**\n\nVercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.\n\n**What you can do:**\n- Wait a few minutes and try again\n- Try a different AI model from the settings menu\n- Contact support to purchase AI credits for unrestricted access\n\nWe apologize for the inconvenience!`,
+              error: `⚠️ **AI Service Temporarily Limited**
+Vercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.
+
+**What you can do:**
+- Wait a few minutes and try again
+- Try a different AI model from the settings menu
+- Contact support to purchase AI credits for unrestricted access
+
+We apologize for the inconvenience!`,
             })
           } else {
             toast.error(
@@ -1043,11 +1051,30 @@ export default function Home() {
                       ].map((example, index) => {
                         const shouldHide = index >= 3 && !showAllExamples
                         const hideOnDesktop = index >= 6
+
+                        // Don't render pills 6-7 at all on desktop
+                        if (hideOnDesktop) {
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => handleSearch(example.query, searchState.mode)}
+                              className={`group ${shouldHide ? "hidden" : "inline-flex"} md:hidden items-center gap-2 px-5 py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
+                            >
+                              <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                                {example.emoji}
+                              </span>
+                              <span className="text-base font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
+                                {example.query}
+                              </span>
+                            </button>
+                          )
+                        }
+
                         return (
                           <button
                             key={index}
                             onClick={() => handleSearch(example.query, searchState.mode)}
-                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} ${hideOnDesktop ? "md:hidden" : ""} items-center gap-2 px-5 py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
+                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-5 py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
                           >
                             <span className="text-lg group-hover:scale-110 transition-transform duration-200">
                               {example.emoji}
@@ -1101,11 +1128,30 @@ export default function Home() {
                       ].map((example, index) => {
                         const shouldHide = index >= 3 && !showAllExamples
                         const hideOnDesktop = index >= 6
+
+                        // Don't render pills 6-7 at all on desktop
+                        if (hideOnDesktop) {
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => handleSearch(example.query, searchState.mode)}
+                              className={`group ${shouldHide ? "hidden" : "inline-flex"} md:hidden items-center gap-2 px-4 py-2 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-200 hover:shadow-sm hover:shadow-miami-aqua/10`}
+                            >
+                              <span className="text-base group-hover:scale-110 transition-transform duration-200">
+                                {example.emoji}
+                              </span>
+                              <span className="text-sm font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
+                                {example.query}
+                              </span>
+                            </button>
+                          )
+                        }
+
                         return (
                           <button
                             key={index}
                             onClick={() => handleSearch(example.query, searchState.mode)}
-                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} ${hideOnDesktop ? "md:hidden" : ""} items-center gap-2 px-4 py-2 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-200 hover:shadow-sm hover:shadow-miami-aqua/10`}
+                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-4 py-2 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-200 hover:shadow-sm hover:shadow-miami-aqua/10`}
                           >
                             <span className="text-base group-hover:scale-110 transition-transform duration-200">
                               {example.emoji}
