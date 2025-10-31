@@ -92,7 +92,7 @@ export const SearchResponse = memo(function SearchResponse({
     <div className="w-full max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Response Card */}
       <div
-        className="bg-gradient-to-br from-miami-aqua/10 to-miami-pink/10 border border-miami-aqua/30 rounded-xl p-6 backdrop-blur-sm hover:border-miami-aqua/50 transition-all duration-300 hover:shadow-lg hover:shadow-miami-aqua/10"
+        className="bg-muted/20 rounded-lg p-6 transition-all duration-300 hover:shadow-md hover:bg-muted/30"
         role="article"
         aria-label="Search response"
       >
