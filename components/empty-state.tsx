@@ -1,6 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import Search from "@/components/icons/Search"
+import Sparkles from "@/components/icons/Sparkles"
 
 interface EmptyStateProps {
   type: "no-searches" | "no-bookmarks" | "no-results"
@@ -10,14 +12,14 @@ interface EmptyStateProps {
 export function EmptyState({ type, onAction }: EmptyStateProps) {
   const states = {
     "no-searches": {
-      icon: <span className="text-6xl">🔍</span>,
+      icon: <Search size={48} className="text-miami-aqua" />,
       title: "No searches yet",
       description: "Start your first search to see your history here",
       action: "Start Searching",
       gradient: "from-miami-aqua/20 to-miami-pink/20",
     },
     "no-bookmarks": {
-      icon: <span className="text-6xl">✨</span>,
+      icon: <Sparkles size={48} className="text-miami-pink" />,
       title: "No bookmarks yet",
       description: "Bookmark your favorite searches to access them quickly",
       action: null,

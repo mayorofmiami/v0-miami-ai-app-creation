@@ -7,7 +7,6 @@ import { HistorySidebar } from "@/components/history-sidebar"
 import { RelatedSearches } from "@/components/related-searches"
 import { EmptyState } from "@/components/empty-state"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
 import type { ModelId } from "@/components/model-selector"
 import { ModelBadge } from "@/components/model-badge"
@@ -23,6 +22,14 @@ import { generateRelatedSearches } from "@/lib/search-suggestions"
 import { HelpMenu } from "@/components/help-menu"
 import type { SearchInputRef } from "@/components/search-input"
 import { ResponseActions } from "@/components/response-actions"
+import Menu from "@/components/icons/Menu"
+import User from "@/components/icons/User"
+import Shield from "@/components/icons/Shield"
+import Clock from "@/components/icons/Clock"
+import Plus from "@/components/icons/Plus"
+import Sun from "@/components/icons/Sun"
+import Moon from "@/components/icons/Moon"
+import { useTheme } from "next-themes"
 
 type SearchState = {
   mode: "quick" | "deep"
@@ -116,6 +123,8 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
 }
 
 export default function Home() {
+  const { theme, setTheme } = useTheme()
+
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
     mode: "quick",
     isLoading: false,
@@ -514,7 +523,7 @@ export default function Home() {
                       aria-label="Open menu"
                     >
                       <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                        ☰
+                        <Menu size={24} className="text-miami-aqua" />
                       </span>
                     </Button>
                   </SheetTrigger>
@@ -537,7 +546,9 @@ export default function Home() {
                         className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
                         onClick={handleNewChat}
                       >
-                        <span className="text-xl mr-3">+</span>
+                        <span className="text-xl mr-3">
+                          <Plus size={20} />
+                        </span>
                         New Chat
                       </Button>
 
@@ -547,7 +558,9 @@ export default function Home() {
                             variant="ghost"
                             className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
                           >
-                            <span className="text-xl mr-3">🛡️</span>
+                            <span className="text-xl mr-3">
+                              <Shield size={20} className="text-miami-aqua" />
+                            </span>
                             Admin Dashboard
                           </Button>
                         </Link>
@@ -577,7 +590,9 @@ export default function Home() {
                                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
                               >
                                 <div className="flex items-center gap-3">
-                                  <span className="text-muted-foreground flex-shrink-0">🕐</span>
+                                  <span className="text-muted-foreground flex-shrink-0">
+                                    <Clock size={16} />
+                                  </span>
                                   <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                                     {search}
                                   </span>
@@ -589,10 +604,15 @@ export default function Home() {
                       )}
 
                       <div className="pt-5 border-t border-border mt-2">
-                        <div className="flex items-center justify-between px-4 py-3">
-                          <span className="text-base text-muted-foreground">Theme</span>
-                          <ThemeToggle />
-                        </div>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-base px-4 py-6 h-auto hover:bg-accent"
+                          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                        >
+                          <Sun className="mr-3 h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                          <Moon className="mr-3 h-5 w-5 absolute left-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                          <span>Theme</span>
+                        </Button>
                       </div>
 
                       <div className="border-t border-border pt-3 mt-2">
@@ -615,7 +635,9 @@ export default function Home() {
                           <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
                             <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
                               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                                <span className="text-miami-aqua text-2xl">👤</span>
+                                <span className="text-miami-aqua text-2xl">
+                                  <User size={24} className="text-miami-aqua" />
+                                </span>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
@@ -679,7 +701,7 @@ export default function Home() {
                       aria-label="Open menu"
                     >
                       <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                        ☰
+                        <Menu size={24} className="text-miami-aqua" />
                       </span>
                     </Button>
                   </SheetTrigger>
@@ -701,7 +723,9 @@ export default function Home() {
                         className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
                         onClick={handleNewChat}
                       >
-                        <span className="text-xl mr-3">+</span>
+                        <span className="text-xl mr-3">
+                          <Plus size={20} />
+                        </span>
                         New Chat
                       </Button>
 
@@ -711,7 +735,9 @@ export default function Home() {
                             variant="ghost"
                             className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
                           >
-                            <span className="text-xl mr-3">🛡️</span>
+                            <span className="text-xl mr-3">
+                              <Shield size={20} className="text-miami-aqua" />
+                            </span>
                             Admin Dashboard
                           </Button>
                         </Link>
@@ -741,7 +767,9 @@ export default function Home() {
                                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
                               >
                                 <div className="flex items-center gap-3">
-                                  <span className="text-muted-foreground flex-shrink-0">🕐</span>
+                                  <span className="text-muted-foreground flex-shrink-0">
+                                    <Clock size={16} />
+                                  </span>
                                   <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                                     {search}
                                   </span>
@@ -753,10 +781,15 @@ export default function Home() {
                       )}
 
                       <div className="pt-5 border-t border-border mt-2">
-                        <div className="flex items-center justify-between px-4 py-3">
-                          <span className="text-base text-muted-foreground">Theme</span>
-                          <ThemeToggle />
-                        </div>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start text-base px-4 py-6 h-auto hover:bg-accent"
+                          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                        >
+                          <Sun className="mr-3 h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                          <Moon className="mr-3 h-5 w-5 absolute left-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                          <span>Theme</span>
+                        </Button>
                       </div>
 
                       <div className="border-t border-border pt-3 mt-2">
@@ -768,7 +801,9 @@ export default function Home() {
                       <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
                         <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                            <span className="text-miami-aqua text-2xl">👤</span>
+                            <span className="text-miami-aqua text-2xl">
+                              <User size={24} className="text-miami-aqua" />
+                            </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
@@ -810,7 +845,7 @@ export default function Home() {
                   aria-label="Open menu"
                 >
                   <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                    ☰
+                    <Menu size={24} className="text-miami-aqua" />
                   </span>
                 </Button>
               </SheetTrigger>
@@ -832,7 +867,9 @@ export default function Home() {
                     className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
                     onClick={handleNewChat}
                   >
-                    <span className="text-xl mr-3">+</span>
+                    <span className="text-xl mr-3">
+                      <Plus size={20} />
+                    </span>
                     New Chat
                   </Button>
 
@@ -842,7 +879,9 @@ export default function Home() {
                         variant="ghost"
                         className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
                       >
-                        <span className="text-xl mr-3">🛡️</span>
+                        <span className="text-xl mr-3">
+                          <Shield size={20} className="text-miami-aqua" />
+                        </span>
                         Admin Dashboard
                       </Button>
                     </Link>
@@ -872,7 +911,9 @@ export default function Home() {
                             className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
                           >
                             <div className="flex items-center gap-3">
-                              <span className="text-muted-foreground flex-shrink-0">🕐</span>
+                              <span className="text-muted-foreground flex-shrink-0">
+                                <Clock size={16} />
+                              </span>
                               <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                                 {search}
                               </span>
@@ -884,10 +925,15 @@ export default function Home() {
                   )}
 
                   <div className="pt-5 border-t border-border mt-2">
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-base text-muted-foreground">Theme</span>
-                      <ThemeToggle />
-                    </div>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-base px-4 py-6 h-auto hover:bg-accent"
+                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    >
+                      <Sun className="mr-3 h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                      <Moon className="mr-3 h-5 w-5 absolute left-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                      <span>Theme</span>
+                    </Button>
                   </div>
 
                   <div className="border-t border-border pt-3 mt-2">
@@ -909,7 +955,9 @@ export default function Home() {
                       <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
                         <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                            <span className="text-miami-aqua text-2xl">👤</span>
+                            <span className="text-miami-aqua text-2xl">
+                              <User size={24} className="text-miami-aqua" />
+                            </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
@@ -983,7 +1031,6 @@ export default function Home() {
 
                     {/* Example Search Queries */}
                     <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
-                      {console.log("[v0] showAllExamples:", showAllExamples)}
                       {[
                         { query: "Which Miami AI startups raised funding in 2025?", emoji: "🤖" },
                         { query: "Is Miami real estate overvalued vs Austin?", emoji: "🏠" },
@@ -995,7 +1042,6 @@ export default function Home() {
                         { query: "Best nightlife spots in South Beach", emoji: "🎉" },
                       ].map((example, index) => {
                         const shouldHide = index >= 3 && !showAllExamples
-                        console.log(`[v0] Query ${index}: "${example.query.slice(0, 20)}..." - shouldHide:`, shouldHide)
                         return (
                           <button
                             key={index}
@@ -1013,7 +1059,6 @@ export default function Home() {
                       })}
 
                       {/* Show More Button - Mobile Only */}
-                      {console.log("[v0] Show More button visible:", !showAllExamples)}
                       {!showAllExamples && (
                         <button
                           onClick={() => setShowAllExamples(true)}

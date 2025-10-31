@@ -13,6 +13,7 @@ import { AboutDialog } from "@/components/help/about-dialog"
 import { TermsDialog } from "@/components/help/terms-dialog"
 import { PrivacyDialog } from "@/components/help/privacy-dialog"
 import Link from "next/link"
+import Info from "@/components/icons/Info"
 
 interface HelpMenuProps {
   isCollapsed?: boolean
@@ -30,7 +31,7 @@ export function HelpMenu({ isCollapsed = false, isMobile = false }: HelpMenuProp
         <DropdownMenuTrigger asChild>
           {isCollapsed ? (
             <Button variant="ghost" size="icon" className="w-full h-10" title="Help & Support">
-              <span className="text-xl">❓</span>
+              <Info size="20px" className="text-current" />
             </Button>
           ) : (
             <Button
@@ -39,7 +40,7 @@ export function HelpMenu({ isCollapsed = false, isMobile = false }: HelpMenuProp
                 isMobile ? "h-14 sm:h-12 text-lg sm:text-base" : "h-10"
               }`}
             >
-              <span className={`${isMobile ? "text-2xl sm:text-xl" : "text-xl"} mr-3`}>❓</span>
+              <Info size={isMobile ? "24px" : "20px"} className="mr-3 text-current" />
               <span>Help & Support</span>
             </Button>
           )}
