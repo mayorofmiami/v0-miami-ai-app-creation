@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useReducer } from "react"
 import { SearchInput } from "@/components/search-input"
 import { SearchResponse } from "@/components/search-response"
 import { HistorySidebar } from "@/components/history-sidebar"
@@ -26,29 +26,123 @@ import { FeatureActions } from "@/components/feature-actions"
 import type { SearchInputRef } from "@/components/search-input"
 import { ResponseActions } from "@/components/response-actions"
 
+type SearchState = {
+  mode: "quick" | "deep"
+  isLoading: boolean
+  response: string
+  citations: Array<{ title: string; url: string; snippet: string }>
+  hasSearched: boolean
+  currentQuery: string
+  currentSearchId: string | undefined
+  relatedSearches: string[]
+  currentModelInfo: { model: string; reason: string; autoSelected: boolean } | null
+  rateLimitInfo: { remaining: number; limit: number } | null
+  optimisticQuery: string
+}
+
+type SearchAction =
+  | { type: "START_SEARCH"; query: string; mode: "quick" | "deep" }
+  | { type: "UPDATE_RESPONSE"; response: string }
+  | { type: "SET_CITATIONS"; citations: Array<{ title: string; url: string; snippet: string }> }
+  | { type: "SET_MODEL_INFO"; modelInfo: { model: string; reason: string; autoSelected: boolean } }
+  | { type: "SET_RATE_LIMIT"; rateLimitInfo: { remaining: number; limit: number } }
+  | { type: "SEARCH_COMPLETE" }
+  | { type: "SEARCH_ERROR"; error: string }
+  | { type: "CLEAR_SEARCH" }
+  | { type: "SET_MODE"; mode: "quick" | "deep" }
+  | { type: "LOAD_FROM_HISTORY"; history: any }
+
+function searchReducer(state: SearchState, action: SearchAction): SearchState {
+  switch (action.type) {
+    case "START_SEARCH":
+      return {
+        ...state,
+        isLoading: true,
+        hasSearched: true,
+        response: "",
+        citations: [],
+        currentQuery: action.query,
+        optimisticQuery: action.query,
+        currentSearchId: undefined,
+        currentModelInfo: null,
+        mode: action.mode,
+        relatedSearches: generateRelatedSearches(action.query),
+      }
+    case "UPDATE_RESPONSE":
+      return { ...state, response: action.response }
+    case "SET_CITATIONS":
+      return { ...state, citations: action.citations }
+    case "SET_MODEL_INFO":
+      return { ...state, currentModelInfo: action.modelInfo }
+    case "SET_RATE_LIMIT":
+      return { ...state, rateLimitInfo: action.rateLimitInfo }
+    case "SEARCH_COMPLETE":
+      return { ...state, isLoading: false, optimisticQuery: "" }
+    case "SEARCH_ERROR":
+      return { ...state, isLoading: false, response: action.error, optimisticQuery: "" }
+    case "CLEAR_SEARCH":
+      return {
+        ...state,
+        hasSearched: false,
+        response: "",
+        citations: [],
+        currentQuery: "",
+        optimisticQuery: "",
+        relatedSearches: [],
+        currentModelInfo: null,
+      }
+    case "SET_MODE":
+      return { ...state, mode: action.mode }
+    case "LOAD_FROM_HISTORY":
+      return {
+        ...state,
+        hasSearched: true,
+        mode: action.history.mode,
+        response: action.history.response,
+        citations: action.history.citations || [],
+        currentQuery: action.history.query,
+        optimisticQuery: "",
+        currentSearchId: action.history.id,
+        relatedSearches: generateRelatedSearches(action.history.query),
+        currentModelInfo: action.history.model_used
+          ? {
+              model: action.history.model_used,
+              reason: action.history.selection_reason || "",
+              autoSelected: action.history.auto_selected ?? true,
+            }
+          : null,
+      }
+    default:
+      return state
+  }
+}
+
 export default function Home() {
-  const [mode, setMode] = useState<"quick" | "deep">("quick")
-  const [isLoading, setIsLoading] = useState(false)
-  const [response, setResponse] = useState("")
-  const [citations, setCitations] = useState<Array<{ title: string; url: string; snippet: string }>>([])
-  const [hasSearched, setHasSearched] = useState(false)
+  const [searchState, dispatchSearch] = useReducer(searchReducer, {
+    mode: "quick",
+    isLoading: false,
+    response: "",
+    citations: [],
+    hasSearched: false,
+    currentQuery: "",
+    currentSearchId: undefined,
+    relatedSearches: [],
+    currentModelInfo: null,
+    rateLimitInfo: null,
+    optimisticQuery: "",
+  })
+
+  // UI state (kept separate as it's not related to search)
   const [showHistory, setShowHistory] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [currentQuery, setCurrentQuery] = useState("")
-  const [currentSearchId, setCurrentSearchId] = useState<string | undefined>()
-  const [relatedSearches, setRelatedSearches] = useState<string[]>([])
+  const [shouldFocusInput, setShouldFocusInput] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
+
+  // User state
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [user, setUser] = useState<{ id: string; email: string; name: string | null; role?: string } | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
-  const [shouldFocusInput, setShouldFocusInput] = useState(false)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
   const [selectedModel, setSelectedModel] = useState<ModelId>("auto")
-  const [currentModelInfo, setCurrentModelInfo] = useState<{
-    model: string
-    reason: string
-    autoSelected: boolean
-  } | null>(null)
-  const [rateLimitInfo, setRateLimitInfo] = useState<{ remaining: number; limit: number } | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const searchInputRef = useRef<SearchInputRef>(null)
 
@@ -119,14 +213,14 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (shouldFocusInput && !hasSearched) {
+    if (shouldFocusInput && !searchState.hasSearched) {
       // Wait for next frame to ensure component is mounted
       requestAnimationFrame(() => {
         searchInputRef.current?.focus()
         setShouldFocusInput(false)
       })
     }
-  }, [shouldFocusInput, hasSearched])
+  }, [shouldFocusInput, searchState.hasSearched])
 
   const handleModelChange = async (newModel: ModelId) => {
     setSelectedModel(newModel)
@@ -152,7 +246,8 @@ export default function Home() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
-      setIsLoading(false)
+      dispatchSearch({ type: "SEARCH_ERROR", error: "" }) // Clear any ongoing response
+      dispatchSearch({ type: "SEARCH_COMPLETE" }) // Ensure loading is set to false
       toast.info("Search canceled")
     }
   }
@@ -162,20 +257,13 @@ export default function Home() {
   }
 
   const handleClearSearch = () => {
-    setHasSearched(false)
-    setResponse("")
-    setCitations([])
-    setCurrentQuery("")
-    setRelatedSearches([])
-    setCurrentModelInfo(null) // Clear model info
+    dispatchSearch({ type: "CLEAR_SEARCH" })
   }
 
   const handleToggleMode = () => {
-    setMode((prev) => {
-      const newMode = prev === "quick" ? "deep" : "quick"
-      toast.info(`Switched to ${newMode === "quick" ? "Quick Search" : "Deep Research"} mode`)
-      return newMode
-    })
+    const newMode = searchState.mode === "quick" ? "deep" : "quick"
+    dispatchSearch({ type: "SET_MODE", mode: newMode })
+    toast.info(`Switched to ${newMode === "quick" ? "Quick Search" : "Deep Research"} mode`)
   }
 
   const handleToggleHistory = () => {
@@ -185,7 +273,7 @@ export default function Home() {
 
   const handleSearch = useCallback(
     async (query: string, searchMode: "quick" | "deep") => {
-      if (isLoading) {
+      if (searchState.isLoading) {
         console.log("[v0] Search already in progress, ignoring duplicate request")
         return
       }
@@ -196,24 +284,14 @@ export default function Home() {
 
       abortControllerRef.current = new AbortController()
 
-      setIsLoading(true)
-      setHasSearched(true)
-      setResponse("")
-      setCitations([])
-      setCurrentQuery(query)
-      setCurrentSearchId(undefined)
-      setCurrentModelInfo(null)
-      setRelatedSearches(generateRelatedSearches(query))
+      dispatchSearch({ type: "START_SEARCH", query, mode: searchMode })
 
-      const loadingToast = toast.loading(searchMode === "deep" ? "Deep research in progress..." : "Searching...")
+      // REMOVED redundant loading toast - optimistic UI now shows search state
 
       try {
         const body: any = { query, mode: searchMode }
         if (userId) {
           body.userId = userId
-          console.log("[v0] Searching with userId:", userId)
-        } else {
-          console.log("[v0] Searching without userId (not authenticated)")
         }
 
         if (selectedModel !== "auto") {
@@ -229,7 +307,7 @@ export default function Home() {
 
         if (res.status === 429) {
           const error = await res.json()
-          toast.dismiss(loadingToast)
+          // REMOVED toast.dismiss(loadingToast) since loadingToast no longer exists
 
           if (error.type === "ai_gateway_rate_limit" || error.type === "ai_gateway_error") {
             toast.error(
@@ -237,20 +315,21 @@ export default function Home() {
               "Free AI credits have rate limits due to abuse. Please try again in a few minutes, or contact support to purchase AI credits.",
               10000,
             )
-            setResponse(
-              `⚠️ **AI Service Temporarily Limited**\n\nVercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.\n\n**What you can do:**\n- Wait a few minutes and try again\n- Try a different AI model from the settings menu\n- Contact support to purchase AI credits for unrestricted access\n\nWe apologize for the inconvenience!`,
-            )
+            dispatchSearch({
+              type: "SEARCH_ERROR",
+              error: `⚠️ **AI Service Temporarily Limited**\n\nVercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.\n\n**What you can do:**\n- Wait a few minutes and try again\n- Try a different AI model from the settings menu\n- Contact support to purchase AI credits for unrestricted access\n\nWe apologize for the inconvenience!`,
+            })
           } else {
             toast.error(
               "Rate Limit Exceeded",
               error.reason ||
                 `You've reached your query limit. ${userId ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`,
             )
-            setResponse(
-              `⚠️ Rate limit exceeded. ${userId ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
-            )
+            dispatchSearch({
+              type: "SEARCH_ERROR",
+              error: `⚠️ Rate limit exceeded. ${userId ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
+            })
           }
-          setIsLoading(false)
           return
         }
 
@@ -259,9 +338,12 @@ export default function Home() {
           const errorMessage = error.error || "Search failed"
 
           if (res.status === 503 && errorMessage.includes("API key")) {
-            toast.dismiss(loadingToast)
+            // REMOVED toast.dismiss(loadingToast)
             toast.error("Configuration Error", "Please add EXA_API_KEY to environment variables in the Vars section")
-            setResponse("⚠️ Search is not configured. Please add your EXA_API_KEY to the environment variables.")
+            dispatchSearch({
+              type: "SEARCH_ERROR",
+              error: "⚠️ Search is not configured. Please add your EXA_API_KEY to the environment variables.",
+            })
             return
           }
 
@@ -271,7 +353,10 @@ export default function Home() {
         const remaining = res.headers.get("X-RateLimit-Remaining")
         const limit = res.headers.get("X-RateLimit-Limit")
         if (remaining && limit) {
-          setRateLimitInfo({ remaining: Number.parseInt(remaining), limit: Number.parseInt(limit) })
+          dispatchSearch({
+            type: "SET_RATE_LIMIT",
+            rateLimitInfo: { remaining: Number.parseInt(remaining), limit: Number.parseInt(limit) },
+          })
         }
 
         const reader = res.body?.getReader()
@@ -297,14 +382,17 @@ export default function Home() {
                 const parsed = JSON.parse(data)
                 if (parsed.type === "text") {
                   accumulatedResponse += parsed.content
-                  setResponse(accumulatedResponse)
+                  dispatchSearch({ type: "UPDATE_RESPONSE", response: accumulatedResponse })
                 } else if (parsed.type === "citations") {
-                  setCitations(parsed.content || parsed.citations || [])
+                  dispatchSearch({ type: "SET_CITATIONS", citations: parsed.content || parsed.citations || [] })
                 } else if (parsed.type === "model") {
-                  setCurrentModelInfo({
-                    model: parsed.content?.model || parsed.model,
-                    reason: parsed.content?.reason || parsed.reason,
-                    autoSelected: parsed.content?.autoSelected ?? parsed.autoSelected ?? true,
+                  dispatchSearch({
+                    type: "SET_MODEL_INFO",
+                    modelInfo: {
+                      model: parsed.content?.model || parsed.model,
+                      reason: parsed.content?.reason || parsed.reason,
+                      autoSelected: parsed.content?.autoSelected ?? parsed.autoSelected ?? true,
+                    },
                   })
                 }
               } catch (e) {
@@ -314,8 +402,8 @@ export default function Home() {
           }
         }
 
-        toast.dismiss(loadingToast)
-        toast.success("Search complete!")
+        // REMOVED redundant success toast - search completion is visible in UI
+        dispatchSearch({ type: "SEARCH_COMPLETE" })
 
         setRecentSearches((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 10))
       } catch (error: any) {
@@ -325,16 +413,15 @@ export default function Home() {
         }
 
         console.error("[v0] Search error:", error)
-        toast.dismiss(loadingToast)
+        // REMOVED toast.dismiss(loadingToast)
         toast.error("Search failed", error.message || "Please try again")
-        setResponse("Sorry, something went wrong. Please try again.")
+        dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, something went wrong. Please try again." })
       } finally {
-        setIsLoading(false)
         abortControllerRef.current = null
       }
     },
-    [userId, selectedModel],
-  ) // Add dependencies for useCallback
+    [userId, selectedModel, searchState.isLoading],
+  )
 
   const handleSelectHistory = (history: SearchHistory) => {
     if (!history.response || history.response.trim() === "") {
@@ -345,20 +432,7 @@ export default function Home() {
     }
 
     // Load from history if response exists
-    setHasSearched(true)
-    setMode(history.mode)
-    setResponse(history.response)
-    setCitations(history.citations || [])
-    setCurrentQuery(history.query)
-    setCurrentSearchId(history.id)
-    setRelatedSearches(generateRelatedSearches(history.query))
-    if (history.model_used) {
-      setCurrentModelInfo({
-        model: history.model_used,
-        reason: history.selection_reason || "",
-        autoSelected: history.auto_selected ?? true,
-      })
-    }
+    dispatchSearch({ type: "LOAD_FROM_HISTORY", history })
     toast.info("Loaded from history")
   }
 
@@ -388,13 +462,13 @@ export default function Home() {
   const handleFeatureAction = (query: string, actionMode: "quick" | "deep") => {
     if (actionMode === "deep" && !query) {
       // Just switch to deep mode and focus input
-      setMode("deep")
+      dispatchSearch({ type: "SET_MODE", mode: "deep" })
       setTimeout(() => {
         searchInputRef.current?.focus()
       }, 100)
     } else if (query) {
       // Focus input with pre-filled query
-      setMode(actionMode)
+      dispatchSearch({ type: "SET_MODE", mode: actionMode })
       setTimeout(() => {
         searchInputRef.current?.focus()
         // Optionally pre-fill the query
@@ -404,8 +478,8 @@ export default function Home() {
   }
 
   const handleRegenerate = () => {
-    if (currentQuery) {
-      handleSearch(currentQuery, mode)
+    if (searchState.currentQuery) {
+      handleSearch(searchState.currentQuery, searchState.mode)
     }
   }
 
@@ -424,7 +498,7 @@ export default function Home() {
         isLoadingUser={isLoadingUser}
         recentSearches={recentSearches}
         onNewChat={handleNewChat}
-        onSearchSelect={(search) => handleSearch(search, mode)}
+        onSearchSelect={(search) => handleSearch(search, searchState.mode)}
         onToggleHistory={handleToggleHistory}
         onLogout={handleLogout}
         isCollapsed={isSidebarCollapsed}
@@ -434,7 +508,7 @@ export default function Home() {
       <div
         className={`min-h-screen flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "md:ml-16" : "md:ml-64"}`}
       >
-        {hasSearched && (
+        {searchState.hasSearched && (
           <div
             className={`fixed top-4 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
@@ -505,7 +579,7 @@ export default function Home() {
                               <button
                                 key={index}
                                 onClick={() => {
-                                  handleSearch(search, mode)
+                                  handleSearch(search, searchState.mode)
                                   setIsDrawerOpen(false)
                                 }}
                                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
@@ -597,7 +671,7 @@ export default function Home() {
           </div>
         )}
 
-        {!hasSearched && user && (
+        {!searchState.hasSearched && user && (
           <div
             className={`fixed top-4 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
@@ -667,7 +741,7 @@ export default function Home() {
                               <button
                                 key={index}
                                 onClick={() => {
-                                  handleSearch(search, mode)
+                                  handleSearch(search, searchState.mode)
                                   setIsDrawerOpen(false)
                                 }}
                                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
@@ -731,7 +805,7 @@ export default function Home() {
         )}
 
         {/* Menu Button - Home page only, mobile only, non-authenticated users */}
-        {!hasSearched && !user && (
+        {!searchState.hasSearched && !user && (
           <div className="fixed top-4 left-6 z-50 md:hidden">
             <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
               <SheetTrigger asChild>
@@ -796,7 +870,7 @@ export default function Home() {
                           <button
                             key={index}
                             onClick={() => {
-                              handleSearch(search, mode)
+                              handleSearch(search, searchState.mode)
                               setIsDrawerOpen(false)
                             }}
                             className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
@@ -875,9 +949,9 @@ export default function Home() {
 
         {/* Main Content */}
         <main
-          className={`flex-1 container mx-auto sm:px-6 lg:px-8 px-4 py-12 max-w-full overflow-x-hidden ${hasSearched ? "pb-32 pt-24" : user ? "pt-24" : ""}`}
+          className={`flex-1 container mx-auto sm:px-6 lg:px-8 px-4 py-12 max-w-full overflow-x-hidden ${searchState.hasSearched ? "pb-32 pt-24" : user ? "pt-24" : ""}`}
         >
-          {!hasSearched ? (
+          {!searchState.hasSearched ? (
             <>
               {!user && (
                 <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] space-y-6 sm:space-y-8 animate-in fade-in duration-700 justify-center">
@@ -899,9 +973,9 @@ export default function Home() {
                       <SearchInput
                         ref={searchInputRef}
                         onSearch={handleSearch}
-                        isLoading={isLoading}
-                        mode={mode}
-                        onModeChange={setMode}
+                        isLoading={searchState.isLoading}
+                        mode={searchState.mode}
+                        onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
                         onCancel={handleCancelSearch}
                         recentSearches={recentSearches}
                         user={user}
@@ -926,7 +1000,7 @@ export default function Home() {
                       ].map((example, index) => (
                         <button
                           key={index}
-                          onClick={() => handleSearch(example.query, mode)}
+                          onClick={() => handleSearch(example.query, searchState.mode)}
                           className={`group relative p-4 sm:p-5 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10 ${index >= 3 ? "hidden sm:block" : ""}`}
                         >
                           <div className="flex items-start gap-3">
@@ -962,39 +1036,54 @@ export default function Home() {
             </>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {isLoading && !response ? (
+              {searchState.optimisticQuery && !searchState.response && (
+                <div className="w-full max-w-3xl mx-auto">
+                  <div className="bg-gradient-to-br from-miami-aqua/5 to-miami-pink/5 border border-miami-aqua/20 rounded-xl p-6 backdrop-blur-sm">
+                    <p className="text-lg font-medium text-foreground mb-4">{searchState.optimisticQuery}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="w-2 h-2 rounded-full bg-miami-aqua animate-pulse" />
+                      <span>Searching...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {searchState.isLoading && !searchState.response ? (
                 <SkeletonSearch />
-              ) : response ? (
+              ) : searchState.response ? (
                 <>
                   <div className="space-y-4">
                     <SearchResponse
-                      response={response}
-                      citations={citations}
-                      isStreaming={isLoading}
+                      response={searchState.response}
+                      citations={searchState.citations}
+                      isStreaming={searchState.isLoading}
                       actions={
-                        !isLoading && response ? (
+                        !searchState.isLoading && searchState.response ? (
                           <ResponseActions
-                            query={currentQuery}
-                            response={response}
-                            searchId={currentSearchId}
+                            query={searchState.currentQuery}
+                            response={searchState.response}
+                            searchId={searchState.currentSearchId}
                             userId={userId}
                             onRegenerate={handleRegenerate}
                           />
                         ) : null
                       }
                       modelBadge={
-                        user && currentModelInfo ? (
+                        user && searchState.currentModelInfo ? (
                           <ModelBadge
-                            model={currentModelInfo.model}
-                            reason={currentModelInfo.reason}
-                            autoSelected={currentModelInfo.autoSelected}
+                            model={searchState.currentModelInfo.model}
+                            reason={searchState.currentModelInfo.reason}
+                            autoSelected={searchState.currentModelInfo.autoSelected}
                           />
                         ) : null
                       }
                     />
                   </div>
-                  {!isLoading && response && (
-                    <RelatedSearches searches={relatedSearches} onSelect={(search) => handleSearch(search, mode)} />
+                  {!searchState.isLoading && searchState.response && (
+                    <RelatedSearches
+                      searches={searchState.relatedSearches}
+                      onSelect={(search) => handleSearch(search, searchState.mode)}
+                    />
                   )}
                 </>
               ) : (
@@ -1011,11 +1100,12 @@ export default function Home() {
             onClose={() => setShowHistory(false)}
             onSelectHistory={handleSelectHistory}
             localSearches={recentSearches}
+            isOpen={showHistory}
           />
         )}
 
-        {/* Fixed Search Bar at Bottom - Only on results page */}
-        {(hasSearched || user) && (
+        {/* Fixed Search Bar at Bottom */}
+        {(searchState.hasSearched || user) && (
           <div
             className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
@@ -1023,9 +1113,9 @@ export default function Home() {
               <SearchInput
                 ref={searchInputRef}
                 onSearch={handleSearch}
-                isLoading={isLoading}
-                mode={mode}
-                onModeChange={setMode}
+                isLoading={searchState.isLoading}
+                mode={searchState.mode}
+                onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
                 onCancel={handleCancelSearch}
                 recentSearches={recentSearches}
                 user={user}
@@ -1033,9 +1123,9 @@ export default function Home() {
                 onModelChange={handleModelChange}
                 onHistoryClick={handleToggleHistory}
               />
-              {rateLimitInfo && (
+              {searchState.rateLimitInfo && (
                 <div className="text-center text-xs text-muted-foreground">
-                  {rateLimitInfo.remaining} of {rateLimitInfo.limit} queries remaining today
+                  {searchState.rateLimitInfo.remaining} of {searchState.rateLimitInfo.limit} queries remaining today
                 </div>
               )}
             </div>

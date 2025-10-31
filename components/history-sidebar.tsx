@@ -11,9 +11,10 @@ interface HistorySidebarProps {
   onClose: () => void
   onSelectHistory: (history: SearchHistory) => void
   localSearches?: string[]
+  isOpen: boolean
 }
 
-export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches = [] }: HistorySidebarProps) {
+export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches = [], isOpen }: HistorySidebarProps) {
   const [history, setHistory] = useState<SearchHistory[]>([])
   const [filteredHistory, setFilteredHistory] = useState<SearchHistory[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -22,6 +23,8 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
   const itemsPerPage = 10
 
   useEffect(() => {
+    if (!isOpen) return
+
     async function fetchHistory() {
       if (!userId) {
         const localHistory: SearchHistory[] = localSearches.map((query, index) => ({
@@ -51,7 +54,7 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
     }
 
     fetchHistory()
-  }, [userId, localSearches])
+  }, [userId, localSearches, isOpen])
 
   useEffect(() => {
     if (searchFilter.trim()) {
