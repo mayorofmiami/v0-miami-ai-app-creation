@@ -68,7 +68,7 @@ export async function POST(req: Request) {
                 content: chunk,
               })
               controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
-              await new Promise((resolve) => setTimeout(resolve, 5))
+              await new Promise((resolve) => setTimeout(resolve, 17))
             }
 
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))
@@ -276,8 +276,7 @@ Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"
                 content: chunk,
               })
               controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
-              // Small delay to simulate streaming
-              await new Promise((resolve) => setTimeout(resolve, 5))
+              await new Promise((resolve) => setTimeout(resolve, 17))
             }
 
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))

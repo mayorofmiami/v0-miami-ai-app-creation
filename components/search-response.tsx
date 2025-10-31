@@ -36,18 +36,8 @@ export const SearchResponse = memo(function SearchResponse({
     if (isStreaming) {
       setDisplayedText(response)
     } else {
-      // Typing animation for completed responses
-      let index = 0
-      setDisplayedText("")
-      const interval = setInterval(() => {
-        if (index < response.length) {
-          setDisplayedText(response.slice(0, index + 1))
-          index++
-        } else {
-          clearInterval(interval)
-        }
-      }, 10)
-      return () => clearInterval(interval)
+      // No need for typing animation since we were updating in real-time
+      setDisplayedText(response)
     }
   }, [response, isStreaming])
 

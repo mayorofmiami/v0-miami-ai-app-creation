@@ -13,7 +13,6 @@ import type { ModelId } from "@/components/model-selector"
 import { ModelBadge } from "@/components/model-badge"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { User, Menu, Plus, Clock, Shield } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import type { SearchHistory } from "@/lib/db"
@@ -150,15 +149,12 @@ export default function Home() {
 
   useEffect(() => {
     async function loadRecentSearches() {
-      console.log("[v0] loadRecentSearches - userId:", userId)
       if (!userId) {
-        console.log("[v0] No userId, skipping database fetch")
         return
       }
       try {
         const res = await fetch(`/api/history?userId=${userId}`)
         const data = await res.json()
-        console.log("[v0] Fetched recent searches:", data)
         const recent = (data.history || []).slice(0, 10).map((h: SearchHistory) => h.query)
         setRecentSearches(recent)
       } catch (error) {
@@ -273,7 +269,6 @@ export default function Home() {
   const handleSearch = useCallback(
     async (query: string, searchMode: "quick" | "deep") => {
       if (searchState.isLoading) {
-        console.log("[v0] Search already in progress, ignoring duplicate request")
         return
       }
 
@@ -284,8 +279,6 @@ export default function Home() {
       abortControllerRef.current = new AbortController()
 
       dispatchSearch({ type: "START_SEARCH", query, mode: searchMode })
-
-      // REMOVED redundant loading toast - optimistic UI now shows search state
 
       try {
         const body: any = { query, mode: searchMode }
@@ -306,7 +299,6 @@ export default function Home() {
 
         if (res.status === 429) {
           const error = await res.json()
-          // REMOVED toast.dismiss(loadingToast) since loadingToast no longer exists
 
           if (error.type === "ai_gateway_rate_limit" || error.type === "ai_gateway_error") {
             toast.error(
@@ -337,7 +329,6 @@ export default function Home() {
           const errorMessage = error.error || "Search failed"
 
           if (res.status === 503 && errorMessage.includes("API key")) {
-            // REMOVED toast.dismiss(loadingToast)
             toast.error("Configuration Error", "Please add EXA_API_KEY to environment variables in the Vars section")
             dispatchSearch({
               type: "SEARCH_ERROR",
@@ -401,7 +392,6 @@ export default function Home() {
           }
         }
 
-        // REMOVED redundant success toast - search completion is visible in UI
         dispatchSearch({ type: "SEARCH_COMPLETE" })
 
         searchInputRef.current?.clear()
@@ -409,12 +399,10 @@ export default function Home() {
         setRecentSearches((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 10))
       } catch (error: any) {
         if (error.name === "AbortError") {
-          console.log("[v0] Search aborted by user")
           return
         }
 
         console.error("[v0] Search error:", error)
-        // REMOVED toast.dismiss(loadingToast)
         toast.error("Search failed", error.message || "Please try again")
         dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, something went wrong. Please try again." })
       } finally {
@@ -427,7 +415,6 @@ export default function Home() {
   const handleSelectHistory = (history: SearchHistory) => {
     if (!history.response || history.response.trim() === "") {
       // If no response (local/unauthenticated history), re-run the search
-      console.log("[v0] No response in history, re-running search for:", history.query)
       handleSearch(history.query, history.mode)
       return
     }
@@ -524,7 +511,9 @@ export default function Home() {
                       className="md:hidden group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
                       aria-label="Open menu"
                     >
-                      <Menu className="text-miami-aqua w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
+                      <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
+                        ☰
+                      </span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
@@ -546,7 +535,7 @@ export default function Home() {
                         className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
                         onClick={handleNewChat}
                       >
-                        <Plus className="w-5 h-5 mr-3" />
+                        <span className="text-xl mr-3">+</span>
                         New Chat
                       </Button>
 
@@ -556,7 +545,7 @@ export default function Home() {
                             variant="ghost"
                             className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
                           >
-                            <Shield className="w-5 h-5 mr-3" />
+                            <span className="text-xl mr-3">🛡️</span>
                             Admin Dashboard
                           </Button>
                         </Link>
@@ -586,7 +575,7 @@ export default function Home() {
                                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
                               >
                                 <div className="flex items-center gap-3">
-                                  <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                                  <span className="text-muted-foreground flex-shrink-0">🕐</span>
                                   <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                                     {search}
                                   </span>
@@ -624,7 +613,7 @@ export default function Home() {
                           <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
                             <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
                               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                                <User className="w-6 h-6 text-miami-aqua" />
+                                <span className="text-miami-aqua text-2xl">👤</span>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
@@ -687,7 +676,9 @@ export default function Home() {
                       className="md:hidden group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
                       aria-label="Open menu"
                     >
-                      <Menu className="text-miami-aqua w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
+                      <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
+                        ☰
+                      </span>
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
@@ -708,7 +699,7 @@ export default function Home() {
                         className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
                         onClick={handleNewChat}
                       >
-                        <Plus className="w-5 h-5 mr-3" />
+                        <span className="text-xl mr-3">+</span>
                         New Chat
                       </Button>
 
@@ -718,7 +709,7 @@ export default function Home() {
                             variant="ghost"
                             className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
                           >
-                            <Shield className="w-5 h-5 mr-3" />
+                            <span className="text-xl mr-3">🛡️</span>
                             Admin Dashboard
                           </Button>
                         </Link>
@@ -748,7 +739,7 @@ export default function Home() {
                                 className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
                               >
                                 <div className="flex items-center gap-3">
-                                  <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                                  <span className="text-muted-foreground flex-shrink-0">🕐</span>
                                   <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                                     {search}
                                   </span>
@@ -775,7 +766,7 @@ export default function Home() {
                       <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
                         <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                            <User className="w-6 h-6 text-miami-aqua" />
+                            <span className="text-miami-aqua text-2xl">👤</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
@@ -816,7 +807,9 @@ export default function Home() {
                   className="group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
                   aria-label="Open menu"
                 >
-                  <Menu className="text-miami-aqua w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
+                  <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
+                    ☰
+                  </span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
@@ -837,7 +830,7 @@ export default function Home() {
                     className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
                     onClick={handleNewChat}
                   >
-                    <Plus className="w-5 h-5 mr-3" />
+                    <span className="text-xl mr-3">+</span>
                     New Chat
                   </Button>
 
@@ -847,7 +840,7 @@ export default function Home() {
                         variant="ghost"
                         className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
                       >
-                        <Shield className="w-5 h-5 mr-3" />
+                        <span className="text-xl mr-3">🛡️</span>
                         Admin Dashboard
                       </Button>
                     </Link>
@@ -877,7 +870,7 @@ export default function Home() {
                             className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
                           >
                             <div className="flex items-center gap-3">
-                              <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                              <span className="text-muted-foreground flex-shrink-0">🕐</span>
                               <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                                 {search}
                               </span>
@@ -914,7 +907,7 @@ export default function Home() {
                       <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
                         <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                            <User className="w-6 h-6 text-miami-aqua" />
+                            <span className="text-miami-aqua text-2xl">👤</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
