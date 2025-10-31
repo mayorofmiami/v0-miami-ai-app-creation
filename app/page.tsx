@@ -1042,6 +1042,13 @@ export default function Home() {
                 <SkeletonSearch />
               ) : searchState.response ? (
                 <>
+                  {searchState.currentQuery && (
+                    <div className="w-full max-w-3xl mx-auto">
+                      <div className="bg-gradient-to-br from-miami-aqua/5 to-miami-pink/5 border border-miami-aqua/20 rounded-xl p-6 backdrop-blur-sm">
+                        <p className="text-lg font-medium text-foreground">{searchState.currentQuery}</p>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-4">
                     <SearchResponse
                       response={searchState.response}

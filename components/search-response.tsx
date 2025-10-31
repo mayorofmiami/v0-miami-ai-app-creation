@@ -2,7 +2,9 @@
 
 import { useEffect, useState, memo } from "react"
 import { ExternalLink } from "lucide-react"
-import type { JSX } from "react/jsx-runtime"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import rehypeRaw from "rehype-raw"
 import type { ReactNode } from "react"
 
 interface Citation {
@@ -63,57 +65,26 @@ export const SearchResponse = memo(function SearchResponse({
     }
   }
 
-  const renderResponseWithCitations = (text: string) => {
-    // This allows citation markers to be rendered as numbers until citations load
+  const processTextWithCitations = (text: string) => {
+    const citationPattern = /\[(?:Source\s*)?(\d+(?:\s*,\s*\d+)*)\]/g
+    return text.replace(citationPattern, (match, citationNums) => {
+      // Split by comma to handle multiple citations
+      const numbers = citationNums.split(/\s*,\s*/).map((n: string) => Number.parseInt(n.trim()))
 
-    // Match patterns like [Source 1], [1], [Source 2], etc.
-    const citationPattern = /\[(?:Source\s*)?(\d+)\]/g
-    const parts: (string | JSX.Element)[] = []
-    let lastIndex = 0
-    let match
+      // Create a cite element for each citation number
+      return numbers
+        .map((citationNumber: number) => {
+          const citation = safeCitations[citationNumber - 1]
+          if (!citation) return `[Source ${citationNumber}]`
 
-    while ((match = citationPattern.exec(text)) !== null) {
-      // Add text before the citation
-      if (match.index > lastIndex) {
-        parts.push(text.slice(lastIndex, match.index))
-      }
-
-      const citationNumber = Number.parseInt(match[1])
-      const citation = safeCitations[citationNumber - 1]
-
-      const sourceName = citation ? getSourceName(citation) : citationNumber.toString()
-      const citationUrl = citation?.url || "#"
-
-      parts.push(
-        <a
-          key={`citation-${match.index}`}
-          href={citationUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center align-baseline text-[0.75em] font-medium px-1.5 py-0.5 mx-0.5 rounded-md bg-miami-aqua/10 text-miami-aqua border border-miami-aqua/30 hover:bg-miami-aqua/20 hover:border-miami-aqua/50 hover:scale-105 transition-all duration-200 cursor-pointer no-underline"
-          aria-label={`Open source: ${sourceName}`}
-          title={citation?.title || "View source"}
-          onClick={(e) => {
-            if (!citation) {
-              e.preventDefault()
-            }
-          }}
-        >
-          {sourceName}
-          {citation && <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-60" aria-hidden="true" />}
-        </a>,
-      )
-
-      lastIndex = match.index + match[0].length
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.slice(lastIndex))
-    }
-
-    return parts.length > 0 ? parts : text
+          const sourceName = getSourceName(citation)
+          return `<cite data-num="${citationNumber}" data-name="${sourceName}" data-url="${citation.url}"></cite>`
+        })
+        .join("")
+    })
   }
+
+  const processedText = processTextWithCitations(displayedText)
 
   if (!response) return null
 
@@ -125,13 +96,123 @@ export const SearchResponse = memo(function SearchResponse({
         role="article"
         aria-label="Search response"
       >
-        <div className="prose prose-invert max-w-none">
-          <p className="text-foreground leading-relaxed text-balance whitespace-pre-wrap break-words">
-            {renderResponseWithCitations(displayedText)}
-            {isStreaming && (
-              <span className="inline-block w-2 h-5 bg-miami-aqua animate-pulse ml-1" aria-label="Loading" />
-            )}
-          </p>
+        <div className="prose prose-invert prose-miami max-w-none">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+            components={{
+              h1: ({ children }) => (
+                <h1 className="text-2xl font-bold text-foreground mb-4 mt-6 first:mt-0">{children}</h1>
+              ),
+              h2: ({ children }) => (
+                <h2 className="text-xl font-semibold text-foreground mb-3 mt-5 first:mt-0">{children}</h2>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-lg font-semibold text-foreground mb-2 mt-4 first:mt-0">{children}</h3>
+              ),
+              p: ({ children }) => <p className="text-foreground leading-relaxed mb-4 last:mb-0">{children}</p>,
+              ul: ({ children }) => (
+                <ul className="list-disc list-inside space-y-2 mb-4 text-foreground">{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal list-inside space-y-2 mb-4 text-foreground">{children}</ol>
+              ),
+              li: ({ children }) => <li className="text-foreground leading-relaxed">{children}</li>,
+              table: ({ children }) => (
+                <div className="overflow-x-auto mb-4">
+                  <table className="min-w-full border-collapse border border-miami-aqua/30 rounded-lg overflow-hidden">
+                    {children}
+                  </table>
+                </div>
+              ),
+              thead: ({ children }) => <thead className="bg-miami-aqua/20">{children}</thead>,
+              tbody: ({ children }) => <tbody className="divide-y divide-miami-aqua/20">{children}</tbody>,
+              tr: ({ children }) => <tr className="hover:bg-miami-aqua/10 transition-colors">{children}</tr>,
+              th: ({ children }) => (
+                <th className="px-4 py-2 text-left text-sm font-semibold text-foreground border border-miami-aqua/30">
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => (
+                <td className="px-4 py-2 text-sm text-foreground border border-miami-aqua/30">{children}</td>
+              ),
+              code: ({ inline, children, ...props }: any) => {
+                if (inline) {
+                  return (
+                    <code className="px-1.5 py-0.5 rounded bg-miami-aqua/20 text-miami-aqua font-mono text-sm">
+                      {children}
+                    </code>
+                  )
+                }
+                return (
+                  <pre className="bg-muted/50 rounded-lg p-4 overflow-x-auto mb-4 border border-miami-aqua/20">
+                    <code className="text-sm font-mono text-foreground" {...props}>
+                      {children}
+                    </code>
+                  </pre>
+                )
+              },
+              blockquote: ({ children }) => (
+                <blockquote className="border-l-4 border-miami-aqua/50 pl-4 py-2 my-4 italic text-muted-foreground bg-miami-aqua/5 rounded-r">
+                  {children}
+                </blockquote>
+              ),
+              a: ({ href, children }) => (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-miami-aqua hover:text-miami-aqua/80 underline decoration-miami-aqua/30 hover:decoration-miami-aqua/60 transition-colors"
+                >
+                  {children}
+                </a>
+              ),
+              img: ({ src, alt }) => (
+                <div className="my-4 rounded-lg overflow-hidden border border-miami-aqua/30">
+                  <img
+                    src={src || "/placeholder.svg"}
+                    alt={alt || ""}
+                    loading="lazy"
+                    className="w-full h-auto object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none"
+                    }}
+                  />
+                  {alt && <p className="text-xs text-muted-foreground text-center py-2 bg-muted/30">{alt}</p>}
+                </div>
+              ),
+              hr: () => <hr className="my-6 border-t border-miami-aqua/30" />,
+              strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+              em: ({ children }) => <em className="italic text-foreground">{children}</em>,
+              cite: ({ node }: any) => {
+                const citationNumber = node?.properties?.dataNum
+                const sourceName = node?.properties?.dataName
+                const citationUrl = node?.properties?.dataUrl
+                const citation = safeCitations[citationNumber - 1]
+
+                if (!citation) return null
+
+                return (
+                  <a
+                    href={citationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center align-baseline text-[0.75em] font-medium px-1.5 py-0.5 mx-0.5 rounded-md bg-miami-aqua/10 text-miami-aqua border border-miami-aqua/30 hover:bg-miami-aqua/20 hover:border-miami-aqua/50 hover:scale-105 transition-all duration-200 cursor-pointer no-underline"
+                    aria-label={`Open source: ${sourceName}`}
+                    title={citation.title}
+                  >
+                    {sourceName}
+                    <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-60" aria-hidden="true" />
+                  </a>
+                )
+              },
+            }}
+          >
+            {processedText}
+          </ReactMarkdown>
+          {isStreaming && (
+            <span className="inline-block w-2 h-5 bg-miami-aqua animate-pulse ml-1" aria-label="Loading" />
+          )}
         </div>
       </div>
 
