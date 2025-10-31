@@ -60,8 +60,7 @@ export async function POST(req: Request) {
             })
             controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
 
-            // Send cached text
-            const chunkSize = 50
+            const chunkSize = 150
             for (let i = 0; i < cached.answer.length; i += chunkSize) {
               const chunk = cached.answer.slice(i, i + chunkSize)
               const textData = JSON.stringify({
@@ -69,7 +68,7 @@ export async function POST(req: Request) {
                 content: chunk,
               })
               controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
-              await new Promise((resolve) => setTimeout(resolve, 10))
+              await new Promise((resolve) => setTimeout(resolve, 5))
             }
 
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))
@@ -249,8 +248,7 @@ Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"
             })
             controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
 
-            // Send the text response in chunks
-            const chunkSize = 50
+            const chunkSize = 150
             for (let i = 0; i < text.length; i += chunkSize) {
               const chunk = text.slice(i, i + chunkSize)
               const textData = JSON.stringify({
@@ -259,7 +257,7 @@ Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"
               })
               controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
               // Small delay to simulate streaming
-              await new Promise((resolve) => setTimeout(resolve, 10))
+              await new Promise((resolve) => setTimeout(resolve, 5))
             }
 
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))

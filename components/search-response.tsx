@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, memo } from "react"
 import { ExternalLink } from "lucide-react"
 import type { JSX } from "react/jsx-runtime"
 import type { ReactNode } from "react"
@@ -19,7 +19,13 @@ interface SearchResponseProps {
   modelBadge?: ReactNode
 }
 
-export function SearchResponse({ response, citations, isStreaming, actions, modelBadge }: SearchResponseProps) {
+export const SearchResponse = memo(function SearchResponse({
+  response,
+  citations,
+  isStreaming,
+  actions,
+  modelBadge,
+}: SearchResponseProps) {
   const [displayedText, setDisplayedText] = useState("")
 
   const safeCitations = citations || []
@@ -181,4 +187,4 @@ export function SearchResponse({ response, citations, isStreaming, actions, mode
       )}
     </div>
   )
-}
+})

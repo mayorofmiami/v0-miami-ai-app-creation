@@ -185,6 +185,11 @@ export default function Home() {
 
   const handleSearch = useCallback(
     async (query: string, searchMode: "quick" | "deep") => {
+      if (isLoading) {
+        console.log("[v0] Search already in progress, ignoring duplicate request")
+        return
+      }
+
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
