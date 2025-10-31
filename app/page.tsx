@@ -135,6 +135,7 @@ export default function Home() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [shouldFocusInput, setShouldFocusInput] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
+  const [showAllExamples, setShowAllExamples] = useState(false)
 
   // User state
   const [recentSearches, setRecentSearches] = useState<string[]>([])
@@ -440,6 +441,7 @@ export default function Home() {
   const handleNewChat = () => {
     handleClearSearch()
     setIsDrawerOpen(false)
+    setShowAllExamples(false)
 
     searchInputRef.current?.clear()
     setTimeout(() => {
@@ -981,6 +983,7 @@ export default function Home() {
 
                     {/* Example Search Queries */}
                     <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+                      {console.log("[v0] showAllExamples:", showAllExamples)}
                       {[
                         { query: "Which Miami AI startups raised funding in 2025?", emoji: "🤖" },
                         { query: "Is Miami real estate overvalued vs Austin?", emoji: "🏠" },
@@ -990,20 +993,38 @@ export default function Home() {
                         { query: "Remote work visa options for Miami", emoji: "✈️" },
                         { query: "Miami Beach climate adaptation plans", emoji: "🌊" },
                         { query: "Best nightlife spots in South Beach", emoji: "🎉" },
-                      ].map((example, index) => (
+                      ].map((example, index) => {
+                        const shouldHide = index >= 3 && !showAllExamples
+                        console.log(`[v0] Query ${index}: "${example.query.slice(0, 20)}..." - shouldHide:`, shouldHide)
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => handleSearch(example.query, searchState.mode)}
+                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
+                          >
+                            <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                              {example.emoji}
+                            </span>
+                            <span className="text-sm font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
+                              {example.query}
+                            </span>
+                          </button>
+                        )
+                      })}
+
+                      {/* Show More Button - Mobile Only */}
+                      {console.log("[v0] Show More button visible:", !showAllExamples)}
+                      {!showAllExamples && (
                         <button
-                          key={index}
-                          onClick={() => handleSearch(example.query, searchState.mode)}
-                          className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105"
+                          onClick={() => setShowAllExamples(true)}
+                          className="md:hidden group inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-miami-aqua/50 bg-miami-aqua/5 hover:bg-miami-aqua/10 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/20"
                         >
-                          <span className="text-lg group-hover:scale-110 transition-transform duration-200">
-                            {example.emoji}
-                          </span>
-                          <span className="text-sm font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
-                            {example.query}
+                          <span className="text-lg group-hover:scale-110 transition-transform duration-200">+</span>
+                          <span className="text-sm font-medium text-miami-aqua transition-colors whitespace-nowrap">
+                            More
                           </span>
                         </button>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1035,7 +1056,7 @@ export default function Home() {
                         <button
                           key={index}
                           onClick={() => handleSearch(example.query, searchState.mode)}
-                          className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105"
+                          className={`group ${index >= 3 && !showAllExamples ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
                         >
                           <span className="text-lg group-hover:scale-110 transition-transform duration-200">
                             {example.emoji}
@@ -1045,6 +1066,19 @@ export default function Home() {
                           </span>
                         </button>
                       ))}
+
+                      {/* Show More Button - Mobile Only */}
+                      {!showAllExamples && (
+                        <button
+                          onClick={() => setShowAllExamples(true)}
+                          className="md:hidden group inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-miami-aqua/50 bg-miami-aqua/5 hover:bg-miami-aqua/10 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/20"
+                        >
+                          <span className="text-lg group-hover:scale-110 transition-transform duration-200">+</span>
+                          <span className="text-sm font-medium text-miami-aqua transition-colors whitespace-nowrap">
+                            More
+                          </span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1058,8 +1092,8 @@ export default function Home() {
                 <>
                   {searchState.currentQuery && (
                     <div className="w-full max-w-3xl mx-auto">
-                      <div className="bg-gradient-to-br from-miami-aqua/5 to-miami-pink/5 border border-miami-aqua/20 rounded-xl p-6 backdrop-blur-sm">
-                        <p className="text-lg font-medium text-foreground">{searchState.currentQuery}</p>
+                      <div className="bg-muted/30 rounded-2xl px-5 py-4 border border-border/50">
+                        <p className="text-base text-foreground/90">{searchState.currentQuery}</p>
                       </div>
                     </div>
                   )}

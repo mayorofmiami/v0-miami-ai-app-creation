@@ -1,6 +1,5 @@
 "use client"
 
-import { Search, Sparkles, Frown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface EmptyStateProps {
@@ -11,21 +10,21 @@ interface EmptyStateProps {
 export function EmptyState({ type, onAction }: EmptyStateProps) {
   const states = {
     "no-searches": {
-      icon: <Search className="w-20 h-20 text-miami-aqua/50" />,
+      icon: <span className="text-6xl">🔍</span>,
       title: "No searches yet",
       description: "Start your first search to see your history here",
       action: "Start Searching",
       gradient: "from-miami-aqua/20 to-miami-pink/20",
     },
     "no-bookmarks": {
-      icon: <Sparkles className="w-20 h-20 text-miami-pink/50" />,
+      icon: <span className="text-6xl">✨</span>,
       title: "No bookmarks yet",
       description: "Bookmark your favorite searches to access them quickly",
       action: null,
       gradient: "from-miami-pink/20 to-miami-aqua/20",
     },
     "no-results": {
-      icon: <Frown className="w-20 h-20 text-miami-aqua/50" />,
+      icon: <span className="text-6xl">😕</span>,
       title: "No results found",
       description: "Try adjusting your search query or try a different search mode",
       action: "New Search",

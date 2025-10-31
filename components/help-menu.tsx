@@ -1,6 +1,5 @@
 "use client"
 
-import { HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -31,7 +30,7 @@ export function HelpMenu({ isCollapsed = false, isMobile = false }: HelpMenuProp
         <DropdownMenuTrigger asChild>
           {isCollapsed ? (
             <Button variant="ghost" size="icon" className="w-full h-10" title="Help & Support">
-              <HelpCircle className="h-5 w-5" />
+              <span className="text-xl">❓</span>
             </Button>
           ) : (
             <Button
@@ -40,7 +39,7 @@ export function HelpMenu({ isCollapsed = false, isMobile = false }: HelpMenuProp
                 isMobile ? "h-14 sm:h-12 text-lg sm:text-base" : "h-10"
               }`}
             >
-              <HelpCircle className={`${isMobile ? "w-7 h-7 sm:w-6 sm:h-6" : "h-5 w-5"} mr-3`} />
+              <span className={`${isMobile ? "text-2xl sm:text-xl" : "text-xl"} mr-3`}>❓</span>
               <span>Help & Support</span>
             </Button>
           )}

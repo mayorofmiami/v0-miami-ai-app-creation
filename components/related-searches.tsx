@@ -1,6 +1,5 @@
 "use client"
 
-import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface RelatedSearchesProps {
@@ -14,7 +13,7 @@ export function RelatedSearches({ searches, onSelect }: RelatedSearchesProps) {
   return (
     <div className="w-full max-w-3xl mx-auto space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Sparkles className="w-4 h-4" />
+        <span className="text-base">✨</span>
         <span>Related searches</span>
       </div>
       <div className="flex flex-wrap gap-2">
