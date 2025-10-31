@@ -988,32 +988,28 @@ export default function Home() {
                     </div>
 
                     {/* Example Search Queries */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
                       {[
-                        { query: "What are the best tech startups in Miami right now?", category: "Miami Business" },
-                        { query: "Compare Miami's real estate market to other major cities", category: "Real Estate" },
-                        { query: "What's happening in Miami's AI and tech scene?", category: "Technology" },
-                        {
-                          query: "Best practices for hurricane preparedness in South Florida",
-                          category: "Local Living",
-                        },
-                        { query: "Explain the latest developments in quantum computing", category: "Technology" },
-                        { query: "What are the environmental challenges facing Miami Beach?", category: "Environment" },
+                        { query: "Which Miami AI startups raised funding in 2025?", emoji: "🤖" },
+                        { query: "Is Miami real estate overvalued vs Austin?", emoji: "🏠" },
+                        { query: "Best coworking spaces in Wynwood", emoji: "💼" },
+                        { query: "Miami's crypto scene in 2025", emoji: "₿" },
+                        { query: "Top new restaurants in Brickell", emoji: "🍽️" },
+                        { query: "Remote work visa options for Miami", emoji: "✈️" },
+                        { query: "Miami Beach climate adaptation plans", emoji: "🌊" },
+                        { query: "Best nightlife spots in South Beach", emoji: "🎉" },
                       ].map((example, index) => (
                         <button
                           key={index}
                           onClick={() => handleSearch(example.query, searchState.mode)}
-                          className={`group relative p-4 sm:p-5 rounded-xl border-2 border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 text-left hover:shadow-lg hover:shadow-miami-aqua/10 ${index >= 3 ? "hidden sm:block" : ""}`}
+                          className="group inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105"
                         >
-                          <div className="flex items-start gap-3">
-                            <div className="w-2.5 h-2.5 rounded-full bg-miami-aqua mt-2 group-hover:animate-pulse flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-base font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2">
-                                {example.query}
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1.5">{example.category}</p>
-                            </div>
-                          </div>
+                          <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                            {example.emoji}
+                          </span>
+                          <span className="text-sm font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
+                            {example.query}
+                          </span>
                         </button>
                       ))}
                     </div>
