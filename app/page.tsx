@@ -405,6 +405,8 @@ export default function Home() {
         // REMOVED redundant success toast - search completion is visible in UI
         dispatchSearch({ type: "SEARCH_COMPLETE" })
 
+        searchInputRef.current?.clear()
+
         setRecentSearches((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 10))
       } catch (error: any) {
         if (error.name === "AbortError") {
@@ -1036,18 +1038,6 @@ export default function Home() {
             </>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {searchState.optimisticQuery && !searchState.response && (
-                <div className="w-full max-w-3xl mx-auto">
-                  <div className="bg-gradient-to-br from-miami-aqua/5 to-miami-pink/5 border border-miami-aqua/20 rounded-xl p-6 backdrop-blur-sm">
-                    <p className="text-lg font-medium text-foreground mb-4">{searchState.optimisticQuery}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <div className="w-2 h-2 rounded-full bg-miami-aqua animate-pulse" />
-                      <span>Searching...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {searchState.isLoading && !searchState.response ? (
                 <SkeletonSearch />
               ) : searchState.response ? (
