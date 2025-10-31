@@ -1026,23 +1026,7 @@ export default function Home() {
                     <p className="text-lg sm:text-xl text-muted-foreground">How can I help you today?</p>
                   </div>
 
-                  <div className="w-full max-w-3xl px-4 space-y-4 sm:space-y-6">
-                    <div className="w-full">
-                      <SearchInput
-                        ref={searchInputRef}
-                        onSearch={handleSearch}
-                        isLoading={searchState.isLoading}
-                        mode={searchState.mode}
-                        onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-                        onCancel={handleCancelSearch}
-                        recentSearches={recentSearches}
-                        user={user}
-                        selectedModel={selectedModel}
-                        onModelChange={handleModelChange}
-                        onHistoryClick={handleToggleHistory}
-                      />
-                    </div>
-
+                  <div className="w-full max-w-3xl px-4">
                     {/* Example Search Queries - Same as non-authenticated users */}
                     <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
                       {[
