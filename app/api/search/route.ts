@@ -206,6 +206,45 @@ Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"
         )
       }
 
+      console.log("[v0] Generating AI-powered related searches...")
+      let relatedSearches: string[] = []
+      try {
+        const relatedSearchPrompt = `Based on this search query and answer, generate exactly 5 contextually relevant follow-up questions.
+
+Original Query: "${query}"
+
+Answer Summary: ${text.substring(0, 500)}...
+
+Generate 5 follow-up questions that:
+- Are directly relevant to the topic being searched
+- Naturally extend the conversation about this specific subject
+- Cover different angles (deeper dive, related topics, practical applications, comparisons, current trends)
+- Are concise and actionable
+- Feel natural and conversational
+${query.toLowerCase().includes("miami") ? "- Include Miami-specific context where relevant" : "- Focus on the topic itself without forcing unrelated geographic connections"}
+
+Return ONLY the 5 questions, one per line, without numbering or bullet points.`
+
+        const { text: relatedText } = await generateText({
+          model: "openai/gpt-4o-mini",
+          prompt: relatedSearchPrompt,
+          maxTokens: 200,
+          temperature: 0.7,
+        })
+
+        relatedSearches = relatedText
+          .split("\n")
+          .map((q) => q.trim())
+          .filter((q) => q.length > 0)
+          .slice(0, 5)
+
+        console.log("[v0] Generated related searches:", relatedSearches)
+      } catch (error) {
+        console.error("[v0] Failed to generate related searches:", error)
+        // Fallback to empty array if generation fails
+        relatedSearches = []
+      }
+
       await setCachedResponse(query, mode, {
         answer: text,
         sources: searchResults.map((result, index) => ({
@@ -277,6 +316,14 @@ Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"
               })
               controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
               await new Promise((resolve) => setTimeout(resolve, 17))
+            }
+
+            if (relatedSearches.length > 0) {
+              const relatedData = JSON.stringify({
+                type: "related_searches",
+                content: relatedSearches,
+              })
+              controller.enqueue(encoder.encode(`data: ${relatedData}\n\n`))
             }
 
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))

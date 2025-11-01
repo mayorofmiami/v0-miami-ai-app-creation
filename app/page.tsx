@@ -51,6 +51,7 @@ type SearchAction =
   | { type: "SET_CITATIONS"; citations: Array<{ title: string; url: string; snippet: string }> }
   | { type: "SET_MODEL_INFO"; modelInfo: { model: string; reason: string; autoSelected: boolean } }
   | { type: "SET_RATE_LIMIT"; rateLimitInfo: { remaining: number; limit: number } }
+  | { type: "SET_RELATED_SEARCHES"; relatedSearches: string[] }
   | { type: "SEARCH_COMPLETE" }
   | { type: "SEARCH_ERROR"; error: string }
   | { type: "CLEAR_SEARCH" }
@@ -71,7 +72,7 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         currentSearchId: undefined,
         currentModelInfo: null,
         mode: action.mode,
-        relatedSearches: generateRelatedSearches(action.query),
+        relatedSearches: [], // Start with empty array, will be populated by AI
       }
     case "UPDATE_RESPONSE":
       return { ...state, response: action.response }
@@ -81,6 +82,8 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
       return { ...state, currentModelInfo: action.modelInfo }
     case "SET_RATE_LIMIT":
       return { ...state, rateLimitInfo: action.rateLimitInfo }
+    case "SET_RELATED_SEARCHES":
+      return { ...state, relatedSearches: action.relatedSearches } // New action to set AI-generated related searches
     case "SEARCH_COMPLETE":
       return { ...state, isLoading: false, optimisticQuery: "" }
     case "SEARCH_ERROR":
@@ -402,6 +405,8 @@ We apologize for the inconvenience!`,
                       autoSelected: parsed.content?.autoSelected ?? parsed.autoSelected ?? true,
                     },
                   })
+                } else if (parsed.type === "related_searches") {
+                  dispatchSearch({ type: "SET_RELATED_SEARCHES", relatedSearches: parsed.content || [] })
                 }
               } catch (e) {
                 // Skip invalid JSON
@@ -1238,7 +1243,7 @@ We apologize for the inconvenience!`,
                   {!searchState.isLoading && searchState.response && (
                     <RelatedSearches
                       searches={searchState.relatedSearches}
-                      onSelect={(search) => handleSearch(search, searchState.mode)}
+                      onSearchClick={(search) => handleSearch(search, searchState.mode)}
                     />
                   )}
                 </>
