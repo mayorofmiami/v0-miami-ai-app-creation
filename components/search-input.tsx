@@ -310,7 +310,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       {isMenuOpen && (
         <div
           ref={menuRef}
-          className="absolute right-0 top-full mt-2 w-48 bg-card/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+          className="absolute right-0 bottom-full mb-2 w-48 bg-card/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           {/* Content Type Selection */}
           <div className="p-1.5">
@@ -369,7 +369,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                       setIsMenuOpen(false)
                     }}
                     className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
-                      mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-muted-foreground"
+                      mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-foreground"
                     }`}
                   >
                     <Sparkles className="w-3 h-3" />
