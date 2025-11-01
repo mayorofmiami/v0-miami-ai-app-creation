@@ -31,7 +31,6 @@ import Sun from "@/components/icons/Sun"
 import Moon from "@/components/icons/Moon"
 import { useTheme } from "next-themes"
 import { ImageResult } from "@/components/image-result"
-import { FloatingActionMenu } from "@/components/floating-action-menu"
 
 type SearchState = {
   mode: "quick" | "deep"
@@ -1154,20 +1153,11 @@ We apologize for the inconvenience!`,
                           onContentTypeChange={(type) =>
                             dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })
                           }
+                          onVoiceSearch={handleVoiceSearch}
+                          hasHistory={recentSearches.length > 0}
                         />
                       </div>
-                      <FloatingActionMenu
-                        contentType={searchState.contentType}
-                        onContentTypeChange={(type) => dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })}
-                        mode={searchState.mode}
-                        onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-                        selectedModel={selectedModel}
-                        onModelChange={handleModelChange}
-                        onVoiceSearch={handleVoiceSearch}
-                        onHistoryClick={handleToggleHistory}
-                        hasHistory={recentSearches.length > 0}
-                        user={user}
-                      />
+                      {/* Removed FloatingActionMenu here */}
                     </div>
 
                     {/* Example Search Queries */}
@@ -1426,20 +1416,11 @@ We apologize for the inconvenience!`,
                     onHistoryClick={handleToggleHistory}
                     contentType={searchState.contentType}
                     onContentTypeChange={(type) => dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })}
+                    onVoiceSearch={handleVoiceSearch}
+                    hasHistory={recentSearches.length > 0}
                   />
                 </div>
-                <FloatingActionMenu
-                  contentType={searchState.contentType}
-                  onContentTypeChange={(type) => dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })}
-                  mode={searchState.mode}
-                  onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-                  selectedModel={selectedModel}
-                  onModelChange={handleModelChange}
-                  onVoiceSearch={handleVoiceSearch}
-                  onHistoryClick={handleToggleHistory}
-                  hasHistory={recentSearches.length > 0}
-                  user={user}
-                />
+                {/* Removed FloatingActionMenu here */}
               </div>
               {searchState.contentType === "image" && searchState.imageRateLimit && (
                 <div className="text-center text-xs text-muted-foreground">

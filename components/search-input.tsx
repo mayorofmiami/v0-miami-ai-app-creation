@@ -6,6 +6,9 @@ import SearchIcon from "@/components/icons/Search"
 import XIcon from "@/components/icons/X"
 import ClockIcon from "@/components/icons/Clock"
 import ImageIcon from "@/components/icons/Image"
+import Settings from "@/components/icons/Settings"
+import Sparkles from "@/components/icons/Sparkles"
+import History from "@/components/icons/History"
 import type { ModelId } from "@/components/model-selector"
 
 const MODEL_OPTIONS = [
@@ -32,6 +35,8 @@ interface SearchInputProps {
   onHistoryClick?: () => void
   contentType?: "search" | "image"
   onContentTypeChange?: (type: "search" | "image") => void
+  onVoiceSearch?: () => void
+  hasHistory?: boolean
 }
 
 export interface SearchInputRef {
@@ -53,6 +58,8 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     onHistoryClick,
     contentType = "search",
     onContentTypeChange,
+    onVoiceSearch,
+    hasHistory = false,
   },
   ref,
 ) {
@@ -63,8 +70,10 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   const [isFocused, setIsFocused] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [recognition, setRecognition] = useState<any>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -76,14 +85,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       setSelectedIndex(-1)
     },
   }))
-
-  useEffect(() => {
-    if (typeof ref === "function") {
-      ref(inputRef.current)
-    } else if (ref) {
-      ref.current = inputRef.current
-    }
-  }, [ref])
 
   useEffect(() => {
     if (typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
@@ -128,6 +129,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         console.log("[v0] Click outside detected")
         setShowSuggestions(false)
+        setIsMenuOpen(false)
       }
     }
 
@@ -252,7 +254,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             onKeyDown={handleKeyDown}
             placeholder={contentType === "image" ? "Describe the image you want to generate..." : "Ask anything..."}
             disabled={isLoading}
-            className={`w-full px-6 py-5 pr-20 text-foreground rounded-xl border-2 ${
+            className={`w-full px-6 py-5 pr-32 text-foreground rounded-xl border-2 ${
               contentType === "image"
                 ? "border-miami-pink glow-pulse-pink"
                 : mode === "quick"
@@ -263,7 +265,21 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             } placeholder:text-muted-foreground/60`}
           />
         </div>
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 z-20">
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-20">
+          {/* Settings Menu Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsMenuOpen(!isMenuOpen)
+            }}
+            className="p-3 rounded-lg bg-background/80 hover:bg-muted transition-all border border-border/50 hover:border-miami-aqua/50"
+            title="Options"
+          >
+            <Settings className="w-5 h-5 text-muted-foreground hover:text-miami-aqua transition-colors" />
+          </button>
+
+          {/* Submit Button */}
           {isLoading && onCancel ? (
             <button
               type="button"
@@ -291,6 +307,127 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         </div>
       </form>
 
+      {isMenuOpen && (
+        <div
+          ref={menuRef}
+          className="absolute right-0 top-full mt-2 w-48 bg-card/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          {/* Content Type Selection */}
+          <div className="p-1.5">
+            <div className="flex gap-1">
+              <button
+                onClick={() => {
+                  onContentTypeChange?.("search")
+                  setIsMenuOpen(false)
+                }}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
+                  contentType === "search"
+                    ? "bg-miami-aqua/20 text-miami-aqua"
+                    : "hover:bg-muted/50 text-muted-foreground"
+                }`}
+              >
+                <SearchIcon className="w-3.5 h-3.5" />
+                Search
+              </button>
+              <button
+                onClick={() => {
+                  onContentTypeChange?.("image")
+                  setIsMenuOpen(false)
+                }}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
+                  contentType === "image"
+                    ? "bg-miami-pink/20 text-miami-pink"
+                    : "hover:bg-muted/50 text-muted-foreground"
+                }`}
+              >
+                <ImageIcon className="w-3.5 h-3.5" />
+                Image
+              </button>
+            </div>
+          </div>
+
+          {/* Search Mode (only show for search content type) */}
+          {contentType === "search" && (
+            <>
+              <div className="h-px bg-border/30 mx-1.5" />
+              <div className="p-1.5">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => {
+                      onModeChange("quick")
+                      setIsMenuOpen(false)
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
+                      mode === "quick" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted/50 text-muted-foreground"
+                    }`}
+                  >
+                    Quick
+                  </button>
+                  <button
+                    onClick={() => {
+                      onModeChange("deep")
+                      setIsMenuOpen(false)
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
+                      mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-muted-foreground"
+                    }`}
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Deep
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Model Selection (only show for search content type and authenticated users) */}
+          {contentType === "search" && onModelChange && user && (
+            <>
+              <div className="h-px bg-border/30 mx-1.5" />
+              <div className="p-1.5 max-h-48 overflow-y-auto">
+                {MODEL_OPTIONS.map((model) => (
+                  <button
+                    key={model.id}
+                    onClick={() => {
+                      onModelChange(model.id)
+                      setIsMenuOpen(false)
+                    }}
+                    className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
+                      selectedModel === model.id
+                        ? "bg-miami-aqua/20 text-miami-aqua"
+                        : "hover:bg-muted/50 text-foreground"
+                    }`}
+                  >
+                    <span className="text-xs font-medium">{model.name}</span>
+                    {selectedModel === model.id && <div className="w-1.5 h-1.5 rounded-full bg-miami-aqua" />}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* History Button */}
+          {hasHistory && onHistoryClick && (
+            <>
+              <div className="h-px bg-border/30 mx-1.5" />
+              <div className="p-1.5">
+                <button
+                  onClick={() => {
+                    onHistoryClick()
+                    setIsMenuOpen(false)
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-all text-xs font-medium text-muted-foreground"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  History
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && query.length >= 2 && (
         <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
           {suggestions.map((suggestion, index) => (
@@ -315,6 +452,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         </div>
       )}
 
+      {/* Rate limit messages */}
       {contentType === "image" && !isLoading && (
         <p className="text-sm text-muted-foreground text-center mt-3">
           {user ? "50 images per day" : "3 free images per day • Sign up for 50/day"}
