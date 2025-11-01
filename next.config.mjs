@@ -23,13 +23,9 @@ const nextConfig = {
   compress: true,
   // Optimize production builds
   productionBrowserSourceMaps: false,
-  // Enable SWC minification
-  swcMinify: true,
   experimental: {
     // Enable optimized package imports
     optimizePackageImports: ['@/components', '@/lib'],
-    // Enable React compiler for better performance
-    reactCompiler: true,
   },
   async headers() {
     return [
