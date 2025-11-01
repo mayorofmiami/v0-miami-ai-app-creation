@@ -15,7 +15,14 @@ export async function GET(request: NextRequest) {
 
     const preference = await getModelPreference(userId)
 
-    return NextResponse.json({ preference })
+    return NextResponse.json(
+      { preference },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+        },
+      },
+    )
   } catch (error) {
     console.error("[v0] Error fetching model preference:", error)
     return NextResponse.json({ error: "Failed to fetch model preference" }, { status: 500 })
@@ -35,7 +42,14 @@ export async function POST(request: NextRequest) {
 
     const preference = await updateModelPreference(userId, modelPreference, selectedModel)
 
-    return NextResponse.json({ preference })
+    return NextResponse.json(
+      { preference },
+      {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      },
+    )
   } catch (error) {
     console.error("[v0] Error updating model preference:", error)
     return NextResponse.json({ error: "Failed to update model preference" }, { status: 500 })

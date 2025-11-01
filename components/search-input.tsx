@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react"
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback, useMemo } from "react"
 import SearchIcon from "@/components/icons/Search"
 import XIcon from "@/components/icons/X"
 import ClockIcon from "@/components/icons/Clock"
@@ -113,16 +113,17 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     }
   }, [])
 
-  useEffect(() => {
+  const filteredSuggestions = useMemo(() => {
     if (query.length >= 2) {
-      const filtered = recentSearches.filter((s) => s.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
-      setSuggestions(filtered)
-      setShowSuggestions(filtered.length > 0)
-    } else {
-      setSuggestions([])
-      setShowSuggestions(false)
+      return recentSearches.filter((s) => s.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
     }
+    return []
   }, [query, recentSearches])
+
+  useEffect(() => {
+    setSuggestions(filteredSuggestions)
+    setShowSuggestions(filteredSuggestions.length > 0)
+  }, [filteredSuggestions])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -137,17 +138,20 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     return () => document.removeEventListener("click", handleClickOutside)
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (query.trim() && !isLoading) {
-      onSearch(query, mode)
-      setShowSuggestions(false)
-      setIsFocused(false)
-      inputRef.current?.blur()
-    }
-  }
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault()
+      if (query.trim() && !isLoading) {
+        onSearch(query, mode)
+        setShowSuggestions(false)
+        setIsFocused(false)
+        inputRef.current?.blur()
+      }
+    },
+    [query, isLoading, onSearch, mode],
+  )
 
-  const handleFocus = () => {
+  const handleFocus = useCallback(() => {
     console.log("[v0] handleFocus called")
     setIsFocused(true)
     setTimeout(() => {
@@ -159,36 +163,39 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         })
       }
     }, 300)
-  }
+  }, [])
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     console.log("[v0] handleBlur called")
     setIsFocused(false)
-  }
+  }, [])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showSuggestions || suggestions.length === 0) return
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!showSuggestions || suggestions.length === 0) return
 
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev))
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1))
-    } else if (e.key === "Enter" && selectedIndex >= 0) {
-      e.preventDefault()
-      setQuery(suggestions[selectedIndex])
-      onSearch(suggestions[selectedIndex], mode)
-      setShowSuggestions(false)
-      setSelectedIndex(-1)
-      inputRef.current?.blur()
-    } else if (e.key === "Escape") {
-      setShowSuggestions(false)
-      setSelectedIndex(-1)
-    }
-  }
+      if (e.key === "ArrowDown") {
+        e.preventDefault()
+        setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev))
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1))
+      } else if (e.key === "Enter" && selectedIndex >= 0) {
+        e.preventDefault()
+        setQuery(suggestions[selectedIndex])
+        onSearch(suggestions[selectedIndex], mode)
+        setShowSuggestions(false)
+        setSelectedIndex(-1)
+        inputRef.current?.blur()
+      } else if (e.key === "Escape") {
+        setShowSuggestions(false)
+        setSelectedIndex(-1)
+      }
+    },
+    [showSuggestions, suggestions, selectedIndex, onSearch, mode],
+  )
 
-  const handleVoiceSearch = () => {
+  const handleVoiceSearch = useCallback(() => {
     if (!recognition) {
       alert("Voice search is not supported in your browser")
       return
@@ -201,7 +208,52 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       recognition.start()
       setIsListening(true)
     }
-  }
+  }, [recognition, isListening])
+
+  const handleSuggestionClick = useCallback(
+    (suggestion: string) => {
+      setQuery(suggestion)
+      onSearch(suggestion, mode)
+      setShowSuggestions(false)
+      setSelectedIndex(-1)
+      inputRef.current?.blur()
+    },
+    [onSearch, mode],
+  )
+
+  const handleMenuToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsMenuOpen((prev) => !prev)
+  }, [])
+
+  const handleContentTypeChange = useCallback(
+    (type: "search" | "image") => {
+      onContentTypeChange?.(type)
+      setIsMenuOpen(false)
+    },
+    [onContentTypeChange],
+  )
+
+  const handleModeChangeCallback = useCallback(
+    (newMode: "quick" | "deep") => {
+      onModeChange(newMode)
+      setIsMenuOpen(false)
+    },
+    [onModeChange],
+  )
+
+  const handleModelChangeCallback = useCallback(
+    (model: ModelId) => {
+      onModelChange?.(model)
+      setIsMenuOpen(false)
+    },
+    [onModelChange],
+  )
+
+  const handleHistoryClickCallback = useCallback(() => {
+    onHistoryClick?.()
+    setIsMenuOpen(false)
+  }, [onHistoryClick])
 
   return (
     <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
@@ -269,10 +321,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
           {/* Settings Menu Button */}
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsMenuOpen(!isMenuOpen)
-            }}
+            onClick={handleMenuToggle}
             className="p-3 rounded-lg bg-background/80 hover:bg-muted transition-all border border-border/50 hover:border-miami-aqua/50"
             title="Options"
           >
@@ -316,10 +365,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
           <div className="p-1.5">
             <div className="flex gap-1">
               <button
-                onClick={() => {
-                  onContentTypeChange?.("search")
-                  setIsMenuOpen(false)
-                }}
+                onClick={() => handleContentTypeChange("search")}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
                   contentType === "search"
                     ? "bg-miami-aqua/20 text-miami-aqua"
@@ -330,10 +376,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                 Search
               </button>
               <button
-                onClick={() => {
-                  onContentTypeChange?.("image")
-                  setIsMenuOpen(false)
-                }}
+                onClick={() => handleContentTypeChange("image")}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
                   contentType === "image"
                     ? "bg-miami-pink/20 text-miami-pink"
@@ -353,10 +396,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
               <div className="p-1.5">
                 <div className="flex gap-1">
                   <button
-                    onClick={() => {
-                      onModeChange("quick")
-                      setIsMenuOpen(false)
-                    }}
+                    onClick={() => handleModeChangeCallback("quick")}
                     className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
                       mode === "quick" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted/50 text-muted-foreground"
                     }`}
@@ -364,10 +404,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                     Quick
                   </button>
                   <button
-                    onClick={() => {
-                      onModeChange("deep")
-                      setIsMenuOpen(false)
-                    }}
+                    onClick={() => handleModeChangeCallback("deep")}
                     className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
                       mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-foreground"
                     }`}
@@ -388,10 +425,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                 {MODEL_OPTIONS.map((model) => (
                   <button
                     key={model.id}
-                    onClick={() => {
-                      onModelChange(model.id)
-                      setIsMenuOpen(false)
-                    }}
+                    onClick={() => handleModelChangeCallback(model.id)}
                     className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
                       selectedModel === model.id
                         ? "bg-miami-aqua/20 text-miami-aqua"
@@ -412,10 +446,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
               <div className="h-px bg-border/30 mx-1.5" />
               <div className="p-1.5">
                 <button
-                  onClick={() => {
-                    onHistoryClick()
-                    setIsMenuOpen(false)
-                  }}
+                  onClick={handleHistoryClickCallback}
                   className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-all text-xs font-medium text-muted-foreground"
                 >
                   <History className="w-3.5 h-3.5" />
@@ -435,11 +466,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
               key={index}
               onClick={(e) => {
                 e.preventDefault()
-                setQuery(suggestion)
-                onSearch(suggestion, mode)
-                setShowSuggestions(false)
-                setSelectedIndex(-1)
-                inputRef.current?.blur()
+                handleSuggestionClick(suggestion)
               }}
               className={`w-full px-5 py-4 text-left flex items-center gap-3 transition-colors ${
                 index === selectedIndex ? "bg-miami-aqua/10" : "hover:bg-muted"

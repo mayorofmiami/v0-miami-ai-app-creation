@@ -5,6 +5,7 @@ import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "next-themes"
 import { OnboardingModal } from "@/components/onboarding-modal"
+import { PrefetchProvider } from "@/components/prefetch-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -39,8 +40,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <PrefetchProvider />
           <OnboardingModal />
           {children}
           <Toaster

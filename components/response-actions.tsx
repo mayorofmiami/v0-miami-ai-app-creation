@@ -1,4 +1,6 @@
 "use client"
+
+import { useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import Copy from "@/components/icons/Copy"
 import Share from "@/components/icons/Share"
@@ -9,19 +11,22 @@ import { toast } from "sonner"
 interface ResponseActionsProps {
   response: string
   onRegenerate?: () => void
+  query?: string
+  searchId?: string
+  userId?: string | null
 }
 
-export function ResponseActions({ response, onRegenerate }: ResponseActionsProps) {
-  const handleCopy = async () => {
+export function ResponseActions({ response, onRegenerate, query, searchId, userId }: ResponseActionsProps) {
+  const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(response)
       toast.success("Response copied to clipboard")
     } catch (error) {
       toast.error("Failed to copy response")
     }
-  }
+  }, [response])
 
-  const handleShare = async () => {
+  const handleShare = useCallback(async () => {
     if (navigator.share) {
       try {
         await navigator.share({
@@ -35,11 +40,17 @@ export function ResponseActions({ response, onRegenerate }: ResponseActionsProps
       handleCopy()
       toast.success("Link copied to clipboard")
     }
-  }
+  }, [response, handleCopy])
 
-  const handleBookmark = () => {
+  const handleBookmark = useCallback(() => {
     toast.success("Response bookmarked")
-  }
+  }, [])
+
+  const handleRegenerateClick = useCallback(() => {
+    if (onRegenerate) {
+      onRegenerate()
+    }
+  }, [onRegenerate])
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -70,7 +81,7 @@ export function ResponseActions({ response, onRegenerate }: ResponseActionsProps
         <Button
           variant="ghost"
           size="sm"
-          onClick={onRegenerate}
+          onClick={handleRegenerateClick}
           className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-miami-aqua/10 hover:text-miami-aqua transition-colors"
           aria-label="Regenerate response"
         >

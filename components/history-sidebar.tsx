@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import X from "@/components/icons/X"
 import Clock from "@/components/icons/Clock"
 import Sparkles from "@/components/icons/Sparkles"
@@ -71,7 +71,7 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
     }
   }, [searchFilter, history])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
@@ -84,7 +84,23 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
     if (diffHours < 24) return `${diffHours}h ago`
     if (diffDays < 7) return `${diffDays}d ago`
     return date.toLocaleDateString()
-  }
+  }, [])
+
+  const handleSelectHistory = useCallback(
+    (item: SearchHistory) => {
+      onSelectHistory(item)
+      onClose()
+    },
+    [onSelectHistory, onClose],
+  )
+
+  const handlePreviousPage = useCallback(() => {
+    setCurrentPage((p) => Math.max(1, p - 1))
+  }, [])
+
+  const handleNextPage = useCallback(() => {
+    setCurrentPage((p) => Math.min(totalPages, p + 1))
+  }, [])
 
   const totalPages = Math.ceil(filteredHistory.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -130,10 +146,7 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
             currentItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => {
-                  onSelectHistory(item)
-                  onClose()
-                }}
+                onClick={() => handleSelectHistory(item)}
                 className="w-full text-left p-3 rounded-lg bg-muted/50 hover:bg-muted border border-border hover:border-miami-aqua/50 transition-all group"
               >
                 <div className="flex items-start gap-2 mb-2">
@@ -157,24 +170,14 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
 
         {totalPages > 1 && (
           <div className="p-4 border-t border-border flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
+            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
               <ChevronLeft className="w-4 h-4 mr-1" />
               Previous
             </Button>
             <span className="text-sm text-muted-foreground">
               Page {currentPage} of {totalPages}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
+            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
               Next
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>

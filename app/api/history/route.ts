@@ -11,7 +11,14 @@ export async function GET(req: Request) {
 
     const history = await getSearchHistory(userId, 50)
 
-    return Response.json({ history })
+    return Response.json(
+      { history },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        },
+      },
+    )
   } catch (error) {
     console.error("[v0] History API error:", error)
     return Response.json({ error: "Failed to fetch history" }, { status: 500 })

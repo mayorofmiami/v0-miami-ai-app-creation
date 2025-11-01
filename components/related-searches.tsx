@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback } from "react"
 import { Button } from "@/components/ui/button"
 
 interface RelatedSearchesProps {
@@ -8,6 +9,13 @@ interface RelatedSearchesProps {
 }
 
 export function RelatedSearches({ searches, onSearchClick }: RelatedSearchesProps) {
+  const handleSearchClick = useCallback(
+    (search: string) => {
+      onSearchClick(search)
+    },
+    [onSearchClick],
+  )
+
   if (!searches || searches.length === 0) return null
 
   return (
@@ -19,7 +27,7 @@ export function RelatedSearches({ searches, onSearchClick }: RelatedSearchesProp
             key={index}
             variant="outline"
             size="sm"
-            onClick={() => onSearchClick(search)}
+            onClick={() => handleSearchClick(search)}
             className="hover:bg-miami-aqua/10 hover:border-miami-aqua hover:shadow-lg hover:shadow-miami-aqua/20 transition-all duration-300 text-sm whitespace-normal text-left h-auto py-2 px-3"
           >
             {search}

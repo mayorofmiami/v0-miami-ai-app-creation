@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import DownloadIcon from "@/components/icons/Download"
@@ -20,7 +20,7 @@ export function ImageResult({ imageUrl, prompt, model, resolution, createdAt, on
   const [isDownloading, setIsDownloading] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const handleDownload = async () => {
+  const handleDownload = useCallback(async () => {
     setIsDownloading(true)
     try {
       const response = await fetch(imageUrl)
@@ -38,13 +38,13 @@ export function ImageResult({ imageUrl, prompt, model, resolution, createdAt, on
     } finally {
       setIsDownloading(false)
     }
-  }
+  }, [imageUrl])
 
-  const handleCopyPrompt = () => {
+  const handleCopyPrompt = useCallback(() => {
     navigator.clipboard.writeText(prompt)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }
+  }, [prompt])
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4 animate-in fade-in duration-500">

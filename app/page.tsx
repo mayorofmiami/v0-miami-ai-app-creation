@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback, useReducer } from "react"
+import { useState, useRef, useEffect, useCallback, useReducer, Suspense } from "react"
 import { SearchInput } from "@/components/search-input"
 import { SearchResponse } from "@/components/search-response"
 import { HistorySidebar } from "@/components/history-sidebar"
 import { RelatedSearches } from "@/components/related-searches"
+import { ImageResult } from "@/components/image-result"
 import { EmptyState } from "@/components/empty-state"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
@@ -30,7 +31,6 @@ import Plus from "@/components/icons/Plus"
 import Sun from "@/components/icons/Sun"
 import Moon from "@/components/icons/Moon"
 import { useTheme } from "next-themes"
-import { ImageResult } from "@/components/image-result"
 
 type SearchState = {
   mode: "quick" | "deep"
@@ -203,56 +203,36 @@ export default function Home() {
   const isAdmin = user?.role === "owner" || user?.role === "admin"
 
   useEffect(() => {
-    async function loadRecentSearches() {
-      if (!userId) {
-        return
-      }
+    async function loadInitialData() {
       try {
-        const res = await fetch(`/api/history?userId=${userId}`)
+        const res = await fetch("/api/init")
         const data = await res.json()
-        const recent = (data.history || []).slice(0, 10).map((h: SearchHistory) => h.query)
-        setRecentSearches(recent)
-      } catch (error) {
-        console.error("[v0] Failed to load recent searches:", error)
-      }
-    }
-    loadRecentSearches()
-  }, [userId])
 
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const res = await fetch("/api/user")
-        const data = await res.json()
+        // Set user
         setUser(data.user)
+
+        // Set recent searches if user exists
+        if (data.user && data.history) {
+          const recent = data.history.slice(0, 10).map((h: SearchHistory) => h.query)
+          setRecentSearches(recent)
+        }
+
+        // Set model preference if exists
+        if (data.user && data.modelPreference) {
+          if (data.modelPreference.model_preference === "manual" && data.modelPreference.selected_model) {
+            setSelectedModel(data.modelPreference.selected_model as ModelId)
+          }
+        }
       } catch (error) {
-        console.error("[v0] Failed to load user:", error)
+        console.error("[v0] Failed to load initial data:", error)
       } finally {
         setIsLoadingUser(false)
       }
     }
-    loadUser()
+    loadInitialData()
   }, [])
 
-  useEffect(() => {
-    async function loadModelPreference() {
-      if (!userId) return
-
-      try {
-        const res = await fetch(`/api/model-preference?userId=${userId}`)
-        const data = await res.json()
-
-        if (data.preference) {
-          if (data.preference.model_preference === "manual" && data.preference.selected_model) {
-            setSelectedModel(data.preference.selected_model as ModelId)
-          }
-        }
-      } catch (error) {
-        console.error("[v0] Failed to load model preference:", error)
-      }
-    }
-    loadModelPreference()
-  }, [userId])
+  // They are now combined in the loadInitialData effect above
 
   useEffect(() => {
     if (window.location.hash === "#history") {
@@ -1332,48 +1312,52 @@ We apologize for the inconvenience!`,
                     </div>
                   )}
                   <div className="space-y-4">
-                    {searchState.generatedImage ? (
-                      <ImageResult
-                        imageUrl={searchState.generatedImage.url}
-                        prompt={searchState.generatedImage.prompt}
-                        model={searchState.generatedImage.model}
-                        resolution={searchState.generatedImage.resolution}
-                        createdAt={searchState.generatedImage.createdAt}
-                        onRegenerate={() => handleImageGeneration(searchState.generatedImage!.prompt)}
-                      />
-                    ) : (
-                      <SearchResponse
-                        response={searchState.response}
-                        citations={searchState.citations}
-                        isStreaming={searchState.isLoading}
-                        actions={
-                          !searchState.isLoading && searchState.response ? (
-                            <ResponseActions
-                              query={searchState.currentQuery}
-                              response={searchState.response}
-                              searchId={searchState.currentSearchId}
-                              userId={userId}
-                              onRegenerate={handleRegenerate}
-                            />
-                          ) : null
-                        }
-                        modelBadge={
-                          user && searchState.currentModelInfo ? (
-                            <ModelBadge
-                              model={searchState.currentModelInfo.model}
-                              reason={searchState.currentModelInfo.reason}
-                              autoSelected={searchState.currentModelInfo.autoSelected}
-                            />
-                          ) : null
-                        }
-                      />
-                    )}
+                    <Suspense fallback={<SkeletonSearch />}>
+                      {searchState.generatedImage ? (
+                        <ImageResult
+                          imageUrl={searchState.generatedImage.url}
+                          prompt={searchState.generatedImage.prompt}
+                          model={searchState.generatedImage.model}
+                          resolution={searchState.generatedImage.resolution}
+                          createdAt={searchState.generatedImage.createdAt}
+                          onRegenerate={() => handleImageGeneration(searchState.generatedImage!.prompt)}
+                        />
+                      ) : (
+                        <SearchResponse
+                          response={searchState.response}
+                          citations={searchState.citations}
+                          isStreaming={searchState.isLoading}
+                          actions={
+                            !searchState.isLoading && searchState.response ? (
+                              <ResponseActions
+                                query={searchState.currentQuery}
+                                response={searchState.response}
+                                searchId={searchState.currentSearchId}
+                                userId={userId}
+                                onRegenerate={handleRegenerate}
+                              />
+                            ) : null
+                          }
+                          modelBadge={
+                            user && searchState.currentModelInfo ? (
+                              <ModelBadge
+                                model={searchState.currentModelInfo.model}
+                                reason={searchState.currentModelInfo.reason}
+                                autoSelected={searchState.currentModelInfo.autoSelected}
+                              />
+                            ) : null
+                          }
+                        />
+                      )}
+                    </Suspense>
                   </div>
                   {!searchState.isLoading && searchState.response && !searchState.generatedImage && (
-                    <RelatedSearches
-                      searches={searchState.relatedSearches}
-                      onSearchClick={(search) => handleSearch(search, searchState.mode)}
-                    />
+                    <Suspense fallback={<div className="h-20" />}>
+                      <RelatedSearches
+                        searches={searchState.relatedSearches}
+                        onSearchClick={(search) => handleSearch(search, searchState.mode)}
+                      />
+                    </Suspense>
                   )}
                 </>
               ) : (
@@ -1385,13 +1369,15 @@ We apologize for the inconvenience!`,
 
         {/* History Sidebar */}
         {showHistory && (
-          <HistorySidebar
-            userId={userId}
-            onClose={() => setShowHistory(false)}
-            onSelectHistory={handleSelectHistory}
-            localSearches={recentSearches}
-            isOpen={showHistory}
-          />
+          <Suspense fallback={<div className="fixed inset-y-0 right-0 w-80 bg-background border-l border-border" />}>
+            <HistorySidebar
+              userId={userId}
+              onClose={() => setShowHistory(false)}
+              onSelectHistory={handleSelectHistory}
+              localSearches={recentSearches}
+              isOpen={showHistory}
+            />
+          </Suspense>
         )}
 
         {/* Fixed Search Bar at Bottom */}
