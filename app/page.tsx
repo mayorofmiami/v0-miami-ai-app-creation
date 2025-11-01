@@ -1188,8 +1188,23 @@ We apologize for the inconvenience!`,
                 <>
                   {searchState.currentQuery && (
                     <div className="w-full max-w-3xl mx-auto">
-                      <div className="bg-muted/30 rounded-2xl px-5 py-4 border border-border/50">
-                        <p className="text-base text-foreground/90">{searchState.currentQuery}</p>
+                      <div className="relative bg-gradient-to-r from-miami-aqua/10 via-miami-blue/10 to-miami-purple/10 rounded-2xl p-[2px] shadow-lg">
+                        <div className="bg-background rounded-2xl px-5 py-4 flex items-start gap-3">
+                          <svg
+                            className="w-5 h-5 text-miami-aqua flex-shrink-0 mt-0.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                            />
+                          </svg>
+                          <p className="text-base text-foreground/90 flex-1">{searchState.currentQuery}</p>
+                        </div>
                       </div>
                     </div>
                   )}

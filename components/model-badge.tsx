@@ -2,6 +2,7 @@
 
 import { Sparkles, Zap, Brain, Feather } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface ModelBadgeProps {
   model: string
@@ -11,11 +12,11 @@ interface ModelBadgeProps {
 }
 
 function getModelIcon(model: string) {
-  if (model.includes("gpt-4o-mini")) return <Zap className="h-3.5 w-3.5" />
-  if (model.includes("gpt-4o")) return <Brain className="h-3.5 w-3.5" />
-  if (model.includes("claude") && model.includes("sonnet")) return <Feather className="h-3.5 w-3.5" />
-  if (model.includes("claude") && model.includes("haiku")) return <Zap className="h-3.5 w-3.5" />
-  return <Sparkles className="h-3.5 w-3.5" />
+  if (model.includes("gpt-4o-mini")) return <Zap className="h-4 w-4" />
+  if (model.includes("gpt-4o")) return <Brain className="h-4 w-4" />
+  if (model.includes("claude") && model.includes("sonnet")) return <Feather className="h-4 w-4" />
+  if (model.includes("claude") && model.includes("haiku")) return <Zap className="h-4 w-4" />
+  return <Sparkles className="h-4 w-4" />
 }
 
 function getModelName(model: string) {
@@ -26,18 +27,33 @@ function getModelName(model: string) {
   return model
 }
 
-export function ModelBadge({ model, reason, className }: ModelBadgeProps) {
+export function ModelBadge({ model, reason, autoSelected, className }: ModelBadgeProps) {
   const icon = getModelIcon(model)
+  const displayName = getModelName(model)
 
   return (
-    <div
-      className={cn(
-        "inline-flex items-center gap-2 rounded-full border border-border/50 bg-muted/30 px-3 py-1.5 text-xs backdrop-blur-sm",
-        className,
-      )}
-    >
-      {icon}
-      <span className="font-medium">{model}</span>
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border-2 border-miami-aqua/30 bg-gradient-to-r from-miami-aqua/10 to-miami-blue/10 px-4 py-2 text-sm backdrop-blur-sm hover:border-miami-aqua/50 hover:shadow-lg hover:shadow-miami-aqua/20 transition-all cursor-help",
+              className,
+            )}
+          >
+            <div className="text-miami-aqua">{icon}</div>
+            <span className="font-semibold text-foreground">{displayName}</span>
+            {autoSelected && <span className="text-xs text-miami-aqua/70 font-medium">AUTO</span>}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="space-y-1">
+            <p className="font-semibold">AI Model: {displayName}</p>
+            {reason && <p className="text-sm text-muted-foreground">{reason}</p>}
+            {autoSelected && <p className="text-xs text-miami-aqua">Automatically selected for optimal performance</p>}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

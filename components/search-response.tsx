@@ -80,25 +80,29 @@ export const SearchResponse = memo(function SearchResponse({
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
-      {/* Response Card */}
+      {/* Response Text */}
       <div className="prose prose-invert prose-miami max-w-none" role="article" aria-label="Search response">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeRaw]}
           components={{
             h1: ({ children }) => (
-              <h1 className="text-2xl font-bold text-foreground mb-4 mt-6 first:mt-0">{children}</h1>
+              <h1 className="text-3xl font-bold text-foreground mb-6 mt-8 first:mt-0 text-balance leading-tight">
+                {children}
+              </h1>
             ),
             h2: ({ children }) => (
-              <h2 className="text-xl font-semibold text-foreground mb-3 mt-5 first:mt-0">{children}</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-4 mt-6 first:mt-0 text-balance leading-snug">
+                {children}
+              </h2>
             ),
             h3: ({ children }) => (
-              <h3 className="text-lg font-semibold text-foreground mb-2 mt-4 first:mt-0">{children}</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-3 mt-5 first:mt-0 text-balance">{children}</h3>
             ),
-            p: ({ children }) => <p className="text-foreground leading-relaxed mb-4 last:mb-0">{children}</p>,
-            ul: ({ children }) => <ul className="list-disc list-inside space-y-2 mb-4 text-foreground">{children}</ul>,
+            p: ({ children }) => <p className="text-foreground leading-relaxed mb-6 last:mb-0">{children}</p>,
+            ul: ({ children }) => <ul className="list-disc list-inside space-y-3 mb-6 text-foreground">{children}</ul>,
             ol: ({ children }) => (
-              <ol className="list-decimal list-inside space-y-2 mb-4 text-foreground">{children}</ol>
+              <ol className="list-decimal list-inside space-y-3 mb-6 text-foreground">{children}</ol>
             ),
             li: ({ children }) => <li className="text-foreground leading-relaxed">{children}</li>,
             table: ({ children }) => (
@@ -164,7 +168,7 @@ export const SearchResponse = memo(function SearchResponse({
                 {alt && <p className="text-xs text-muted-foreground text-center py-2 bg-muted/30">{alt}</p>}
               </div>
             ),
-            hr: () => <hr className="my-6 border-t border-miami-aqua/30" />,
+            hr: () => <hr className="my-8 border-t-2 border-miami-aqua/20" />,
             strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
             em: ({ children }) => <em className="italic text-foreground">{children}</em>,
             cite: ({ node }: any) => {
@@ -209,10 +213,18 @@ export const SearchResponse = memo(function SearchResponse({
         <div className="space-y-3">
           <button
             onClick={() => setIsSourcesExpanded(!isSourcesExpanded)}
-            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors group"
+            className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-miami-aqua transition-colors group px-4 py-2 rounded-lg hover:bg-miami-aqua/5"
             aria-expanded={isSourcesExpanded}
             aria-controls="sources-list"
           >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
             <span className="uppercase tracking-wide">
               {isSourcesExpanded ? "Hide" : "View"} {safeCitations.length}{" "}
               {safeCitations.length === 1 ? "Source" : "Sources"}
@@ -230,7 +242,7 @@ export const SearchResponse = memo(function SearchResponse({
           {isSourcesExpanded && (
             <div
               id="sources-list"
-              className="grid gap-3 animate-in fade-in slide-in-from-top-2 duration-300"
+              className="grid gap-3 animate-in fade-in slide-in-from-top-2 duration-300 md:grid-cols-1"
               role="list"
               aria-label="Source citations"
             >
@@ -241,26 +253,28 @@ export const SearchResponse = memo(function SearchResponse({
                   href={citation.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-start gap-3 p-4 bg-muted/50 hover:bg-muted rounded-lg border border-border hover:border-miami-aqua/50 transition-all duration-300 max-w-full overflow-hidden hover:shadow-md hover:shadow-miami-aqua/10 hover:-translate-y-0.5 scroll-mt-20"
+                  className="group flex items-start gap-3 p-5 bg-gradient-to-br from-muted/50 to-muted/30 hover:from-miami-aqua/5 hover:to-miami-blue/5 rounded-xl border-2 border-border hover:border-miami-aqua/50 transition-all duration-300 max-w-full overflow-hidden hover:shadow-xl hover:shadow-miami-aqua/20 hover:-translate-y-1 scroll-mt-20"
                   role="listitem"
                 >
                   <div
-                    className="flex-shrink-0 w-8 h-8 rounded-full bg-miami-aqua/20 flex items-center justify-center text-miami-aqua font-bold text-sm group-hover:bg-miami-aqua/30 group-hover:scale-110 transition-all duration-300"
+                    className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-blue/20 flex items-center justify-center text-miami-aqua font-bold text-base group-hover:from-miami-aqua/30 group-hover:to-miami-blue/30 group-hover:scale-110 transition-all duration-300 border border-miami-aqua/30"
                     aria-label={`Source ${index + 1}`}
                   >
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-foreground group-hover:text-miami-aqua transition-colors break-all">
+                      <h4 className="font-semibold text-base text-foreground group-hover:text-miami-aqua transition-colors break-all">
                         {citation.title}
                       </h4>
-                      <span className="text-muted-foreground group-hover:text-miami-aqua transition-all duration-300 flex-shrink-0 text-sm">
+                      <span className="text-muted-foreground group-hover:text-miami-aqua transition-all duration-300 flex-shrink-0">
                         ↗
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2 break-all">{citation.snippet}</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1 break-all" title={citation.url}>
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-2 break-all leading-relaxed">
+                      {citation.snippet}
+                    </p>
+                    <p className="text-xs text-miami-aqua/60 mt-2 break-all font-mono" title={citation.url}>
                       {citation.url}
                     </p>
                   </div>
