@@ -1,6 +1,9 @@
 "use client"
 
-import { Sparkles, Zap, Brain, Feather } from "lucide-react"
+import Sparkles from "@/components/icons/Sparkles"
+import Zap from "@/components/icons/Zap"
+import Brain from "@/components/icons/Brain"
+import Feather from "@/components/icons/Feather"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 

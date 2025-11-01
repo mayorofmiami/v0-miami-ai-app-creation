@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Mic, MicOff } from "lucide-react"
+import Mic from "@/components/icons/Mic"
+import MicOff from "@/components/icons/MicOff"
 import { toast } from "@/lib/toast"
 
 interface VoiceSearchProps {

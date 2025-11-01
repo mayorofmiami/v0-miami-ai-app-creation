@@ -2,7 +2,14 @@
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
-import { User, Plus, Clock, Sun, Moon, Palmtree, ChevronLeft, Shield } from "lucide-react"
+import UserIcon from "@/components/icons/User"
+import PlusIcon from "@/components/icons/Plus"
+import ClockIcon from "@/components/icons/Clock"
+import SunIcon from "@/components/icons/Sun"
+import MoonIcon from "@/components/icons/Moon"
+import PalmtreeIcon from "@/components/icons/Palmtree"
+import ChevronLeftIcon from "@/components/icons/ChevronLeft"
+import ShieldIcon from "@/components/icons/Shield"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { HelpMenu } from "@/components/help-menu"
@@ -59,9 +66,9 @@ export function CollapsibleSidebar({
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
-            <Palmtree className="h-5 w-5 text-miami-aqua" />
+            <PalmtreeIcon className="h-5 w-5 text-miami-aqua" />
           ) : (
-            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+            <ChevronLeftIcon className="h-5 w-5 text-muted-foreground" />
           )}
         </Button>
       </div>
@@ -75,7 +82,7 @@ export function CollapsibleSidebar({
           onClick={onNewChat}
           title="New Chat"
         >
-          <Plus className={`h-5 w-5 ${isCollapsed ? "" : "mr-3"}`} />
+          <PlusIcon className={`h-5 w-5 ${isCollapsed ? "" : "mr-3"}`} />
           {!isCollapsed && <span>New Chat</span>}
         </Button>
 
@@ -86,7 +93,7 @@ export function CollapsibleSidebar({
               className={`w-full justify-start h-10 ${isCollapsed ? "px-0 justify-center" : ""} text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10`}
               title="Admin Dashboard"
             >
-              <Shield className={`h-5 w-5 ${isCollapsed ? "" : "mr-3"}`} />
+              <ShieldIcon className={`h-5 w-5 ${isCollapsed ? "" : "mr-3"}`} />
               {!isCollapsed && <span>Admin</span>}
             </Button>
           </Link>
@@ -117,10 +124,10 @@ export function CollapsibleSidebar({
                   title={isCollapsed ? search : undefined}
                 >
                   {isCollapsed ? (
-                    <Clock className="w-5 h-5 text-muted-foreground" />
+                    <ClockIcon className="w-5 h-5 text-muted-foreground" />
                   ) : (
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <ClockIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       <span className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
                         {search}
                       </span>
@@ -142,7 +149,7 @@ export function CollapsibleSidebar({
               className="w-full h-10"
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </Button>
           ) : (
             <div className="flex items-center justify-between px-3 py-3">
@@ -180,7 +187,7 @@ export function CollapsibleSidebar({
                 title={isCollapsed ? user.name || user.email : undefined}
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                  <User className="w-4 h-4 text-miami-aqua" />
+                  <UserIcon className="w-4 h-4 text-miami-aqua" />
                 </div>
                 {!isCollapsed && (
                   <div className="flex-1 min-w-0">
@@ -199,7 +206,7 @@ export function CollapsibleSidebar({
               <>
                 <Link href="/login" className="w-full">
                   <Button size="icon" className="w-full h-9 bg-miami-aqua hover:bg-miami-aqua/90" title="Sign In">
-                    <User className="w-4 h-4" />
+                    <UserIcon className="w-4 h-4" />
                   </Button>
                 </Link>
               </>

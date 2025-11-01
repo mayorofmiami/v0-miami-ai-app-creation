@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@fal-ai/serverless-client": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@neondatabase/serverless": "latest",
     "@polar-sh/sdk": "latest",
@@ -59,11 +60,13 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
     "exa-js": "latest",
+    "fs": "0.0.1-security",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "16.0.0",
     "next-themes": "latest",
     "novel": "latest",
+    "path": "0.12.7",
     "react": "latest",
     "react-day-picker": "9.8.0",
     "react-dom": "19.2.0",

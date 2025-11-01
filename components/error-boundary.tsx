@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle } from "lucide-react"
+import AlertTriangle from "@/components/icons/AlertTriangle"
 
 interface Props {
   children: ReactNode

@@ -1,6 +1,8 @@
 import { neon } from "@neondatabase/serverless"
 import { Logo } from "@/components/logo"
-import { Calendar, User, ArrowRight } from "lucide-react"
+import Calendar from "@/components/icons/Calendar"
+import User from "@/components/icons/User"
+import ArrowRight from "@/components/icons/ArrowRight"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 

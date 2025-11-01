@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { startCheckoutSession } from "@/app/actions/polar"
-import { X } from "lucide-react"
+import X from "@/components/icons/X"
 
 interface CheckoutModalProps {
   productId: string

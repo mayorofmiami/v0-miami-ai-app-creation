@@ -2,15 +2,10 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react"
-import { Search, Sparkles, X, Clock, Mic, MicOff, Settings2, Check, History } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import SearchIcon from "@/components/icons/Search"
+import XIcon from "@/components/icons/X"
+import ClockIcon from "@/components/icons/Clock"
+import ImageIcon from "@/components/icons/Image"
 import type { ModelId } from "@/components/model-selector"
 
 const MODEL_OPTIONS = [
@@ -35,6 +30,8 @@ interface SearchInputProps {
   selectedModel?: ModelId
   onModelChange?: (model: ModelId) => void
   onHistoryClick?: () => void
+  contentType?: "search" | "image"
+  onContentTypeChange?: (type: "search" | "image") => void
 }
 
 export interface SearchInputRef {
@@ -54,6 +51,8 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     selectedModel = "auto",
     onModelChange,
     onHistoryClick,
+    contentType = "search",
+    onContentTypeChange,
   },
   ref,
 ) {
@@ -251,146 +250,44 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             onFocus={handleFocus}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything..."
+            placeholder={contentType === "image" ? "Describe the image you want to generate..." : "Ask anything..."}
             disabled={isLoading}
-            className={`w-full px-6 py-5 pr-48 text-foreground rounded-xl border-2 ${
-              mode === "quick" ? "border-miami-aqua glow-pulse-aqua" : "border-miami-pink glow-pulse-pink"
+            className={`w-full px-6 py-5 pr-20 text-foreground rounded-xl border-2 ${
+              contentType === "image"
+                ? "border-miami-pink glow-pulse-pink"
+                : mode === "quick"
+                  ? "border-miami-aqua glow-pulse-aqua"
+                  : "border-miami-pink glow-pulse-pink"
             } transition-all focus:outline-none focus:ring-0 text-lg bg-background/50 backdrop-blur-sm relative z-10 ${
               isLoading ? "opacity-50 cursor-not-allowed" : ""
             } placeholder:text-muted-foreground/60`}
           />
         </div>
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 z-20">
-          {isListening && onCancel ? (
+          {isLoading && onCancel ? (
             <button
               type="button"
               onClick={onCancel}
               className="p-3.5 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all"
-              title="Cancel search"
+              title="Cancel"
             >
-              <X className="w-5 h-5" />
+              <XIcon className="w-5 h-5" />
             </button>
           ) : (
-            <>
-              {onHistoryClick && recentSearches.length > 0 && (
-                <button
-                  type="button"
-                  onClick={onHistoryClick}
-                  disabled={isLoading}
-                  className="p-3.5 rounded-lg transition-all bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="View search history"
-                >
-                  <History className="w-5 h-5" />
-                </button>
-              )}
-
-              {/* Voice Search Button */}
-              <button
-                type="button"
-                onClick={handleVoiceSearch}
-                disabled={isLoading}
-                className={`p-3.5 rounded-lg transition-all ${
-                  isListening
-                    ? "bg-red-500/20 text-red-500 animate-pulse"
-                    : "bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                title={isListening ? "Stop listening" : "Voice search"}
-              >
-                {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-              </button>
-
-              {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      disabled={isLoading}
-                      className={`p-3.5 rounded-lg transition-all ${
-                        mode === "deep"
-                          ? "bg-miami-pink text-miami-dark neon-border-pink"
-                          : "bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua"
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      title="Search Options"
-                    >
-                      <Settings2 className="w-5 h-5" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72">
-                    <DropdownMenuLabel className="text-sm font-normal text-muted-foreground px-3 py-2">
-                      Search Options
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-
-                    {/* Deep Research Toggle */}
-                    <DropdownMenuItem
-                      onClick={() => onModeChange(mode === "quick" ? "deep" : "quick")}
-                      className="flex items-start gap-3 py-4 px-3 cursor-pointer"
-                    >
-                      <div className="flex h-6 w-6 items-center justify-center">
-                        <Sparkles className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-base font-medium">Deep Research</span>
-                          {mode === "deep" && <Check className="h-5 w-5 text-primary" />}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {mode === "deep" ? "Active - Comprehensive analysis" : "Enable for detailed research"}
-                        </p>
-                      </div>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-sm font-normal text-muted-foreground px-3 py-2">
-                      AI Model
-                    </DropdownMenuLabel>
-
-                    {/* Model Options */}
-                    {MODEL_OPTIONS.map((model) => (
-                      <DropdownMenuItem
-                        key={model.id}
-                        onClick={() => onModelChange?.(model.id)}
-                        className="flex items-start gap-3 py-4 px-3 cursor-pointer"
-                      >
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-base font-medium">{model.name}</span>
-                            {selectedModel === model.id && <Check className="h-5 w-5 text-primary" />}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{model.description}</p>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => onModeChange(mode === "quick" ? "deep" : "quick")}
-                  disabled={isLoading}
-                  className={`p-3.5 rounded-lg transition-all ${
-                    mode === "deep"
-                      ? "bg-miami-pink text-miami-dark neon-border-pink"
-                      : "bg-muted text-muted-foreground hover:bg-miami-aqua/20 hover:text-miami-aqua"
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  title={mode === "deep" ? "Deep Research Mode (Active)" : "Enable Deep Research"}
-                >
-                  <Sparkles className="w-5 h-5" />
-                </button>
-              )}
-            </>
+            <button
+              type="submit"
+              disabled={isLoading || !query.trim()}
+              className={`p-3.5 rounded-lg transition-all ${
+                contentType === "image"
+                  ? "bg-miami-pink hover:bg-miami-pink/80"
+                  : mode === "quick"
+                    ? "bg-miami-aqua hover:bg-miami-aqua/80"
+                    : "bg-miami-pink hover:bg-miami-pink/80"
+              } text-miami-dark disabled:opacity-50 disabled:cursor-not-allowed shadow-lg`}
+            >
+              {contentType === "image" ? <ImageIcon className="w-5 h-5" /> : <SearchIcon className="w-5 h-5" />}
+            </button>
           )}
-
-          {/* Search Button */}
-          <button
-            type="submit"
-            disabled={isLoading || !query.trim()}
-            className={`p-3.5 rounded-lg transition-all ${
-              mode === "quick" ? "bg-miami-aqua hover:bg-miami-aqua/80" : "bg-miami-pink hover:bg-miami-pink/80"
-            } text-miami-dark disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            <Search className="w-5 h-5" />
-          </button>
         </div>
       </form>
 
@@ -411,14 +308,19 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                 index === selectedIndex ? "bg-miami-aqua/10" : "hover:bg-muted"
               }`}
             >
-              <Clock className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+              <ClockIcon className="w-5 h-5 text-muted-foreground flex-shrink-0" />
               <span className="text-base break-all">{suggestion}</span>
             </button>
           ))}
         </div>
       )}
 
-      {mode === "deep" && !isLoading && (
+      {contentType === "image" && !isLoading && (
+        <p className="text-sm text-muted-foreground text-center mt-3">
+          {user ? "50 images per day" : "3 free images per day • Sign up for 50/day"}
+        </p>
+      )}
+      {contentType === "search" && mode === "deep" && !isLoading && (
         <p className="text-sm text-muted-foreground text-center mt-3">
           Deep Research mode may take 30-60 seconds for comprehensive results
         </p>

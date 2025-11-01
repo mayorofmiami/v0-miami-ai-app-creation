@@ -3,7 +3,11 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Share2, Download, Bookmark, Check, MoreVertical } from "lucide-react"
+import Share2 from "@/components/icons/Share2"
+import Download from "@/components/icons/Download"
+import Bookmark from "@/components/icons/Bookmark"
+import Check from "@/components/icons/Check"
+import MoreVertical from "@/components/icons/MoreVertical"
 import { exportToMarkdown, downloadMarkdown, exportToText, downloadText } from "@/lib/export"
 import { toast } from "@/lib/toast"
 

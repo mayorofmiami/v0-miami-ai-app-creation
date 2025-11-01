@@ -5,7 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Folder, Trash2 } from "lucide-react"
+import Plus from "@/components/icons/Plus"
+import Folder from "@/components/icons/Folder"
+import Trash2 from "@/components/icons/Trash2"
 import { toast } from "@/lib/toast"
 import type { Collection } from "@/lib/collections"
 

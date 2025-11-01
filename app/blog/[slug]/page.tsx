@@ -1,6 +1,8 @@
 import { neon } from "@neondatabase/serverless"
 import { Logo } from "@/components/logo"
-import { Calendar, User, ArrowLeft } from "lucide-react"
+import Calendar from "@/components/icons/Calendar"
+import User from "@/components/icons/User"
+import ArrowLeft from "@/components/icons/ArrowLeft"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { notFound } from "next/navigation"
@@ -37,8 +39,8 @@ async function getPost(slug: string): Promise<BlogPost | null> {
   }
 }
 
-export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const { slug } = params
   const post = await getPost(slug)
 
   if (!post) {

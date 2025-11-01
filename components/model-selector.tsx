@@ -3,7 +3,12 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Check, Sparkles, Zap, Brain, Feather, Flame } from "lucide-react"
+import Check from "@/components/icons/Check"
+import Sparkles from "@/components/icons/Sparkles"
+import Zap from "@/components/icons/Zap"
+import Brain from "@/components/icons/Brain"
+import Feather from "@/components/icons/Feather"
+import Flame from "@/components/icons/Flame"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

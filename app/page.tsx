@@ -30,9 +30,12 @@ import Plus from "@/components/icons/Plus"
 import Sun from "@/components/icons/Sun"
 import Moon from "@/components/icons/Moon"
 import { useTheme } from "next-themes"
+import { ImageResult } from "@/components/image-result"
+import { FloatingActionMenu } from "@/components/floating-action-menu"
 
 type SearchState = {
   mode: "quick" | "deep"
+  contentType: "search" | "image"
   isLoading: boolean
   response: string
   citations: Array<{ title: string; url: string; snippet: string }>
@@ -43,10 +46,20 @@ type SearchState = {
   currentModelInfo: { model: string; reason: string; autoSelected: boolean } | null
   rateLimitInfo: { remaining: number; limit: number } | null
   optimisticQuery: string
+  generatedImage: {
+    url: string
+    prompt: string
+    model: string
+    resolution: string
+    createdAt: string
+  } | null
+  imageRateLimit: { currentCount: number; limit: number; remaining: number } | null
 }
 
 type SearchAction =
   | { type: "START_SEARCH"; query: string; mode: "quick" | "deep" }
+  | { type: "START_IMAGE_GENERATION"; prompt: string }
+  | { type: "SET_GENERATED_IMAGE"; image: any; rateLimit: any }
   | { type: "UPDATE_RESPONSE"; response: string }
   | { type: "SET_CITATIONS"; citations: Array<{ title: string; url: string; snippet: string }> }
   | { type: "SET_MODEL_INFO"; modelInfo: { model: string; reason: string; autoSelected: boolean } }
@@ -56,6 +69,7 @@ type SearchAction =
   | { type: "SEARCH_ERROR"; error: string }
   | { type: "CLEAR_SEARCH" }
   | { type: "SET_MODE"; mode: "quick" | "deep" }
+  | { type: "SET_CONTENT_TYPE"; contentType: "search" | "image" }
   | { type: "LOAD_FROM_HISTORY"; history: any }
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
@@ -72,7 +86,28 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         currentSearchId: undefined,
         currentModelInfo: null,
         mode: action.mode,
-        relatedSearches: [], // Start with empty array, will be populated by AI
+        relatedSearches: [],
+        generatedImage: null, // Clear image when starting search
+      }
+    case "START_IMAGE_GENERATION":
+      return {
+        ...state,
+        isLoading: true,
+        hasSearched: true,
+        currentQuery: action.prompt,
+        optimisticQuery: action.prompt,
+        response: "",
+        citations: [],
+        relatedSearches: [],
+        generatedImage: null,
+      }
+    case "SET_GENERATED_IMAGE":
+      return {
+        ...state,
+        isLoading: false,
+        generatedImage: action.image,
+        imageRateLimit: action.rateLimit,
+        optimisticQuery: "",
       }
     case "UPDATE_RESPONSE":
       return { ...state, response: action.response }
@@ -98,9 +133,13 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         optimisticQuery: "",
         relatedSearches: [],
         currentModelInfo: null,
+        generatedImage: null, // Clear image
+        imageRateLimit: null,
       }
     case "SET_MODE":
       return { ...state, mode: action.mode }
+    case "SET_CONTENT_TYPE":
+      return { ...state, contentType: action.contentType }
     case "LOAD_FROM_HISTORY":
       return {
         ...state,
@@ -119,6 +158,7 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
               autoSelected: action.history.auto_selected ?? true,
             }
           : null,
+        generatedImage: action.history.generated_image || null, // Load image if exists in history
       }
     default:
       return state
@@ -130,6 +170,7 @@ export default function Home() {
 
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
     mode: "quick",
+    contentType: "search",
     isLoading: false,
     response: "",
     citations: [],
@@ -140,6 +181,8 @@ export default function Home() {
     currentModelInfo: null,
     rateLimitInfo: null,
     optimisticQuery: "",
+    generatedImage: null,
+    imageRateLimit: null,
   })
 
   // UI state (kept separate as it's not related to search)
@@ -435,6 +478,68 @@ We apologize for the inconvenience!`,
     [userId, selectedModel, searchState.isLoading],
   )
 
+  const handleImageGeneration = useCallback(
+    async (prompt: string) => {
+      if (searchState.isLoading) {
+        return
+      }
+
+      dispatchSearch({ type: "START_IMAGE_GENERATION", prompt })
+
+      try {
+        const body: any = { prompt, userId }
+
+        const res = await fetch("/api/generate-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        })
+
+        if (res.status === 429) {
+          const error = await res.json()
+          toast.error("Rate Limit Exceeded", error.message)
+          dispatchSearch({
+            type: "SEARCH_ERROR",
+            error: `⚠️ ${error.message}`,
+          })
+          return
+        }
+
+        if (!res.ok) {
+          const error = await res.json()
+          throw new Error(error.error || "Image generation failed")
+        }
+
+        const data = await res.json()
+
+        dispatchSearch({
+          type: "SET_GENERATED_IMAGE",
+          image: data.image,
+          rateLimit: data.rateLimit,
+        })
+
+        toast.success("Image generated successfully!")
+        searchInputRef.current?.clear()
+      } catch (error: any) {
+        console.error("[v0] Image generation error:", error)
+        toast.error("Image generation failed", error.message || "Please try again")
+        dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, image generation failed. Please try again." })
+      }
+    },
+    [userId, searchState.isLoading],
+  )
+
+  const handleSearchOrGenerate = useCallback(
+    (query: string, searchMode: "quick" | "deep") => {
+      if (searchState.contentType === "image") {
+        handleImageGeneration(query)
+      } else {
+        handleSearch(query, searchMode)
+      }
+    },
+    [searchState.contentType, handleImageGeneration, handleSearch],
+  )
+
   const handleSelectHistory = (history: SearchHistory) => {
     if (!history.response || history.response.trim() === "") {
       // If no response (local/unauthenticated history), re-run the search
@@ -493,6 +598,11 @@ We apologize for the inconvenience!`,
     if (searchState.currentQuery) {
       handleSearch(searchState.currentQuery, searchState.mode)
     }
+  }
+
+  const handleVoiceSearch = () => {
+    // Voice search logic would go here
+    toast.info("Voice search coming soon!")
   }
 
   return (
@@ -1026,19 +1136,37 @@ We apologize for the inconvenience!`,
                   </div>
 
                   <div className="w-full max-w-3xl px-4 space-y-4 sm:space-y-6">
-                    <div className="w-full">
-                      <SearchInput
-                        ref={searchInputRef}
-                        onSearch={handleSearch}
-                        isLoading={searchState.isLoading}
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1">
+                        <SearchInput
+                          ref={searchInputRef}
+                          onSearch={handleSearchOrGenerate}
+                          isLoading={searchState.isLoading}
+                          mode={searchState.mode}
+                          onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+                          onCancel={handleCancelSearch}
+                          recentSearches={recentSearches}
+                          user={user}
+                          selectedModel={selectedModel}
+                          onModelChange={handleModelChange}
+                          onHistoryClick={handleToggleHistory}
+                          contentType={searchState.contentType}
+                          onContentTypeChange={(type) =>
+                            dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })
+                          }
+                        />
+                      </div>
+                      <FloatingActionMenu
+                        contentType={searchState.contentType}
+                        onContentTypeChange={(type) => dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })}
                         mode={searchState.mode}
                         onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-                        onCancel={handleCancelSearch}
-                        recentSearches={recentSearches}
-                        user={user}
                         selectedModel={selectedModel}
                         onModelChange={handleModelChange}
+                        onVoiceSearch={handleVoiceSearch}
                         onHistoryClick={handleToggleHistory}
+                        hasHistory={recentSearches.length > 0}
+                        user={user}
                       />
                     </div>
 
@@ -1062,7 +1190,7 @@ We apologize for the inconvenience!`,
                           return (
                             <button
                               key={index}
-                              onClick={() => handleSearch(example.query, searchState.mode)}
+                              onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
                               className={`group ${shouldHide ? "hidden" : "inline-flex"} md:hidden items-center gap-2 px-5 py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
                             >
                               <span className="text-lg group-hover:scale-110 transition-transform duration-200">
@@ -1078,7 +1206,7 @@ We apologize for the inconvenience!`,
                         return (
                           <button
                             key={index}
-                            onClick={() => handleSearch(example.query, searchState.mode)}
+                            onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
                             className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-5 py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
                           >
                             <span className="text-lg group-hover:scale-110 transition-transform duration-200">
@@ -1139,7 +1267,7 @@ We apologize for the inconvenience!`,
                           return (
                             <button
                               key={index}
-                              onClick={() => handleSearch(example.query, searchState.mode)}
+                              onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
                               className={`group ${shouldHide ? "hidden" : "inline-flex"} md:hidden items-center gap-2 px-4 py-2 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-200 hover:shadow-sm hover:shadow-miami-aqua/10`}
                             >
                               <span className="text-base group-hover:scale-110 transition-transform duration-200">
@@ -1155,7 +1283,7 @@ We apologize for the inconvenience!`,
                         return (
                           <button
                             key={index}
-                            onClick={() => handleSearch(example.query, searchState.mode)}
+                            onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
                             className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-4 py-2 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-200 hover:shadow-sm hover:shadow-miami-aqua/10`}
                           >
                             <span className="text-base group-hover:scale-110 transition-transform duration-200">
@@ -1187,9 +1315,9 @@ We apologize for the inconvenience!`,
             </>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {searchState.isLoading && !searchState.response ? (
+              {searchState.isLoading && !searchState.response && !searchState.generatedImage ? (
                 <SkeletonSearch />
-              ) : searchState.response ? (
+              ) : searchState.response || searchState.generatedImage ? (
                 <>
                   {searchState.currentQuery && (
                     <div className="w-full max-w-3xl mx-auto">
@@ -1214,33 +1342,44 @@ We apologize for the inconvenience!`,
                     </div>
                   )}
                   <div className="space-y-4">
-                    <SearchResponse
-                      response={searchState.response}
-                      citations={searchState.citations}
-                      isStreaming={searchState.isLoading}
-                      actions={
-                        !searchState.isLoading && searchState.response ? (
-                          <ResponseActions
-                            query={searchState.currentQuery}
-                            response={searchState.response}
-                            searchId={searchState.currentSearchId}
-                            userId={userId}
-                            onRegenerate={handleRegenerate}
-                          />
-                        ) : null
-                      }
-                      modelBadge={
-                        user && searchState.currentModelInfo ? (
-                          <ModelBadge
-                            model={searchState.currentModelInfo.model}
-                            reason={searchState.currentModelInfo.reason}
-                            autoSelected={searchState.currentModelInfo.autoSelected}
-                          />
-                        ) : null
-                      }
-                    />
+                    {searchState.generatedImage ? (
+                      <ImageResult
+                        imageUrl={searchState.generatedImage.url}
+                        prompt={searchState.generatedImage.prompt}
+                        model={searchState.generatedImage.model}
+                        resolution={searchState.generatedImage.resolution}
+                        createdAt={searchState.generatedImage.createdAt}
+                        onRegenerate={() => handleImageGeneration(searchState.generatedImage!.prompt)}
+                      />
+                    ) : (
+                      <SearchResponse
+                        response={searchState.response}
+                        citations={searchState.citations}
+                        isStreaming={searchState.isLoading}
+                        actions={
+                          !searchState.isLoading && searchState.response ? (
+                            <ResponseActions
+                              query={searchState.currentQuery}
+                              response={searchState.response}
+                              searchId={searchState.currentSearchId}
+                              userId={userId}
+                              onRegenerate={handleRegenerate}
+                            />
+                          ) : null
+                        }
+                        modelBadge={
+                          user && searchState.currentModelInfo ? (
+                            <ModelBadge
+                              model={searchState.currentModelInfo.model}
+                              reason={searchState.currentModelInfo.reason}
+                              autoSelected={searchState.currentModelInfo.autoSelected}
+                            />
+                          ) : null
+                        }
+                      />
+                    )}
                   </div>
-                  {!searchState.isLoading && searchState.response && (
+                  {!searchState.isLoading && searchState.response && !searchState.generatedImage && (
                     <RelatedSearches
                       searches={searchState.relatedSearches}
                       onSearchClick={(search) => handleSearch(search, searchState.mode)}
@@ -1271,20 +1410,43 @@ We apologize for the inconvenience!`,
             className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-3">
-              <SearchInput
-                ref={searchInputRef}
-                onSearch={handleSearch}
-                isLoading={searchState.isLoading}
-                mode={searchState.mode}
-                onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-                onCancel={handleCancelSearch}
-                recentSearches={recentSearches}
-                user={user}
-                selectedModel={selectedModel}
-                onModelChange={handleModelChange}
-                onHistoryClick={handleToggleHistory}
-              />
-              {searchState.rateLimitInfo && (
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <SearchInput
+                    ref={searchInputRef}
+                    onSearch={handleSearchOrGenerate}
+                    isLoading={searchState.isLoading}
+                    mode={searchState.mode}
+                    onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+                    onCancel={handleCancelSearch}
+                    recentSearches={recentSearches}
+                    user={user}
+                    selectedModel={selectedModel}
+                    onModelChange={handleModelChange}
+                    onHistoryClick={handleToggleHistory}
+                    contentType={searchState.contentType}
+                    onContentTypeChange={(type) => dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })}
+                  />
+                </div>
+                <FloatingActionMenu
+                  contentType={searchState.contentType}
+                  onContentTypeChange={(type) => dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })}
+                  mode={searchState.mode}
+                  onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+                  selectedModel={selectedModel}
+                  onModelChange={handleModelChange}
+                  onVoiceSearch={handleVoiceSearch}
+                  onHistoryClick={handleToggleHistory}
+                  hasHistory={recentSearches.length > 0}
+                  user={user}
+                />
+              </div>
+              {searchState.contentType === "image" && searchState.imageRateLimit && (
+                <div className="text-center text-xs text-muted-foreground">
+                  {searchState.imageRateLimit.remaining} of {searchState.imageRateLimit.limit} images remaining today
+                </div>
+              )}
+              {searchState.contentType === "search" && searchState.rateLimitInfo && (
                 <div className="text-center text-xs text-muted-foreground">
                   {searchState.rateLimitInfo.remaining} of {searchState.rateLimitInfo.limit} queries remaining today
                 </div>

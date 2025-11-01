@@ -1,6 +1,11 @@
 "use client"
 
-import { Sparkles, FileText, Hammer, SearchIcon, Zap, TrendingUp } from "lucide-react"
+import Sparkles from "@/components/icons/Sparkles"
+import FileText from "@/components/icons/FileText"
+import Hammer from "@/components/icons/Hammer"
+import SearchIcon from "@/components/icons/SearchIcon"
+import Zap from "@/components/icons/Zap"
+import TrendingUp from "@/components/icons/TrendingUp"
 
 interface FeatureActionsProps {
   onActionClick: (query: string, mode: "quick" | "deep") => void

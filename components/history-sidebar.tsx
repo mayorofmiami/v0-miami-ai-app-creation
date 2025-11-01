@@ -1,7 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { X, Clock, Sparkles, SearchIcon, ChevronLeft, ChevronRight } from "lucide-react"
+import X from "@/components/icons/X"
+import Clock from "@/components/icons/Clock"
+import Sparkles from "@/components/icons/Sparkles"
+import SearchIcon from "@/components/icons/SearchIcon"
+import ChevronLeft from "@/components/icons/ChevronLeft"
+import ChevronRight from "@/components/icons/ChevronRight"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { SearchHistory } from "@/lib/db"

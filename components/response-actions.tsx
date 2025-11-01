@@ -1,6 +1,9 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import { Copy, Share2, RotateCw, Bookmark } from "lucide-react"
+import Copy from "@/components/icons/Copy"
+import Share from "@/components/icons/Share"
+import RotateCw from "@/components/icons/RotateCw"
+import Bookmark from "@/components/icons/Bookmark"
 import { toast } from "sonner"
 
 interface ResponseActionsProps {
@@ -59,7 +62,7 @@ export function ResponseActions({ response, onRegenerate }: ResponseActionsProps
         className="h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-miami-aqua/10 hover:text-miami-aqua transition-colors"
         aria-label="Share response"
       >
-        <Share2 className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
+        <Share className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
       </Button>
 
       {/* Regenerate Button */}

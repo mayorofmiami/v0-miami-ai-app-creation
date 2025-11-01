@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Zap, Shield } from "lucide-react"
+import Sparkles from "@/components/icons/Sparkles"
+import Zap from "@/components/icons/Zap"
+import Shield from "@/components/icons/Shield"
 import Image from "next/image"
 
 export function OnboardingModal() {
@@ -25,13 +27,7 @@ export function OnboardingModal() {
   const steps = [
     {
       icon: (
-        <Image
-          src="/images/design-mode/MiamiAILogo.png"
-          alt="MIAMI.AI"
-          width={300}
-          height={60}
-          className="neon-glow"
-        />
+        <Image src="/images/design-mode/MiamiAILogo.png" alt="MIAMI.AI" width={300} height={60} className="neon-glow" />
       ),
       title: "Welcome to MIAMI.AI",
       description:

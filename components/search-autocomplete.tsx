@@ -3,7 +3,8 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Clock } from "lucide-react"
+import Search from "@/components/icons/Search"
+import Clock from "@/components/icons/Clock"
 
 interface SearchAutocompleteProps {
   value: string

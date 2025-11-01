@@ -1,6 +1,7 @@
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Sparkles } from "lucide-react"
+import ArrowLeft from "@/components/icons/ArrowLeft"
+import Sparkles from "@/components/icons/Sparkles"
 import Link from "next/link"
 
 export default function PricingPage() {
