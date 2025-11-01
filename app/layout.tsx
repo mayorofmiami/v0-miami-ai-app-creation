@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "next-themes"
 import { OnboardingModal } from "@/components/onboarding-modal"
 import { PrefetchProvider } from "@/components/prefetch-provider"
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -58,6 +60,8 @@ export default function RootLayout({
               className: "mt-20",
             }}
           />
+          <Analytics />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
