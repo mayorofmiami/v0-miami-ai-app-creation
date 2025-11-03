@@ -204,10 +204,10 @@ export function ThreadSidebar({
         <Button
           onClick={onNewThread}
           className={`${isCollapsed ? "w-10 h-10 p-0" : "w-full"} bg-miami-aqua hover:bg-miami-aqua/90 text-white`}
-          title="New Thread"
+          title="New Chat"
         >
           <PlusIcon className={`h-5 w-5 ${isCollapsed ? "" : "mr-2"}`} />
-          {!isCollapsed && <span>New Thread</span>}
+          {!isCollapsed && <span>New Chat</span>}
         </Button>
       </div>
 
