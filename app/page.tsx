@@ -6,7 +6,6 @@ import { SearchResponse } from "@/components/search-response"
 import { HistorySidebar } from "@/components/history-sidebar"
 import { RelatedSearches } from "@/components/related-searches"
 import { ImageResult } from "@/components/image-result"
-import { EmptyState } from "@/components/empty-state"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
 import type { ModelId } from "@/components/model-selector"
@@ -32,38 +31,43 @@ import Sun from "@/components/icons/Sun"
 import Moon from "@/components/icons/Moon"
 import { useTheme } from "next-themes"
 
-type SearchState = {
-  mode: "quick" | "deep"
-  contentType: "search" | "image"
-  isLoading: boolean
-  response: string
-  citations: Array<{ title: string; url: string; snippet: string }>
-  hasSearched: boolean
-  currentQuery: string
-  currentSearchId: string | undefined
-  relatedSearches: string[]
-  currentModelInfo: { model: string; reason: string; autoSelected: boolean } | null
-  rateLimitInfo: { remaining: number; limit: number } | null
-  optimisticQuery: string
-  generatedImage: {
+type ConversationMessage = {
+  id: string
+  type: "search" | "image"
+  query: string
+  response?: string
+  citations?: Array<{ title: string; url: string; snippet: string }>
+  modelInfo?: { model: string; reason: string; autoSelected: boolean }
+  relatedSearches?: string[]
+  generatedImage?: {
     url: string
     prompt: string
     model: string
     resolution: string
     createdAt: string
-  } | null
+  }
+  isStreaming?: boolean
+}
+
+type SearchState = {
+  mode: "quick" | "deep"
+  contentType: "search" | "image"
+  isLoading: boolean
+  messages: ConversationMessage[]
+  hasSearched: boolean
+  rateLimitInfo: { remaining: number; limit: number } | null
   imageRateLimit: { currentCount: number; limit: number; remaining: number } | null
 }
 
 type SearchAction =
   | { type: "START_SEARCH"; query: string; mode: "quick" | "deep" }
   | { type: "START_IMAGE_GENERATION"; prompt: string }
+  | { type: "UPDATE_CURRENT_RESPONSE"; response: string }
+  | { type: "SET_CURRENT_CITATIONS"; citations: Array<{ title: string; url: string; snippet: string }> }
+  | { type: "SET_CURRENT_MODEL_INFO"; modelInfo: { model: string; reason: string; autoSelected: boolean } }
+  | { type: "SET_CURRENT_RELATED_SEARCHES"; relatedSearches: string[] }
   | { type: "SET_GENERATED_IMAGE"; image: any; rateLimit: any }
-  | { type: "UPDATE_RESPONSE"; response: string }
-  | { type: "SET_CITATIONS"; citations: Array<{ title: string; url: string; snippet: string }> }
-  | { type: "SET_MODEL_INFO"; modelInfo: { model: string; reason: string; autoSelected: boolean } }
   | { type: "SET_RATE_LIMIT"; rateLimitInfo: { remaining: number; limit: number } }
-  | { type: "SET_RELATED_SEARCHES"; relatedSearches: string[] }
   | { type: "SEARCH_COMPLETE" }
   | { type: "SEARCH_ERROR"; error: string }
   | { type: "CLEAR_SEARCH" }
@@ -78,61 +82,92 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         ...state,
         isLoading: true,
         hasSearched: true,
-        response: "",
-        citations: [],
-        currentQuery: action.query,
-        optimisticQuery: action.query,
-        currentSearchId: undefined,
-        currentModelInfo: null,
         mode: action.mode,
-        relatedSearches: [],
-        generatedImage: null, // Clear image when starting search
+        messages: [
+          ...state.messages,
+          {
+            id: Date.now().toString(),
+            type: "search",
+            query: action.query,
+            isStreaming: true,
+          },
+        ],
       }
     case "START_IMAGE_GENERATION":
       return {
         ...state,
         isLoading: true,
         hasSearched: true,
-        currentQuery: action.prompt,
-        optimisticQuery: action.prompt,
-        response: "",
-        citations: [],
-        relatedSearches: [],
-        generatedImage: null,
+        messages: [
+          ...state.messages,
+          {
+            id: Date.now().toString(),
+            type: "image",
+            query: action.prompt,
+            isStreaming: true,
+          },
+        ],
+      }
+    case "UPDATE_CURRENT_RESPONSE":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 ? { ...msg, response: action.response } : msg,
+        ),
+      }
+    case "SET_CURRENT_CITATIONS":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 ? { ...msg, citations: action.citations } : msg,
+        ),
+      }
+    case "SET_CURRENT_MODEL_INFO":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 ? { ...msg, modelInfo: action.modelInfo } : msg,
+        ),
+      }
+    case "SET_CURRENT_RELATED_SEARCHES":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 ? { ...msg, relatedSearches: action.relatedSearches } : msg,
+        ),
       }
     case "SET_GENERATED_IMAGE":
       return {
         ...state,
         isLoading: false,
-        generatedImage: action.image,
         imageRateLimit: action.rateLimit,
-        optimisticQuery: "",
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 ? { ...msg, generatedImage: action.image, isStreaming: false } : msg,
+        ),
       }
-    case "UPDATE_RESPONSE":
-      return { ...state, response: action.response }
-    case "SET_CITATIONS":
-      return { ...state, citations: action.citations }
-    case "SET_MODEL_INFO":
-      return { ...state, currentModelInfo: action.modelInfo }
     case "SET_RATE_LIMIT":
       return { ...state, rateLimitInfo: action.rateLimitInfo }
-    case "SET_RELATED_SEARCHES":
-      return { ...state, relatedSearches: action.relatedSearches } // New action to set AI-generated related searches
     case "SEARCH_COMPLETE":
-      return { ...state, isLoading: false, optimisticQuery: "" }
+      return {
+        ...state,
+        isLoading: false,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 ? { ...msg, isStreaming: false } : msg,
+        ),
+      }
     case "SEARCH_ERROR":
-      return { ...state, isLoading: false, response: action.error, optimisticQuery: "" }
+      return {
+        ...state,
+        isLoading: false,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 ? { ...msg, response: action.error, isStreaming: false } : msg,
+        ),
+      }
     case "CLEAR_SEARCH":
       return {
         ...state,
         hasSearched: false,
-        response: "",
-        citations: [],
-        currentQuery: "",
-        optimisticQuery: "",
-        relatedSearches: [],
-        currentModelInfo: null,
-        generatedImage: null, // Clear image
+        messages: [],
         imageRateLimit: null,
       }
     case "SET_MODE":
@@ -144,20 +179,25 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         ...state,
         hasSearched: true,
         mode: action.history.mode,
-        response: action.history.response,
-        citations: action.history.citations || [],
-        currentQuery: action.history.query,
-        optimisticQuery: "",
-        currentSearchId: action.history.id,
-        relatedSearches: generateRelatedSearches(action.history.query),
-        currentModelInfo: action.history.model_used
-          ? {
-              model: action.history.model_used,
-              reason: action.history.selection_reason || "",
-              autoSelected: action.history.auto_selected ?? true,
-            }
-          : null,
-        generatedImage: action.history.generated_image || null, // Load image if exists in history
+        messages: [
+          {
+            id: action.history.id || Date.now().toString(),
+            type: action.history.generated_image ? "image" : "search",
+            query: action.history.query,
+            response: action.history.response,
+            citations: action.history.citations || [],
+            modelInfo: action.history.model_used
+              ? {
+                  model: action.history.model_used,
+                  reason: action.history.selection_reason || "",
+                  autoSelected: action.history.auto_selected ?? true,
+                }
+              : undefined,
+            relatedSearches: generateRelatedSearches(action.history.query),
+            generatedImage: action.history.generated_image || undefined,
+            isStreaming: false,
+          },
+        ],
       }
     default:
       return state
@@ -171,16 +211,9 @@ export default function Home() {
     mode: "quick",
     contentType: "search",
     isLoading: false,
-    response: "",
-    citations: [],
+    messages: [],
     hasSearched: false,
-    currentQuery: "",
-    currentSearchId: undefined,
-    relatedSearches: [],
-    currentModelInfo: null,
     rateLimitInfo: null,
-    optimisticQuery: "",
-    generatedImage: null,
     imageRateLimit: null,
   })
 
@@ -198,6 +231,7 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<ModelId>("auto")
   const abortControllerRef = useRef<AbortController | null>(null)
   const searchInputRef = useRef<SearchInputRef>(null)
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   const userId = user?.id || null
   const isAdmin = user?.role === "owner" || user?.role === "admin"
@@ -415,12 +449,12 @@ We apologize for the inconvenience!`,
                 const parsed = JSON.parse(data)
                 if (parsed.type === "text") {
                   accumulatedResponse += parsed.content
-                  dispatchSearch({ type: "UPDATE_RESPONSE", response: accumulatedResponse })
+                  dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: accumulatedResponse })
                 } else if (parsed.type === "citations") {
-                  dispatchSearch({ type: "SET_CITATIONS", citations: parsed.content || parsed.citations || [] })
+                  dispatchSearch({ type: "SET_CURRENT_CITATIONS", citations: parsed.content || parsed.citations || [] })
                 } else if (parsed.type === "model") {
                   dispatchSearch({
-                    type: "SET_MODEL_INFO",
+                    type: "SET_CURRENT_MODEL_INFO",
                     modelInfo: {
                       model: parsed.content?.model || parsed.model,
                       reason: parsed.content?.reason || parsed.reason,
@@ -428,7 +462,7 @@ We apologize for the inconvenience!`,
                     },
                   })
                 } else if (parsed.type === "related_searches") {
-                  dispatchSearch({ type: "SET_RELATED_SEARCHES", relatedSearches: parsed.content || [] })
+                  dispatchSearch({ type: "SET_CURRENT_RELATED_SEARCHES", relatedSearches: parsed.content || [] })
                 }
               } catch (e) {
                 // Skip invalid JSON
@@ -574,8 +608,9 @@ We apologize for the inconvenience!`,
   }
 
   const handleRegenerate = () => {
-    if (searchState.currentQuery) {
-      handleSearch(searchState.currentQuery, searchState.mode)
+    const lastMessage = searchState.messages[searchState.messages.length - 1]
+    if (lastMessage) {
+      handleSearch(lastMessage.query, searchState.mode)
     }
   }
 
@@ -583,6 +618,24 @@ We apologize for the inconvenience!`,
     // Voice search logic would go here
     toast.info("Voice search coming soon!")
   }
+
+  useEffect(() => {
+    if (!searchState.isLoading && searchState.messages.length > 0) {
+      const latestMessage = searchState.messages[searchState.messages.length - 1]
+      const messageElement = messageRefs.current[latestMessage.id]
+
+      if (messageElement && !latestMessage.isStreaming) {
+        // Wait a brief moment for the DOM to update, then scroll
+        setTimeout(() => {
+          messageElement.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+            inline: "nearest",
+          })
+        }, 100)
+      }
+    }
+  }, [searchState.isLoading, searchState.messages])
 
   return (
     <ErrorBoundary>
@@ -1285,84 +1338,97 @@ We apologize for the inconvenience!`,
             </>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {searchState.isLoading && !searchState.response && !searchState.generatedImage ? (
-                <SkeletonSearch />
-              ) : searchState.response || searchState.generatedImage ? (
-                <>
-                  {searchState.currentQuery && (
-                    <div className="w-full max-w-3xl mx-auto">
-                      <div className="relative bg-gradient-to-r from-miami-aqua/10 via-miami-blue/10 to-miami-purple/10 rounded-2xl p-[2px] shadow-lg">
-                        <div className="bg-background rounded-2xl px-5 py-4 flex items-start gap-3">
-                          <svg
-                            className="w-5 h-5 text-miami-aqua flex-shrink-0 mt-0.5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                            />
-                          </svg>
-                          <p className="text-base text-foreground/90 flex-1">{searchState.currentQuery}</p>
-                        </div>
+              {searchState.messages.map((message, index) => (
+                <div key={message.id} className="space-y-4">
+                  {/* Query */}
+                  <div
+                    ref={(el) => {
+                      messageRefs.current[message.id] = el
+                    }}
+                    className="w-full max-w-3xl mx-auto"
+                  >
+                    <div className="relative bg-gradient-to-r from-miami-aqua/10 via-miami-blue/10 to-miami-purple/10 rounded-2xl p-[2px] shadow-lg">
+                      <div className="bg-background rounded-2xl px-5 py-4 flex items-start gap-3">
+                        <svg
+                          className="w-5 h-5 text-miami-aqua flex-shrink-0 mt-0.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          />
+                        </svg>
+                        <p className="text-base text-foreground/90 flex-1">{message.query}</p>
                       </div>
                     </div>
-                  )}
-                  <div className="space-y-4">
-                    <Suspense fallback={<SkeletonSearch />}>
-                      {searchState.generatedImage ? (
-                        <ImageResult
-                          imageUrl={searchState.generatedImage.url}
-                          prompt={searchState.generatedImage.prompt}
-                          model={searchState.generatedImage.model}
-                          resolution={searchState.generatedImage.resolution}
-                          createdAt={searchState.generatedImage.createdAt}
-                          onRegenerate={() => handleImageGeneration(searchState.generatedImage!.prompt)}
-                        />
-                      ) : (
-                        <SearchResponse
-                          response={searchState.response}
-                          citations={searchState.citations}
-                          isStreaming={searchState.isLoading}
-                          actions={
-                            !searchState.isLoading && searchState.response ? (
-                              <ResponseActions
-                                query={searchState.currentQuery}
-                                response={searchState.response}
-                                searchId={searchState.currentSearchId}
-                                userId={userId}
-                                onRegenerate={handleRegenerate}
-                              />
-                            ) : null
-                          }
-                          modelBadge={
-                            user && searchState.currentModelInfo ? (
-                              <ModelBadge
-                                model={searchState.currentModelInfo.model}
-                                reason={searchState.currentModelInfo.reason}
-                                autoSelected={searchState.currentModelInfo.autoSelected}
-                              />
-                            ) : null
-                          }
-                        />
-                      )}
-                    </Suspense>
                   </div>
-                  {!searchState.isLoading && searchState.response && !searchState.generatedImage && (
-                    <Suspense fallback={<div className="h-20" />}>
-                      <RelatedSearches
-                        searches={searchState.relatedSearches}
-                        onSearchClick={(search) => handleSearch(search, searchState.mode)}
-                      />
-                    </Suspense>
-                  )}
-                </>
-              ) : (
-                <EmptyState type="no-results" onAction={handleClearSearch} />
-              )}
+
+                  {/* Response */}
+                  {message.isStreaming && !message.response && !message.generatedImage ? (
+                    <SkeletonSearch />
+                  ) : message.response || message.generatedImage ? (
+                    <>
+                      <Suspense fallback={<SkeletonSearch />}>
+                        {message.generatedImage ? (
+                          <ImageResult
+                            imageUrl={message.generatedImage.url}
+                            prompt={message.generatedImage.prompt}
+                            model={message.generatedImage.model}
+                            resolution={message.generatedImage.resolution}
+                            createdAt={message.generatedImage.createdAt}
+                            onRegenerate={() => handleImageGeneration(message.generatedImage!.prompt)}
+                          />
+                        ) : (
+                          <SearchResponse
+                            response={message.response || ""}
+                            citations={message.citations || []}
+                            isStreaming={message.isStreaming || false}
+                            actions={
+                              !message.isStreaming && message.response && index === searchState.messages.length - 1 ? (
+                                <ResponseActions
+                                  query={message.query}
+                                  response={message.response}
+                                  searchId={undefined}
+                                  userId={userId}
+                                  onRegenerate={handleRegenerate}
+                                />
+                              ) : null
+                            }
+                            modelBadge={
+                              user && message.modelInfo ? (
+                                <ModelBadge
+                                  model={message.modelInfo.model}
+                                  reason={message.modelInfo.reason}
+                                  autoSelected={message.modelInfo.autoSelected}
+                                />
+                              ) : null
+                            }
+                          />
+                        )}
+                      </Suspense>
+
+                      {/* Related Searches - Only show for last message */}
+                      {!message.isStreaming &&
+                        message.response &&
+                        !message.generatedImage &&
+                        index === searchState.messages.length - 1 &&
+                        message.relatedSearches &&
+                        message.relatedSearches.length > 0 && (
+                          <Suspense fallback={<div className="h-20" />}>
+                            <RelatedSearches
+                              searches={message.relatedSearches}
+                              onSearchClick={(search) => handleSearch(search, searchState.mode)}
+                            />
+                          </Suspense>
+                        )}
+                    </>
+                  ) : null}
+                </div>
+              ))}
             </div>
           )}
         </main>
