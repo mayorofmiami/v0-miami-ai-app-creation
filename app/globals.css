@@ -74,7 +74,7 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
-@theme {
+@theme inline {
   --font-sans: "Inter", "Inter Fallback";
 
   /* Miami Vice color palette */
@@ -83,7 +83,7 @@
   --color-miami-dark: #111111;
   --color-miami-darker: #0a0a0a;
 
-  /* Extended Miami color palette for feature actions */
+  /* Added extended Miami color palette for feature actions */
   --color-miami-purple: #b794f6;
   --color-miami-blue: #60a5fa;
   --color-miami-green: #34d399;
@@ -103,27 +103,35 @@
   --radius: 0.75rem;
 
   /* Mobile-optimized spacing scale */
-  --spacing-touch-target: 44px;
-  --spacing-comfortable: 20px;
-  --spacing-section: 32px;
+  --spacing-touch-target: 44px; /* Minimum touch target size */
+  --spacing-comfortable: 20px; /* Comfortable spacing between elements */
+  --spacing-section: 32px; /* Section spacing */
 
   /* Mobile-optimized typography scale */
-  --text-xs-mobile: 0.8125rem;
-  --text-sm-mobile: 0.9375rem;
-  --text-base-mobile: 1.0625rem;
-  --text-lg-mobile: 1.1875rem;
-  --text-xl-mobile: 1.375rem;
+  --text-xs-mobile: 0.8125rem; /* 13px */
+  --text-sm-mobile: 0.9375rem; /* 15px */
+  --text-base-mobile: 1.0625rem; /* 17px */
+  --text-lg-mobile: 1.1875rem; /* 19px */
+  --text-xl-mobile: 1.375rem; /* 22px */
 
-  /* Shadcn compatibility tokens */
+  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-chart-1: var(--chart-1);

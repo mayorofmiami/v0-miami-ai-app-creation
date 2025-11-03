@@ -13,7 +13,6 @@ export interface SearchHistory {
   model_used?: string
   auto_selected?: boolean
   selection_reason?: string
-  thread_id?: string // Add optional threadId parameter
   created_at: string
 }
 
@@ -58,15 +57,6 @@ export interface RateLimit {
   updated_at: string
 }
 
-export interface Thread {
-  id: string
-  user_id: string
-  title: string | null
-  mode: "quick" | "deep"
-  created_at: string
-  updated_at: string
-}
-
 // Search History Functions
 export async function createSearchHistory(
   userId: string,
@@ -77,11 +67,10 @@ export async function createSearchHistory(
   modelUsed?: string,
   autoSelected?: boolean,
   selectionReason?: string,
-  threadId?: string, // Add optional threadId parameter
 ) {
   const result = await sql`
-    INSERT INTO search_history (user_id, query, response, citations, mode, model_used, auto_selected, selection_reason, thread_id)
-    VALUES (${userId}, ${query}, ${response}, ${JSON.stringify(citations)}, ${mode}, ${modelUsed || null}, ${autoSelected ?? true}, ${selectionReason || null}, ${threadId || null})
+    INSERT INTO search_history (user_id, query, response, citations, mode, model_used, auto_selected, selection_reason)
+    VALUES (${userId}, ${query}, ${response}, ${JSON.stringify(citations)}, ${mode}, ${modelUsed || null}, ${autoSelected ?? true}, ${selectionReason || null})
     RETURNING *
   `
   return result[0] as SearchHistory

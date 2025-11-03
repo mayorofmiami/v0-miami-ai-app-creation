@@ -165,7 +165,7 @@ importers:
         specifier: latest
         version: 2.0.0
       fs:
-        specifier: latest
+        specifier: 0.0.1-security
         version: 0.0.1-security
       input-otp:
         specifier: latest
@@ -183,7 +183,7 @@ importers:
         specifier: latest
         version: 1.0.2(@tiptap/extension-code-block@3.10.1(@tiptap/core@3.10.1(@tiptap/pm@3.10.1))(@tiptap/pm@3.10.1))(@types/react-dom@19.0.0)(@types/react@19.0.0)(highlight.js@11.11.1)(immer@10.2.0)(lowlight@3.3.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       path:
-        specifier: latest
+        specifier: 0.12.7
         version: 0.12.7
       react:
         specifier: latest

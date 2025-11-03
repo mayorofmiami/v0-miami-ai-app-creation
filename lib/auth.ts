@@ -135,8 +135,6 @@ export async function getCurrentUser(): Promise<User | null> {
   }
 }
 
-export const getUser = getCurrentUser
-
 export async function requireAuth(): Promise<User> {
   const user = await getCurrentUser()
   if (!user) {
