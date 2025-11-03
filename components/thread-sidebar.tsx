@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -41,7 +41,6 @@ export function ThreadSidebar({
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
-  const hasAutoSelected = useRef(false)
 
   // Load threads
   useEffect(() => {
@@ -53,16 +52,6 @@ export function ThreadSidebar({
 
     loadThreads()
   }, [userId])
-
-  useEffect(() => {
-    if (threads.length > 0 && !currentThreadId && !hasAutoSelected.current) {
-      // Automatically select the most recent thread (first in the list)
-      const mostRecentThread = threads[0]
-      onThreadSelect(mostRecentThread.id)
-      hasAutoSelected.current = true
-      console.log("[v0] Auto-selected most recent thread:", mostRecentThread.id)
-    }
-  }, [threads, currentThreadId])
 
   useEffect(() => {
     if (!searchQuery.trim()) {

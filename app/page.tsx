@@ -324,7 +324,6 @@ export default function Home() {
         // Empty thread, just set the threadId and clear search
         dispatchSearch({ type: "CLEAR_SEARCH" })
         dispatchSearch({ type: "SET_THREAD_ID", threadId })
-        dispatchSearch({ type: "SET_MODE", mode: thread.mode })
       }
 
       toast.info("Thread loaded")
