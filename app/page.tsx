@@ -53,6 +53,7 @@ type SearchState = {
     createdAt: string
   } | null
   imageRateLimit: { currentCount: number; limit: number; remaining: number } | null
+  currentThreadId: string | null // Add currentThreadId to state
 }
 
 type SearchAction =
@@ -70,6 +71,7 @@ type SearchAction =
   | { type: "SET_MODE"; mode: "quick" | "deep" }
   | { type: "SET_CONTENT_TYPE"; contentType: "search" | "image" }
   | { type: "LOAD_FROM_HISTORY"; history: any }
+  | { type: "SET_THREAD_ID"; threadId: string } // Add action to set threadId
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -134,6 +136,7 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         currentModelInfo: null,
         generatedImage: null, // Clear image
         imageRateLimit: null,
+        currentThreadId: null, // Clear threadId on clear
       }
     case "SET_MODE":
       return { ...state, mode: action.mode }
@@ -158,7 +161,10 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
             }
           : null,
         generatedImage: action.history.generated_image || null, // Load image if exists in history
+        currentThreadId: action.history.thread_id || null, // Load threadId from history
       }
+    case "SET_THREAD_ID": // Handle SET_THREAD_ID action
+      return { ...state, currentThreadId: action.threadId }
     default:
       return state
   }
@@ -182,6 +188,7 @@ export default function Home() {
     optimisticQuery: "",
     generatedImage: null,
     imageRateLimit: null,
+    currentThreadId: null, // Initialize currentThreadId
   })
 
   // UI state (kept separate as it's not related to search)
@@ -301,6 +308,32 @@ export default function Home() {
     setShowHistory((prev) => !prev)
   }
 
+  const handleThreadSelect = async (threadId: string) => {
+    try {
+      const res = await fetch(`/api/threads/${threadId}`)
+      if (!res.ok) throw new Error("Failed to load thread")
+
+      const data = await res.json()
+      const thread = data.thread
+
+      // Load the most recent search from the thread
+      if (thread.searches && thread.searches.length > 0) {
+        const latestSearch = thread.searches[0]
+        dispatchSearch({ type: "LOAD_FROM_HISTORY", history: latestSearch })
+      } else {
+        // Empty thread, just set the threadId and clear search
+        dispatchSearch({ type: "CLEAR_SEARCH" })
+        dispatchSearch({ type: "SET_THREAD_ID", threadId })
+        dispatchSearch({ type: "SET_MODE", mode: thread.mode })
+      }
+
+      toast.info("Thread loaded")
+    } catch (error) {
+      console.error("[v0] Failed to load thread:", error)
+      toast.error("Failed to load thread")
+    }
+  }
+
   const handleSearch = useCallback(
     async (query: string, searchMode: "quick" | "deep") => {
       if (searchState.isLoading) {
@@ -323,6 +356,10 @@ export default function Home() {
 
         if (selectedModel !== "auto") {
           body.selectedModel = selectedModel
+        }
+
+        if (searchState.currentThreadId) {
+          body.threadId = searchState.currentThreadId
         }
 
         const res = await fetch("/api/search", {
@@ -413,7 +450,9 @@ We apologize for the inconvenience!`,
 
               try {
                 const parsed = JSON.parse(data)
-                if (parsed.type === "text") {
+                if (parsed.type === "thread") {
+                  dispatchSearch({ type: "SET_THREAD_ID", threadId: parsed.content.threadId })
+                } else if (parsed.type === "text") {
                   accumulatedResponse += parsed.content
                   dispatchSearch({ type: "UPDATE_RESPONSE", response: accumulatedResponse })
                 } else if (parsed.type === "citations") {
@@ -454,7 +493,7 @@ We apologize for the inconvenience!`,
         abortControllerRef.current = null
       }
     },
-    [userId, selectedModel, searchState.isLoading],
+    [userId, selectedModel, searchState.isLoading, searchState.currentThreadId], // Add currentThreadId to dependencies
   )
 
   const handleImageGeneration = useCallback(
@@ -604,6 +643,8 @@ We apologize for the inconvenience!`,
         onLogout={handleLogout}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        currentThreadId={searchState.currentThreadId} // Pass currentThreadId
+        onThreadSelect={handleThreadSelect} // Pass handleThreadSelect
       />
 
       <div

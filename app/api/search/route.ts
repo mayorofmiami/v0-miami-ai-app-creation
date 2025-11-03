@@ -6,6 +6,7 @@ import { initializeDatabase } from "@/lib/db-init"
 import { getCachedResponse, setCachedResponse } from "@/lib/cache"
 import { checkRateLimit as checkModelRateLimit } from "@/lib/rate-limiter"
 import { trackModelUsage } from "@/lib/cost-tracker"
+import { createThread, autoUpdateThreadTitle } from "@/lib/threads" // Import thread functions
 
 export const maxDuration = 30
 
@@ -27,7 +28,8 @@ export async function POST(req: Request) {
   try {
     await initializeDatabase()
 
-    const { query, mode, userId, selectedModel } = await req.json()
+    const { query, mode: requestMode, userId, selectedModel, threadId } = await req.json()
+    const mode = requestMode || "quick" // Default to "quick" if mode is undefined
 
     if (!query || typeof query !== "string") {
       return Response.json({ error: "Query is required" }, { status: 400 })
@@ -255,9 +257,20 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`
         model: modelSelection.model,
       })
 
+      let currentThreadId = threadId
+      let searchId: string | undefined
+
       if (userId && typeof userId === "string" && userId.length > 0) {
         try {
-          await createSearchHistory(
+          // If no threadId provided, create a new thread
+          if (!currentThreadId) {
+            const newThread = await createThread(userId, undefined, mode)
+            currentThreadId = newThread.id
+            console.log("[v0] Created new thread:", currentThreadId)
+          }
+
+          // Save search to history with threadId
+          const savedSearch = await createSearchHistory(
             userId,
             query,
             text,
@@ -270,10 +283,17 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`
             modelSelection.model,
             modelSelection.autoSelected,
             modelSelection.reason,
+            currentThreadId, // Pass threadId to createSearchHistory
           )
-          console.log("[v0] Search saved to history for user:", userId)
+
+          searchId = savedSearch.id
+
+          // Auto-generate thread title if it's the first search in the thread
+          await autoUpdateThreadTitle(currentThreadId, userId)
+
+          console.log("[v0] Search saved to thread:", currentThreadId)
         } catch (error) {
-          console.error("[v0] Failed to save search to history:", error)
+          console.error("[v0] Failed to save search to thread:", error)
         }
       }
 
@@ -284,6 +304,14 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`
       const stream = new ReadableStream({
         async start(controller) {
           try {
+            if (currentThreadId) {
+              const threadData = JSON.stringify({
+                type: "thread",
+                content: { threadId: currentThreadId },
+              })
+              controller.enqueue(encoder.encode(`data: ${threadData}\n\n`))
+            }
+
             // Send citations
             const citationsData = JSON.stringify({
               type: "citations",
@@ -340,6 +368,8 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          "X-RateLimit-Remaining": rateLimitCheck.remaining.toString(),
+          "X-RateLimit-Limit": rateLimitCheck.limit.toString(),
         },
       })
     } catch (error: any) {
