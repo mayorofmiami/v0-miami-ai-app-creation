@@ -661,19 +661,21 @@ We apologize for the inconvenience!`,
         onToggleHistory={handleToggleHistory}
         onLogout={handleLogout}
         isCollapsed={isSidebarCollapsed}
-        onCollapseToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       <div
         className={`min-h-screen flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "md:ml-16" : "md:ml-64"}`}
       >
         {searchState.hasSearched && (
-          <div
-            className={`fixed top-0 left-0 right-0 z-50 px-6 pt-4 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
-          >
-            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background via-background/95 to-transparent pointer-events-none" />
+          <div className="fixed inset-x-0 top-0 h-26 md:h-32 bg-gradient-to-b from-background via-background to-transparent pointer-events-none z-40" />
+        )}
 
-            <div className="max-w-3xl mx-auto relative z-10">
+        {searchState.hasSearched && (
+          <div
+            className={`fixed top-4 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+          >
+            <div className="max-w-3xl mx-auto">
               <div className="flex items-center justify-between h-12 relative">
                 {/* Menu Button - Mobile only */}
                 <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -1006,7 +1008,7 @@ We apologize for the inconvenience!`,
 
         {/* Main Content */}
         <main
-          className={`flex-1 container mx-auto sm:px-6 lg:px-8 px-4 py-12 max-w-full overflow-x-hidden ${searchState.hasSearched ? "pb-32 pt-20" : user ? "pt-24" : ""}`}
+          className={`flex-1 container mx-auto sm:px-6 lg:px-8 px-4 py-12 max-w-full overflow-x-hidden ${searchState.hasSearched ? "pb-32 pt-24" : user ? "pt-24" : ""}`}
         >
           {!searchState.hasSearched ? (
             <>
