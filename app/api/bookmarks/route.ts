@@ -1,26 +1,33 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { addBookmark, removeBookmark, getBookmarks } from "@/lib/bookmarks"
+import { getCurrentUser } from "@/lib/auth"
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId")
+  const user = await getCurrentUser()
 
-  if (!userId) {
-    return NextResponse.json({ error: "User ID required" }, { status: 400 })
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const bookmarks = await getBookmarks(userId)
+  const bookmarks = await getBookmarks(user.id)
   return NextResponse.json({ bookmarks })
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, searchId } = await req.json()
+    const user = await getCurrentUser()
 
-    if (!userId || !searchId) {
-      return NextResponse.json({ error: "User ID and search ID required" }, { status: 400 })
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const result = await addBookmark(userId, searchId)
+    const { searchId } = await req.json()
+
+    if (!searchId) {
+      return NextResponse.json({ error: "Search ID required" }, { status: 400 })
+    }
+
+    const result = await addBookmark(user.id, searchId)
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 })
@@ -35,13 +42,19 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { userId, searchId } = await req.json()
+    const user = await getCurrentUser()
 
-    if (!userId || !searchId) {
-      return NextResponse.json({ error: "User ID and search ID required" }, { status: 400 })
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const result = await removeBookmark(userId, searchId)
+    const { searchId } = await req.json()
+
+    if (!searchId) {
+      return NextResponse.json({ error: "Search ID required" }, { status: 400 })
+    }
+
+    const result = await removeBookmark(user.id, searchId)
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 })

@@ -258,7 +258,6 @@ export default function Home() {
           }
         }
       } catch (error) {
-        console.error("[v0] Failed to load initial data:", error)
       } finally {
         setIsLoadingUser(false)
       }
@@ -300,9 +299,7 @@ export default function Home() {
             selectedModel: newModel === "auto" ? null : newModel,
           }),
         })
-      } catch (error) {
-        console.error("[v0] Failed to save model preference:", error)
-      }
+      } catch (error) {}
     }
   }
 
@@ -406,10 +403,10 @@ We apologize for the inconvenience!`,
           const errorMessage = error.error || "Search failed"
 
           if (res.status === 503 && errorMessage.includes("API key")) {
-            toast.error("Configuration Error", "Please add EXA_API_KEY to environment variables in the Vars section")
+            toast.error("Configuration Error", "Please add TAVILY_API_KEY to environment variables in the Vars section")
             dispatchSearch({
               type: "SEARCH_ERROR",
-              error: "⚠️ Search is not configured. Please add your EXA_API_KEY to the environment variables.",
+              error: "⚠️ Search is not configured. Please add your TAVILY_API_KEY to the environment variables.",
             })
             return
           }
@@ -429,24 +426,33 @@ We apologize for the inconvenience!`,
         const reader = res.body?.getReader()
         const decoder = new TextDecoder()
 
-        if (!reader) throw new Error("No response body")
+        if (!reader) {
+          throw new Error("No response body")
+        }
 
         let accumulatedResponse = ""
+        let chunkCount = 0
 
         while (true) {
           const { done, value } = await reader.read()
-          if (done) break
+          if (done) {
+            break
+          }
 
+          chunkCount++
           const chunk = decoder.decode(value)
           const lines = chunk.split("\n")
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
               const data = line.slice(6)
-              if (data === "[DONE]") continue
+              if (data === "[DONE]") {
+                continue
+              }
 
               try {
                 const parsed = JSON.parse(data)
+
                 if (parsed.type === "text") {
                   accumulatedResponse += parsed.content
                   dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: accumulatedResponse })
@@ -464,9 +470,7 @@ We apologize for the inconvenience!`,
                 } else if (parsed.type === "related_searches") {
                   dispatchSearch({ type: "SET_CURRENT_RELATED_SEARCHES", relatedSearches: parsed.content || [] })
                 }
-              } catch (e) {
-                // Skip invalid JSON
-              }
+              } catch (e) {}
             }
           }
         }
@@ -481,7 +485,6 @@ We apologize for the inconvenience!`,
           return
         }
 
-        console.error("[v0] Search error:", error)
         toast.error("Search failed", error.message || "Please try again")
         dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, something went wrong. Please try again." })
       } finally {
@@ -534,7 +537,6 @@ We apologize for the inconvenience!`,
         toast.success("Image generated successfully!")
         searchInputRef.current?.clear()
       } catch (error: any) {
-        console.error("[v0] Image generation error:", error)
         toast.error("Image generation failed", error.message || "Please try again")
         dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, image generation failed. Please try again." })
       }
@@ -573,7 +575,6 @@ We apologize for the inconvenience!`,
       toast.success("Logged out successfully")
       setIsDrawerOpen(false)
     } catch (error) {
-      console.error("[v0] Logout error:", error)
       toast.error("Failed to log out")
     }
   }

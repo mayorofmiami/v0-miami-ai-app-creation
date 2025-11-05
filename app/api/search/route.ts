@@ -1,11 +1,11 @@
-import { generateText } from "ai"
-import { searchWeb, formatSearchContext } from "@/lib/web-search"
+import { streamText } from "ai"
 import { checkRateLimit, incrementRateLimit, createSearchHistory } from "@/lib/db"
-import { selectModel, getModelById } from "@/lib/model-selection"
+import { getModelById } from "@/lib/model-selection"
 import { initializeDatabase } from "@/lib/db-init"
 import { getCachedResponse, setCachedResponse } from "@/lib/cache"
 import { checkRateLimit as checkModelRateLimit } from "@/lib/rate-limiter"
 import { trackModelUsage } from "@/lib/cost-tracker"
+import { webSearchTool } from "@/lib/tools"
 
 export const maxDuration = 30
 
@@ -35,21 +35,16 @@ export async function POST(req: Request) {
 
     const cached = await getCachedResponse(query, mode)
     if (cached) {
-      console.log("[v0] Returning cached response")
-
-      // Create SSE stream with cached data
       const encoder = new TextEncoder()
       const stream = new ReadableStream({
         async start(controller) {
           try {
-            // Send citations
             const citationsData = JSON.stringify({
               type: "citations",
               content: cached.sources,
             })
             controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`))
 
-            // Send model info
             const modelData = JSON.stringify({
               type: "model",
               content: {
@@ -74,7 +69,7 @@ export async function POST(req: Request) {
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))
             controller.close()
           } catch (error) {
-            console.error("[v0] Error in cached stream:", error)
+            console.error("Error in cached stream:", error)
             controller.error(error)
           }
         },
@@ -106,16 +101,6 @@ export async function POST(req: Request) {
       )
     }
 
-    if (!process.env.EXA_API_KEY) {
-      console.error("[v0] EXA_API_KEY not found in environment variables")
-      return Response.json(
-        {
-          error: "Search API key not configured. Please add EXA_API_KEY to environment variables.",
-        },
-        { status: 503 },
-      )
-    }
-
     let modelSelection
     if (selectedModel) {
       const model = getModelById(selectedModel)
@@ -125,10 +110,9 @@ export async function POST(req: Request) {
         autoSelected: false,
       }
     } else {
-      const selection = selectModel(query, mode)
       modelSelection = {
-        model: selection.model,
-        reason: selection.reason,
+        model: "openai/gpt-4o",
+        reason: "Optimized for web search - high quality with current information",
         autoSelected: true,
       }
     }
@@ -147,156 +131,130 @@ export async function POST(req: Request) {
       }
     }
 
-    console.log(`[v0] Using model: ${modelSelection.model} (${modelSelection.reason})`)
-
-    console.log("[v0] Performing web search for:", query, "mode:", mode)
-    const searchResults = await searchWeb(query, mode === "deep" ? 8 : 5)
-    console.log("[v0] Web search completed, found", searchResults.length, "results")
-
-    const searchContext = formatSearchContext(searchResults)
+    const hasTavilyKey = !!process.env.TAVILY_API_KEY
 
     const systemInstruction =
       mode === "deep"
-        ? `You are Miami.ai, an advanced AI research assistant. Provide comprehensive, detailed answers with in-depth analysis.
+        ? `You are Miami.ai, an advanced AI assistant with ${hasTavilyKey ? "real-time web search capabilities" : "comprehensive knowledge"}.
 
-**Formatting Guidelines:**
-- Use markdown formatting for better readability
-- Add relevant emojis to section headings and key points (e.g., 📊 for data, 🔍 for analysis, ⚡ for key points)
-- Structure your response with clear headings (##) and subheadings (###)
-- Use bullet points for lists and tables for comparisons
-- Use **bold** for emphasis and \`code\` for technical terms
-- Add blockquotes (>) for important quotes or highlights
-- Break down complex information into digestible sections
+**Knowledge & Search:**
+${
+  hasTavilyKey
+    ? `- You have access to real-time web search for current information
+- Use the webSearch tool when you need up-to-date data, current events, or recent statistics
+- Always cite your sources when using web search results
+- Combine web search with your knowledge for comprehensive answers`
+    : `- Your knowledge is current through June 2024
+- For time-sensitive topics, acknowledge your knowledge cutoff
+- Focus on providing timeless, foundational knowledge`
+}
 
-Use the provided web search results to give thorough explanations. Always cite your sources using [Source X] notation.`
-        : `You are Miami.ai, a fast AI search assistant. Provide concise, accurate answers.
+**Response Formatting:**
+Use rich markdown formatting to create visually appealing, easy-to-scan responses:
 
-**Formatting Guidelines:**
-- Use markdown formatting for clarity
-- Add relevant emojis to make responses engaging (e.g., ✅ for confirmations, 📍 for locations, 💡 for tips)
-- Use bullet points for quick lists
-- Use **bold** for key information
+📋 **Structure:**
+- Start with a brief overview (2-3 sentences)
+- Use ## for main sections and ### for subsections
+- Break complex topics into digestible parts
+
+✨ **Visual Elements:**
+- Add relevant emojis to section headings (📊 Data, 🔍 Analysis, 💡 Key Points, ⚡ Quick Facts, 🎯 Recommendations)
+- Use **bold** for emphasis and key terms
+- Use bullet points (•) for lists
+- Use numbered lists for steps or rankings
+- Use > blockquotes for important highlights or quotes
+- Use tables for comparisons when helpful
+- Use \`code\` formatting for technical terms
+
+🎨 **Engagement:**
+- Make responses scannable with clear visual hierarchy
+- Use emojis strategically (not excessively)
+- Keep paragraphs short (2-4 sentences max)
+- End with a brief summary or key takeaway when appropriate
+
+Provide comprehensive, detailed answers with in-depth analysis while maintaining excellent readability.`
+        : `You are Miami.ai, a fast AI assistant ${hasTavilyKey ? "with real-time web search" : "providing accurate answers"}.
+
+**Knowledge & Search:**
+${
+  hasTavilyKey
+    ? `- You have access to real-time web search for current information
+- Use webSearch tool for current events, recent data, or time-sensitive queries
+- Cite sources when using web search`
+    : `- Your knowledge is current through June 2024
+- For time-sensitive queries, acknowledge your knowledge cutoff`
+}
+
+**Response Formatting:**
+Create clean, scannable responses using markdown:
+
+✨ **Format Guidelines:**
+- Use relevant emojis for visual appeal (📍 Locations, ✅ Confirmations, 💡 Tips, ⚡ Key Points, 🎯 Recommendations)
+- Use **bold** for important information
+- Use bullet points for lists
 - Keep it concise but well-structured
+- Use short paragraphs (1-3 sentences)
 
-Use the provided web search results to answer directly. Always cite your sources using [Source X] notation.`
+🎯 **Style:**
+- Direct and to-the-point
+- Easy to scan quickly
+- Visually organized with emojis and formatting
+- Professional but friendly tone
 
-    const combinedPrompt = `${systemInstruction}
-
-Based on the following web search results, answer this question: "${query}"
-
-Web Search Results:
-${searchContext}
-
-Provide a ${mode === "deep" ? "detailed and comprehensive" : "clear and concise"} answer, citing the sources you use.`
+Provide accurate, concise answers that are both informative and visually appealing.`
 
     try {
-      const { text, usage } = await generateText({
+      const tools = hasTavilyKey ? { webSearch: webSearchTool } : undefined
+
+      const result = streamText({
         model: modelSelection.model,
-        prompt: combinedPrompt,
+        system: systemInstruction,
+        prompt: query,
         maxTokens: mode === "deep" ? 2000 : 800,
         temperature: mode === "deep" ? 0.7 : 0.5,
+        ...(tools && { tools, maxSteps: 5 }),
+        onFinish: async ({ text, usage }) => {
+          if (usage) {
+            await trackModelUsage(
+              userId || null,
+              modelSelection.model,
+              usage.promptTokens || 0,
+              usage.completionTokens || 0,
+            )
+          }
+
+          await setCachedResponse(query, mode, {
+            answer: text,
+            sources: [], // No external sources for free tier
+            model: modelSelection.model,
+          })
+
+          if (userId && typeof userId === "string" && userId.length > 0) {
+            try {
+              await createSearchHistory(
+                userId,
+                query,
+                text,
+                [], // No external sources
+                mode,
+                modelSelection.model,
+                modelSelection.autoSelected,
+                modelSelection.reason,
+              )
+            } catch (error) {
+              console.error("Failed to save search to history:", error)
+            }
+          }
+
+          await incrementRateLimit(userId && typeof userId === "string" && userId.length > 0 ? userId : null, ipAddress)
+        },
       })
 
-      if (usage) {
-        await trackModelUsage(
-          userId || null,
-          modelSelection.model,
-          usage.promptTokens || 0,
-          usage.completionTokens || 0,
-        )
-      }
-
-      console.log("[v0] Generating AI-powered related searches...")
-      let relatedSearches: string[] = []
-      try {
-        const relatedSearchPrompt = `Based on this search query and answer, generate exactly 5 contextually relevant follow-up questions.
-
-Original Query: "${query}"
-
-Answer Summary: ${text.substring(0, 500)}...
-
-Generate 5 follow-up questions that:
-- Are directly relevant to the topic being searched
-- Naturally extend the conversation about this specific subject
-- Cover different angles (deeper dive, related topics, practical applications, comparisons, current trends)
-- Are concise and actionable
-- Feel natural and conversational
-${query.toLowerCase().includes("miami") ? "- Include Miami-specific context where relevant" : "- Focus on the topic itself without forcing unrelated geographic connections"}
-
-Return ONLY the 5 questions, one per line, without numbering or bullet points.`
-
-        const { text: relatedText } = await generateText({
-          model: "openai/gpt-4o-mini",
-          prompt: relatedSearchPrompt,
-          maxTokens: 200,
-          temperature: 0.7,
-        })
-
-        relatedSearches = relatedText
-          .split("\n")
-          .map((q) => q.trim())
-          .filter((q) => q.length > 0)
-          .slice(0, 5)
-
-        console.log("[v0] Generated related searches:", relatedSearches)
-      } catch (error) {
-        console.error("[v0] Failed to generate related searches:", error)
-        // Fallback to empty array if generation fails
-        relatedSearches = []
-      }
-
-      await setCachedResponse(query, mode, {
-        answer: text,
-        sources: searchResults.map((result, index) => ({
-          title: result.title,
-          url: result.url,
-          snippet: result.text?.substring(0, 200) || "",
-        })),
-        model: modelSelection.model,
-      })
-
-      if (userId && typeof userId === "string" && userId.length > 0) {
-        try {
-          await createSearchHistory(
-            userId,
-            query,
-            text,
-            searchResults.map((result, index) => ({
-              title: result.title,
-              url: result.url,
-              snippet: result.text?.substring(0, 200) || "",
-            })),
-            mode,
-            modelSelection.model,
-            modelSelection.autoSelected,
-            modelSelection.reason,
-          )
-          console.log("[v0] Search saved to history for user:", userId)
-        } catch (error) {
-          console.error("[v0] Failed to save search to history:", error)
-        }
-      }
-
-      await incrementRateLimit(userId && typeof userId === "string" && userId.length > 0 ? userId : null, ipAddress)
-
-      // Create SSE stream in the format the client expects
       const encoder = new TextEncoder()
-      const stream = new ReadableStream({
+
+      const customStream = new ReadableStream({
         async start(controller) {
           try {
-            // Send citations
-            const citationsData = JSON.stringify({
-              type: "citations",
-              content: searchResults.map((result, index) => ({
-                id: index + 1,
-                title: result.title,
-                url: result.url,
-                snippet: result.text?.substring(0, 200) || "",
-              })),
-            })
-            controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`))
-
-            // Send model info
             const modelData = JSON.stringify({
               type: "model",
               content: {
@@ -307,15 +265,48 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`
             })
             controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
 
-            const chunkSize = 150
-            for (let i = 0; i < text.length; i += chunkSize) {
-              const chunk = text.slice(i, i + chunkSize)
+            for await (const chunk of result.textStream) {
               const textData = JSON.stringify({
                 type: "text",
                 content: chunk,
               })
               controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
-              await new Promise((resolve) => setTimeout(resolve, 17))
+            }
+
+            let relatedSearches: string[] = []
+            try {
+              const { streamText: relatedStream } = await import("ai")
+              const relatedResult = relatedStream({
+                model: "openai/gpt-4o-mini",
+                prompt: `Based on this search query, generate exactly 5 contextually relevant follow-up questions.
+
+Original Query: "${query}"
+
+Generate 5 follow-up questions that:
+- Are directly relevant to the topic being searched
+- Naturally extend the conversation about this specific subject
+- Cover different angles (deeper dive, related topics, practical applications, comparisons, current trends)
+- Are concise and actionable
+- Feel natural and conversational
+${query.toLowerCase().includes("miami") ? "- Include Miami-specific context where relevant" : ""}
+
+Return ONLY the 5 questions, one per line, without numbering or bullet points.`,
+                maxTokens: 200,
+                temperature: 0.7,
+              })
+
+              let relatedText = ""
+              for await (const chunk of relatedResult.textStream) {
+                relatedText += chunk
+              }
+
+              relatedSearches = relatedText
+                .split("\n")
+                .map((q) => q.trim())
+                .filter((q) => q.length > 0)
+                .slice(0, 5)
+            } catch (error) {
+              console.error("Failed to generate related searches:", error)
             }
 
             if (relatedSearches.length > 0) {
@@ -329,13 +320,13 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))
             controller.close()
           } catch (error) {
-            console.error("[v0] Error in stream:", error)
+            console.error("Error in stream:", error)
             controller.error(error)
           }
         },
       })
 
-      return new Response(stream, {
+      return new Response(customStream, {
         headers: {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
@@ -343,24 +334,14 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`
         },
       })
     } catch (error: any) {
-      console.error("[v0] Error creating AI response:", error)
+      console.error("Error creating AI response:", error)
 
       if (error.message && error.message.includes("rate_limit_exceeded")) {
         return Response.json(
           {
             error:
-              "AI Gateway rate limit exceeded. Free credits have temporary rate limits due to abuse. Please try again later or purchase AI credits at https://vercel.com/ai",
+              "AI Gateway rate limit exceeded. Please try again in a few moments or upgrade to Pro for higher limits.",
             type: "ai_gateway_rate_limit",
-          },
-          { status: 429 },
-        )
-      }
-
-      if (error.message && (error.message.includes("Free credits") || error.message.includes("rate limit"))) {
-        return Response.json(
-          {
-            error: error.message,
-            type: "ai_gateway_error",
           },
           { status: 429 },
         )
@@ -369,7 +350,7 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`
       throw new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
   } catch (error) {
-    console.error("[v0] Search API error:", error)
+    console.error("Search API error:", error)
     const errorMessage = error instanceof Error ? error.message : "Internal server error"
     return Response.json({ error: errorMessage }, { status: 500 })
   }

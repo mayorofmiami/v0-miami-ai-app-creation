@@ -1,5 +1,4 @@
 import "server-only"
-import Exa from "exa-js"
 
 export interface SearchResult {
   title: string
@@ -11,38 +10,52 @@ export interface SearchResult {
 }
 
 export async function searchWeb(query: string, maxResults = 5): Promise<SearchResult[]> {
-  const apiKey = process.env.EXA_API_KEY
+  const apiKey = process.env.TAVILY_API_KEY
 
   if (!apiKey) {
-    console.error("[v0] EXA_API_KEY not found in environment variables")
-    throw new Error("EXA_API_KEY is required for search functionality")
+    console.error("[v0] TAVILY_API_KEY not found in environment variables")
+    throw new Error("TAVILY_API_KEY is required for search functionality")
   }
 
   try {
-    const exa = new Exa(apiKey)
-
-    // Use Exa's searchAndContents to get both search results and content
-    const response = await exa.searchAndContents(query, {
-      numResults: maxResults,
-      text: true, // Get text content
-      highlights: true, // Get highlights for snippets
-      type: "neural", // Use neural search for better semantic understanding
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: query,
+        max_results: maxResults,
+        search_depth: "basic", // Use "advanced" for more comprehensive results
+        include_answer: false, // We'll let the AI generate the answer
+        include_raw_content: true, // Get full content for better context
+        include_images: false,
+      }),
     })
 
-    // Transform Exa results to our SearchResult format
-    const results: SearchResult[] = response.results.map((result) => ({
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error("[v0] Tavily API error:", response.status, errorText)
+      throw new Error(`Tavily API returned status ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    // Transform Tavily results to our SearchResult format
+    const results: SearchResult[] = (data.results || []).map((result: any) => ({
       title: result.title || "Untitled",
       url: result.url,
-      snippet: result.highlights?.[0] || result.text?.substring(0, 200) || "",
-      content: result.text || "",
-      publishedDate: result.publishedDate,
-      author: result.author,
+      snippet: result.content?.substring(0, 200) || "",
+      content: result.raw_content || result.content || "",
+      publishedDate: result.published_date,
+      author: undefined, // Tavily doesn't provide author info
     }))
 
     return results
   } catch (error) {
-    console.error("[v0] Exa search error:", error)
-    throw new Error("Failed to perform web search")
+    console.error("[v0] Tavily search error:", error)
+    throw new Error(`Failed to perform web search: ${error instanceof Error ? error.message : "Unknown error"}`)
   }
 }
 
