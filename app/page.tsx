@@ -30,6 +30,7 @@ import Plus from "@/components/icons/Plus"
 import Sun from "@/components/icons/Sun"
 import Moon from "@/components/icons/Moon"
 import { useTheme } from "next-themes"
+import type { Attachment } from "@/types" // Import Attachment type
 
 type ConversationMessage = {
   id: string
@@ -46,6 +47,7 @@ type ConversationMessage = {
     resolution: string
     createdAt: string
   }
+  attachments?: Attachment[] // Add attachments field
   isStreaming?: boolean
 }
 
@@ -333,7 +335,7 @@ export default function Home() {
   }
 
   const handleSearch = useCallback(
-    async (query: string, searchMode: "quick" | "deep") => {
+    async (query: string, searchMode: "quick" | "deep", attachments?: Attachment[]) => {
       if (searchState.isLoading) {
         return
       }
@@ -354,6 +356,10 @@ export default function Home() {
 
         if (selectedModel !== "auto") {
           body.selectedModel = selectedModel
+        }
+
+        if (attachments && attachments.length > 0) {
+          body.attachments = attachments
         }
 
         const res = await fetch("/api/search", {
@@ -431,7 +437,6 @@ We apologize for the inconvenience!`,
         }
 
         let accumulatedResponse = ""
-        let chunkCount = 0
 
         while (true) {
           const { done, value } = await reader.read()
@@ -439,7 +444,6 @@ We apologize for the inconvenience!`,
             break
           }
 
-          chunkCount++
           const chunk = decoder.decode(value)
           const lines = chunk.split("\n")
 
@@ -470,7 +474,9 @@ We apologize for the inconvenience!`,
                 } else if (parsed.type === "related_searches") {
                   dispatchSearch({ type: "SET_CURRENT_RELATED_SEARCHES", relatedSearches: parsed.content || [] })
                 }
-              } catch (e) {}
+              } catch (e) {
+                // Ignore parse errors
+              }
             }
           }
         }
@@ -545,11 +551,11 @@ We apologize for the inconvenience!`,
   )
 
   const handleSearchOrGenerate = useCallback(
-    (query: string, searchMode: "quick" | "deep") => {
+    (query: string, searchMode: "quick" | "deep", attachments?: Attachment[]) => {
       if (searchState.contentType === "image") {
         handleImageGeneration(query)
       } else {
-        handleSearch(query, searchMode)
+        handleSearch(query, searchMode, attachments)
       }
     },
     [searchState.contentType, handleImageGeneration, handleSearch],

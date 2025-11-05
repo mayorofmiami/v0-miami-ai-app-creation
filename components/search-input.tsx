@@ -9,7 +9,9 @@ import ImageIcon from "@/components/icons/Image"
 import Settings from "@/components/icons/Settings"
 import Sparkles from "@/components/icons/Sparkles"
 import History from "@/components/icons/History"
-import type { ModelId } from "@/components/model-selector"
+import Paperclip from "@/components/icons/Paperclip"
+import X from "@/components/icons/X"
+import type { ModelId, Attachment } from "@/components/model-selector"
 
 const MODEL_OPTIONS = [
   { id: "auto" as ModelId, name: "Auto", description: "Let us choose" },
@@ -23,7 +25,7 @@ const MODEL_OPTIONS = [
 ]
 
 interface SearchInputProps {
-  onSearch: (query: string, mode: "quick" | "deep") => void
+  onSearch: (query: string, mode: "quick" | "deep", attachments?: Attachment[]) => void
   isLoading?: boolean
   mode: "quick" | "deep"
   onModeChange: (mode: "quick" | "deep") => void
@@ -74,6 +76,9 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useImperativeHandle(ref, () => ({
     focus: () => {
@@ -83,6 +88,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       setQuery("")
       setShowSuggestions(false)
       setSelectedIndex(-1)
+      setAttachments([])
     },
   }))
 
@@ -142,13 +148,14 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     (e: React.FormEvent) => {
       e.preventDefault()
       if (query.trim() && !isLoading) {
-        onSearch(query, mode)
+        onSearch(query, mode, attachments.length > 0 ? attachments : undefined)
         setShowSuggestions(false)
         setIsFocused(false)
+        setAttachments([]) // Clear attachments after search
         inputRef.current?.blur()
       }
     },
-    [query, isLoading, onSearch, mode],
+    [query, isLoading, onSearch, mode, attachments],
   )
 
   const handleFocus = useCallback(() => {
@@ -255,43 +262,105 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     setIsMenuOpen(false)
   }, [onHistoryClick])
 
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || [])
+      if (files.length === 0) return
+
+      // Check attachment limit based on auth status
+      const maxAttachments = user ? 5 : 1
+      if (attachments.length + files.length > maxAttachments) {
+        alert(`Maximum ${maxAttachments} attachment${maxAttachments > 1 ? "s" : ""} allowed`)
+        return
+      }
+
+      setIsUploading(true)
+
+      try {
+        for (const file of files) {
+          const formData = new FormData()
+          formData.append("file", file)
+          if (user?.id) {
+            formData.append("userId", user.id)
+          }
+
+          const res = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          })
+
+          if (!res.ok) {
+            const error = await res.json()
+            alert(error.error || "Upload failed")
+            continue
+          }
+
+          const data = await res.json()
+
+          const attachment: Attachment = {
+            id: Math.random().toString(36).substring(7),
+            name: data.filename,
+            type: data.type,
+            size: data.size,
+            url: data.url,
+            blobUrl: data.url,
+            preview: data.type.startsWith("image/") ? data.url : undefined,
+          }
+
+          setAttachments((prev) => [...prev, attachment])
+        }
+      } catch (error) {
+        console.error("Upload error:", error)
+        alert("Failed to upload file")
+      } finally {
+        setIsUploading(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      }
+    },
+    [attachments.length, user],
+  )
+
+  const handleRemoveAttachment = useCallback((id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id))
+  }, [])
+
   return (
     <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
-      <style jsx>{`
-        @keyframes glow-pulse {
-          0%, 100% {
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4),
-                        0 0 40px rgba(0, 212, 255, 0.2),
-                        inset 0 0 20px rgba(0, 212, 255, 0.1);
-          }
-          50% {
-            box-shadow: 0 0 30px rgba(0, 212, 255, 0.6),
-                        0 0 60px rgba(0, 212, 255, 0.3),
-                        inset 0 0 30px rgba(0, 212, 255, 0.15);
-          }
-        }
-        
-        @keyframes glow-pulse-pink {
-          0%, 100% {
-            box-shadow: 0 0 20px rgba(255, 0, 110, 0.4),
-                        0 0 40px rgba(255, 0, 110, 0.2),
-                        inset 0 0 20px rgba(255, 0, 110, 0.1);
-          }
-          50% {
-            box-shadow: 0 0 30px rgba(255, 0, 110, 0.6),
-                        0 0 60px rgba(255, 0, 110, 0.3),
-                        inset 0 0 30px rgba(255, 0, 110, 0.15);
-          }
-        }
-        
-        .glow-pulse-aqua {
-          animation: glow-pulse 2s ease-in-out infinite;
-        }
-        
-        .glow-pulse-pink {
-          animation: glow-pulse-pink 2s ease-in-out infinite;
-        }
-      `}</style>
+      {attachments.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {attachments.map((attachment) => (
+            <div
+              key={attachment.id}
+              className="relative group flex items-center gap-2 px-3 py-2 bg-muted rounded-lg border border-border"
+            >
+              {attachment.preview ? (
+                <img
+                  src={attachment.preview || "/placeholder.svg"}
+                  alt={attachment.name}
+                  className="w-10 h-10 object-cover rounded"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-muted-foreground/10 rounded flex items-center justify-center">
+                  <Paperclip className="w-5 h-5 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{attachment.name}</p>
+                <p className="text-xs text-muted-foreground">{(attachment.size / 1024).toFixed(1)} KB</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemoveAttachment(attachment.id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-background rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Search Form */}
       <form onSubmit={handleSubmit} className="relative">
@@ -308,10 +377,10 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             disabled={isLoading}
             className={`w-full px-6 py-5 pr-32 text-foreground rounded-xl border-2 ${
               contentType === "image"
-                ? "border-miami-pink glow-pulse-pink"
+                ? "border-miami-pink"
                 : mode === "quick"
-                  ? "border-miami-aqua glow-pulse-aqua"
-                  : "border-miami-pink glow-pulse-pink"
+                  ? "border-miami-aqua"
+                  : "border-miami-pink"
             } transition-all focus:outline-none focus:ring-0 text-lg bg-background/50 backdrop-blur-sm relative z-10 ${
               isLoading ? "opacity-50 cursor-not-allowed" : ""
             } placeholder:text-muted-foreground/60`}
@@ -327,6 +396,32 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
           >
             <Settings className="w-5 h-5 text-muted-foreground hover:text-miami-aqua transition-colors" />
           </button>
+
+          {contentType === "search" && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={user ? "image/*,.pdf,.txt,.csv" : "image/*"}
+                multiple={!!user}
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || isLoading}
+                className="p-3 rounded-lg bg-background/80 hover:bg-muted transition-all border border-border/50 hover:border-miami-aqua/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={user ? "Attach files (images, PDFs, documents)" : "Attach image"}
+              >
+                {isUploading ? (
+                  <div className="w-5 h-5 border-2 border-miami-aqua border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Paperclip className="w-5 h-5 text-muted-foreground hover:text-miami-aqua transition-colors" />
+                )}
+              </button>
+            </>
+          )}
 
           {/* Submit Button */}
           {isLoading && onCancel ? (
@@ -488,6 +583,13 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       {contentType === "search" && mode === "deep" && !isLoading && (
         <p className="text-sm text-muted-foreground text-center mt-3">
           Deep Research mode may take 30-60 seconds for comprehensive results
+        </p>
+      )}
+      {contentType === "search" && attachments.length > 0 && !isLoading && (
+        <p className="text-sm text-muted-foreground text-center mt-3">
+          {user
+            ? `${attachments.length} of 5 attachments • 50 per day`
+            : `${attachments.length} of 1 attachment • 5 per day • Sign up for more`}
         </p>
       )}
     </div>

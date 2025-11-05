@@ -50,6 +50,7 @@
     "@upstash/redis": "latest",
     "@vercel/analytics": "latest",
     "@vercel/blob": "latest",
+    "@vercel/kv": "latest",
     "@vercel/speed-insights": "latest",
     "ai": "latest",
     "arctic": "latest",

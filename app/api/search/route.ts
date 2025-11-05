@@ -23,32 +23,87 @@ function getClientIp(request: Request): string | null {
   return "unknown"
 }
 
+function isValidCachedResponse(answer: string): boolean {
+  const deflectionPhrases = [
+    "I can't provide future information",
+    "I cannot provide future information",
+    "I can't provide details on events",
+    "I cannot provide details on events",
+    "you can use my web search capability",
+    "Would you like me to search",
+    "beyond my current knowledge",
+    "beyond my knowledge cutoff",
+    "due to my knowledge cutoff",
+    "my knowledge cutoff",
+    "knowledge is current through",
+    "let me know if you'd like more details",
+    "let me know if you would like",
+  ]
+
+  const lowerAnswer = answer.toLowerCase()
+  return !deflectionPhrases.some((phrase) => lowerAnswer.includes(phrase.toLowerCase()))
+}
+
+function isTimeSensitiveQuery(query: string): boolean {
+  const lowerQuery = query.toLowerCase()
+
+  // Check for specific years (2024, 2025, etc.)
+  const yearPattern = /\b(202[4-9]|20[3-9]\d)\b/
+  if (yearPattern.test(query)) return true
+
+  // Check for time-sensitive keywords
+  const timeSensitiveKeywords = [
+    "recent",
+    "latest",
+    "current",
+    "new",
+    "today",
+    "this year",
+    "now",
+    "upcoming",
+    "future",
+    "raised funding",
+    "just announced",
+    "breaking",
+    "update",
+    "news",
+    "trending",
+    "this month",
+    "this week",
+  ]
+
+  return timeSensitiveKeywords.some((keyword) => lowerQuery.includes(keyword))
+}
+
 export async function POST(req: Request) {
   try {
     await initializeDatabase()
 
-    const { query, mode, userId, selectedModel } = await req.json()
+    const { query, mode, userId, selectedModel, attachments } = await req.json()
 
     if (!query || typeof query !== "string") {
       return Response.json({ error: "Query is required" }, { status: 400 })
     }
 
-    const cached = await getCachedResponse(query, mode)
-    if (cached) {
+    const isTimeSensitive = isTimeSensitiveQuery(query)
+
+    const cached = !isTimeSensitive ? await getCachedResponse(query, mode) : null
+
+    if (cached && cached.answer && cached.answer.trim().length > 0 && isValidCachedResponse(cached.answer)) {
       const encoder = new TextEncoder()
       const stream = new ReadableStream({
         async start(controller) {
           try {
             const citationsData = JSON.stringify({
               type: "citations",
-              content: cached.sources,
+              content: cached.sources || [],
             })
             controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`))
 
             const modelData = JSON.stringify({
               type: "model",
               content: {
-                model: cached.model,
+                model: cached.model || "openai/gpt-4o",
                 reason: "Cached response",
                 autoSelected: false,
               },
@@ -70,7 +125,11 @@ export async function POST(req: Request) {
             controller.close()
           } catch (error) {
             console.error("Error in cached stream:", error)
-            controller.error(error)
+            try {
+              controller.error(error)
+            } catch (e) {
+              // Controller already closed, ignore
+            }
           }
         },
       })
@@ -82,6 +141,8 @@ export async function POST(req: Request) {
           Connection: "keep-alive",
         },
       })
+    } else if (cached) {
+      // Cache exists but answer is empty, skip it
     }
 
     const ipAddress = getClientIp(req)
@@ -102,7 +163,22 @@ export async function POST(req: Request) {
     }
 
     let modelSelection
-    if (selectedModel) {
+    if (attachments && attachments.length > 0) {
+      const hasImages = attachments.some((a: any) => a.type.startsWith("image/"))
+      if (hasImages) {
+        modelSelection = {
+          model: userId ? "openai/gpt-4o" : "openai/gpt-4o-mini",
+          reason: userId ? "Premium vision model for image analysis" : "Vision model for image analysis",
+          autoSelected: true,
+        }
+      } else {
+        modelSelection = {
+          model: "openai/gpt-4o",
+          reason: "Document analysis",
+          autoSelected: true,
+        }
+      }
+    } else if (selectedModel) {
       const model = getModelById(selectedModel)
       modelSelection = {
         model,
@@ -111,8 +187,10 @@ export async function POST(req: Request) {
       }
     } else {
       modelSelection = {
-        model: "openai/gpt-4o",
-        reason: "Optimized for web search - high quality with current information",
+        model: userId ? "openai/gpt-4o" : "openai/gpt-4o-mini",
+        reason: userId
+          ? "Optimized for web search - high quality with current information"
+          : "Fast and efficient model for quick searches",
         autoSelected: true,
       }
     }
@@ -133,9 +211,35 @@ export async function POST(req: Request) {
 
     const hasTavilyKey = !!process.env.TAVILY_API_KEY
 
+    let webSearchResults = null
+    if (hasTavilyKey && isTimeSensitive && !attachments?.length) {
+      try {
+        const searchResponse = await fetch("https://api.tavily.com/search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            api_key: process.env.TAVILY_API_KEY,
+            query: query,
+            search_depth: "basic",
+            max_results: 5,
+          }),
+        })
+
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json()
+          webSearchResults = searchData.results || []
+        }
+      } catch (error) {
+        console.error("Web search failed:", error)
+        // Continue without search results
+      }
+    }
+
     const systemInstruction =
       mode === "deep"
-        ? `You are Miami.ai, an advanced AI assistant with ${hasTavilyKey ? "real-time web search capabilities" : "comprehensive knowledge"}.
+        ? `You are Miami.ai, an advanced AI assistant with ${hasTavilyKey ? "real-time web search capabilities" : "comprehensive knowledge"}${attachments && attachments.length > 0 ? " and vision capabilities" : ""}.
 
 **Knowledge & Search:**
 ${
@@ -147,6 +251,16 @@ ${
     : `- Your knowledge is current through June 2024
 - For time-sensitive topics, acknowledge your knowledge cutoff
 - Focus on providing timeless, foundational knowledge`
+}
+
+${
+  attachments && attachments.length > 0
+    ? `**Vision & Document Analysis:**
+- Analyze images in detail, describing what you see
+- Extract text from images when relevant
+- Answer questions about the visual content
+- Combine image analysis with your knowledge for comprehensive answers`
+    : ""
 }
 
 **Response Formatting:**
@@ -173,16 +287,28 @@ Use rich markdown formatting to create visually appealing, easy-to-scan response
 - End with a brief summary or key takeaway when appropriate
 
 Provide comprehensive, detailed answers with in-depth analysis while maintaining excellent readability.`
-        : `You are Miami.ai, a fast AI assistant ${hasTavilyKey ? "with real-time web search" : "providing accurate answers"}.
+        : `You are Miami.ai, a fast and knowledgeable AI assistant${hasTavilyKey ? " with real-time web search capabilities" : ""}${attachments && attachments.length > 0 ? " and vision capabilities" : ""}.
 
-**Knowledge & Search:**
+**Your Capabilities:**
 ${
   hasTavilyKey
-    ? `- You have access to real-time web search for current information
-- Use webSearch tool for current events, recent data, or time-sensitive queries
-- Cite sources when using web search`
+    ? `- You have access to current information from web search results
+- When web search results are provided, use them as your primary source
+- Synthesize information from multiple sources
+- Cite your sources when using web search results
+- Provide direct, comprehensive answers based on the latest information`
     : `- Your knowledge is current through June 2024
-- For time-sensitive queries, acknowledge your knowledge cutoff`
+- Provide accurate answers based on your training data
+- For questions about recent events, acknowledge your knowledge cutoff`
+}
+
+${
+  attachments && attachments.length > 0
+    ? `**Vision & Document Analysis:**
+- Analyze images and describe what you see
+- Extract relevant information from visual content
+- Answer questions about the images`
+    : ""
 }
 
 **Response Formatting:**
@@ -200,16 +326,55 @@ Create clean, scannable responses using markdown:
 - Easy to scan quickly
 - Visually organized with emojis and formatting
 - Professional but friendly tone
+${hasTavilyKey ? "- Use web search proactively for current information - don't deflect or make excuses" : ""}
+- Answer questions confidently and comprehensively
+
+${hasTavilyKey && webSearchResults ? "\n**IMPORTANT:** Web search results have been provided below. Use them as your primary source of information. Do not mention knowledge cutoffs or limitations - answer the question directly using the search results.\n" : ""}
 
 Provide accurate, concise answers that are both informative and visually appealing.`
 
     try {
-      const tools = hasTavilyKey ? { webSearch: webSearchTool } : undefined
+      const tools = hasTavilyKey && !webSearchResults ? { webSearch: webSearchTool } : undefined
+
+      let messages
+      if (webSearchResults && webSearchResults.length > 0) {
+        const searchContext = webSearchResults
+          .map(
+            (result: any, index: number) => `[${index + 1}] ${result.title}\n${result.content}\nSource: ${result.url}`,
+          )
+          .join("\n\n")
+
+        const enhancedQuery = `${query}\n\n---\nWeb Search Results:\n${searchContext}`
+        messages = [{ role: "user" as const, content: enhancedQuery }]
+      } else if (attachments && attachments.length > 0) {
+        const imageAttachments = attachments.filter((a: any) => a.type.startsWith("image/"))
+        if (imageAttachments.length > 0) {
+          // For images, use messages format with content array
+          messages = [
+            {
+              role: "user" as const,
+              content: [
+                { type: "text" as const, text: query },
+                ...imageAttachments.map((img: any) => ({
+                  type: "image" as const,
+                  image: img.url,
+                })),
+              ],
+            },
+          ]
+        } else {
+          // For non-image attachments, use simple prompt
+          messages = [{ role: "user" as const, content: query }]
+        }
+      } else {
+        // No attachments, use simple prompt
+        messages = [{ role: "user" as const, content: query }]
+      }
 
       const result = streamText({
         model: modelSelection.model,
         system: systemInstruction,
-        prompt: query,
+        messages,
         maxTokens: mode === "deep" ? 2000 : 800,
         temperature: mode === "deep" ? 0.7 : 0.5,
         ...(tools && { tools, maxSteps: 5 }),
@@ -223,9 +388,11 @@ Provide accurate, concise answers that are both informative and visually appeali
             )
           }
 
+          const sources = webSearchResults ? webSearchResults.map((r: any) => ({ title: r.title, url: r.url })) : []
+
           await setCachedResponse(query, mode, {
             answer: text,
-            sources: [], // No external sources for free tier
+            sources,
             model: modelSelection.model,
           })
 
@@ -235,7 +402,7 @@ Provide accurate, concise answers that are both informative and visually appeali
                 userId,
                 query,
                 text,
-                [], // No external sources
+                sources,
                 mode,
                 modelSelection.model,
                 modelSelection.autoSelected,
@@ -255,6 +422,10 @@ Provide accurate, concise answers that are both informative and visually appeali
       const customStream = new ReadableStream({
         async start(controller) {
           try {
+            if (!modelSelection) {
+              throw new Error("Model selection is undefined")
+            }
+
             const modelData = JSON.stringify({
               type: "model",
               content: {
@@ -265,7 +436,13 @@ Provide accurate, concise answers that are both informative and visually appeali
             })
             controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
 
+            let chunkCount = 0
+            let totalText = ""
+
             for await (const chunk of result.textStream) {
+              chunkCount++
+              totalText += chunk
+
               const textData = JSON.stringify({
                 type: "text",
                 content: chunk,
@@ -321,7 +498,11 @@ Return ONLY the 5 questions, one per line, without numbering or bullet points.`,
             controller.close()
           } catch (error) {
             console.error("Error in stream:", error)
-            controller.error(error)
+            try {
+              controller.error(error)
+            } catch (e) {
+              // Controller already closed, ignore
+            }
           }
         },
       })
