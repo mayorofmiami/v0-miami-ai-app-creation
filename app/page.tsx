@@ -680,21 +680,21 @@ We apologize for the inconvenience!`,
 
         {searchState.hasSearched && (
           <div
-            className={`fixed top-4 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+            className={`fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
             <div className="max-w-3xl mx-auto">
-              <div className="flex items-center justify-between h-12 relative">
-                {/* Menu Button - Mobile only */}
+              <div className="flex items-center justify-between h-14 md:h-12 relative">
+                {/* Menu Button - Mobile only with larger touch target */}
                 <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="md:hidden group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
                       aria-label="Open menu"
                     >
                       <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                        <Menu size={24} className="text-miami-aqua" />
+                        <Menu size={28} className="text-miami-aqua md:w-6 md:h-6" />
                       </span>
                     </Button>
                   </SheetTrigger>
@@ -840,14 +840,14 @@ We apologize for the inconvenience!`,
                   </SheetContent>
                 </Sheet>
 
-                {/* Logo - Centered within max-w-3xl container */}
+                {/* Logo - Centered with better mobile sizing */}
                 <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 md:top-2 md:translate-y-0">
                   <Image
                     src="/miami-ai-logo.png"
                     alt="MIAMI.AI"
-                    width={140}
-                    height={28}
-                    className="h-12 w-auto"
+                    width={160}
+                    height={32}
+                    className="h-10 md:h-12 w-auto"
                     priority
                   />
                 </div>
@@ -858,21 +858,21 @@ We apologize for the inconvenience!`,
 
         {!searchState.hasSearched && user && (
           <div
-            className={`fixed top-4 left-0 right-0 z-50 px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+            className={`fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
             <div className="max-w-3xl mx-auto">
-              <div className="flex items-center justify-between h-12 relative">
-                {/* Menu Button - Mobile only */}
+              <div className="flex items-center justify-between h-14 md:h-12 relative">
+                {/* Menu Button - Mobile only with larger touch target */}
                 <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="md:hidden group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
                       aria-label="Open menu"
                     >
                       <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                        <Menu size={24} className="text-miami-aqua" />
+                        <Menu size={28} className="text-miami-aqua md:w-6 md:h-6" />
                       </span>
                     </Button>
                   </SheetTrigger>
@@ -1035,184 +1035,188 @@ We apologize for the inconvenience!`,
         )}
 
         {!searchState.hasSearched && !user && (
-          <div className="fixed top-4 left-6 z-50 md:hidden">
-            <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="group relative h-12 w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
-                  aria-label="Open menu"
-                >
-                  <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                    <Menu size={24} className="text-miami-aqua" />
-                  </span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
-                <div className="flex flex-col items-center gap-4 py-4">
-                  <Image
-                    src="/miami-ai-logo.png"
-                    alt="MIAMI.AI"
-                    width={180}
-                    height={36}
-                    className="h-9 w-auto"
-                    priority
-                  />
-                </div>
-
-                <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
-                    onClick={handleNewChat}
-                  >
-                    <span className="text-xl mr-3">
-                      <Plus size={20} />
-                    </span>
-                    New Chat
-                  </Button>
-
-                  {isAdmin && (
-                    <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
-                      >
-                        <span className="text-xl mr-3">
-                          <Shield size={20} className="text-miami-aqua" />
-                        </span>
-                        Admin Dashboard
-                      </Button>
-                    </Link>
-                  )}
-
-                  {recentSearches.length > 0 && (
-                    <div className="pt-5 border-t border-border mt-2">
-                      <div className="flex items-center justify-between px-4 mb-3">
-                        <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                          Recent Chats
-                        </p>
-                        <button
-                          onClick={handleToggleHistory}
-                          className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
-                        >
-                          See All
-                        </button>
-                      </div>
-                      <div className="space-y-2 max-h-64 overflow-y-auto">
-                        {recentSearches.slice(0, 5).map((search, index) => (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              handleSearch(search, searchState.mode)
-                              setIsDrawerOpen(false)
-                            }}
-                            className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-muted-foreground flex-shrink-0">
-                                <Clock size={16} />
-                              </span>
-                              <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                                {search}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-5 border-t border-border mt-2">
+          <div className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center justify-between h-14 md:h-12 relative">
+                <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+                  <SheetTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start text-base px-4 py-6 h-auto hover:bg-accent"
-                      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                      size="icon"
+                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                      aria-label="Open menu"
                     >
-                      <Sun className="mr-3 h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                      <Moon className="mr-3 h-5 w-5 absolute left-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                      <span>Theme</span>
+                      <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
+                        <Menu size={28} className="text-miami-aqua md:w-6 md:h-6" />
+                      </span>
                     </Button>
-                  </div>
-
-                  <div className="border-t border-border pt-3 mt-2">
-                    <HelpMenu isMobile />
-                  </div>
-                </nav>
-
-                <div className="border-t pt-6 pb-8 mt-auto">
-                  {isLoadingUser ? (
-                    <div className="flex items-center gap-3 px-4">
-                      <div className="w-12 h-12 rounded-full bg-muted/50 animate-pulse" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-muted/50 rounded w-24 animate-pulse" />
-                        <div className="h-3 bg-muted/50 rounded w-32 animate-pulse" />
-                      </div>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
+                    <div className="flex flex-col items-center gap-4 py-4">
+                      <Image
+                        src="/miami-ai-logo.png"
+                        alt="MIAMI.AI"
+                        width={180}
+                        height={36}
+                        className="h-9 w-auto"
+                        priority
+                      />
                     </div>
-                  ) : user ? (
-                    <>
-                      <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
-                        <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                            <span className="text-miami-aqua text-2xl">
-                              <User size={24} className="text-miami-aqua" />
+
+                    <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
+                        onClick={handleNewChat}
+                      >
+                        <span className="text-xl mr-3">
+                          <Plus size={20} />
+                        </span>
+                        New Chat
+                      </Button>
+
+                      {isAdmin && (
+                        <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
+                          >
+                            <span className="text-xl mr-3">
+                              <Shield size={20} className="text-miami-aqua" />
                             </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
-                              {user.name || "User"}
+                            Admin Dashboard
+                          </Button>
+                        </Link>
+                      )}
+
+                      {recentSearches.length > 0 && (
+                        <div className="pt-5 border-t border-border mt-2">
+                          <div className="flex items-center justify-between px-4 mb-3">
+                            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                              Recent Chats
                             </p>
-                            <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                            <button
+                              onClick={handleToggleHistory}
+                              className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                            >
+                              See All
+                            </button>
+                          </div>
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {recentSearches.slice(0, 5).map((search, index) => (
+                              <button
+                                key={index}
+                                onClick={() => {
+                                  handleSearch(search, searchState.mode)
+                                  setIsDrawerOpen(false)
+                                }}
+                                className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="text-muted-foreground flex-shrink-0">
+                                    <Clock size={16} />
+                                  </span>
+                                  <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                                    {search}
+                                  </span>
+                                </div>
+                              </button>
+                            ))}
                           </div>
                         </div>
-                      </Link>
-                    </>
-                  ) : (
-                    <div className="flex flex-col gap-3 px-4">
-                      <Link href="/login" onClick={() => setIsDrawerOpen(false)} className="block">
-                        <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-12 rounded-lg shadow-sm hover:shadow-md transition-all text-base">
-                          Sign In
-                        </Button>
-                      </Link>
-                      <Link href="/signup" onClick={() => setIsDrawerOpen(false)} className="block">
+                      )}
+
+                      <div className="pt-5 border-t border-border mt-2">
                         <Button
-                          variant="outline"
-                          className="w-full h-12 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent text-base"
+                          variant="ghost"
+                          className="w-full justify-start text-base px-4 py-6 h-auto hover:bg-accent"
+                          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                         >
-                          Sign Up
+                          <Sun className="mr-3 h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                          <Moon className="mr-3 h-5 w-5 absolute left-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                          <span>Theme</span>
                         </Button>
-                      </Link>
+                      </div>
+
+                      <div className="border-t border-border pt-3 mt-2">
+                        <HelpMenu isMobile />
+                      </div>
+                    </nav>
+
+                    <div className="border-t pt-6 pb-8 mt-auto">
+                      {isLoadingUser ? (
+                        <div className="flex items-center gap-3 px-4">
+                          <div className="w-12 h-12 rounded-full bg-muted/50 animate-pulse" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-muted/50 rounded w-24 animate-pulse" />
+                            <div className="h-3 bg-muted/50 rounded w-32 animate-pulse" />
+                          </div>
+                        </div>
+                      ) : user ? (
+                        <>
+                          <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
+                            <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
+                                <span className="text-miami-aqua text-2xl">
+                                  <User size={24} className="text-miami-aqua" />
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
+                                  {user.name || "User"}
+                                </p>
+                                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                              </div>
+                            </div>
+                          </Link>
+                        </>
+                      ) : (
+                        <div className="flex flex-col gap-3 px-4">
+                          <Link href="/login" onClick={() => setIsDrawerOpen(false)} className="block">
+                            <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-12 rounded-lg shadow-sm hover:shadow-md transition-all text-base">
+                              Sign In
+                            </Button>
+                          </Link>
+                          <Link href="/signup" onClick={() => setIsDrawerOpen(false)} className="block">
+                            <Button
+                              variant="outline"
+                              className="w-full h-12 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent text-base"
+                            >
+                              Sign Up
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Main Content */}
         <main
-          className={`flex-1 container mx-auto sm:px-6 lg:px-8 px-4 py-12 max-w-full overflow-x-hidden ${searchState.hasSearched ? "pb-32 pt-24" : user ? "pt-24" : ""}`}
+          className={`flex-1 container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 max-w-full overflow-x-hidden ${searchState.hasSearched ? "pb-36 md:pb-32 pt-20 md:pt-24" : user ? "pt-20 md:pt-24" : ""}`}
         >
           {!searchState.hasSearched ? (
             <>
               {!user && (
-                <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] space-y-6 sm:space-y-8 animate-in fade-in duration-700 justify-center">
+                <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] space-y-8 md:space-y-8 animate-in fade-in duration-700 justify-center px-2">
                   <div className="text-center">
                     <div className="flex justify-center">
                       <Image
                         src="/miami-ai-logo.png"
                         alt="MIAMI.AI"
-                        width={294}
-                        height={59}
-                        className="neon-glow max-w-full h-auto"
+                        width={320}
+                        height={64}
+                        className="neon-glow max-w-full h-auto w-72 md:w-auto"
                         priority
                       />
                     </div>
                   </div>
 
-                  <div className="w-full max-w-3xl px-4 space-y-4 sm:space-y-6">
+                  <div className="w-full max-w-3xl px-2 md:px-4 space-y-6 md:space-y-6">
                     <div className="flex items-end gap-3">
                       <div className="flex-1">
                         <SearchInput
@@ -1235,11 +1239,9 @@ We apologize for the inconvenience!`,
                           hasHistory={recentSearches.length > 0}
                         />
                       </div>
-                      {/* Removed FloatingActionMenu here */}
                     </div>
 
-                    {/* Example Search Queries */}
-                    <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+                    <div className="flex flex-wrap gap-2.5 md:gap-3 justify-center">
                       {[
                         { query: "Which Miami AI startups raised funding in 2025?", emoji: "🤖" },
                         { query: "Is Miami real estate overvalued vs Austin?", emoji: "🏠" },
@@ -1253,18 +1255,17 @@ We apologize for the inconvenience!`,
                         const shouldHide = index >= 3 && !showAllExamples
                         const hideOnDesktop = index >= 6
 
-                        // Don't render pills 6-7 at all on desktop
                         if (hideOnDesktop) {
                           return (
                             <button
                               key={index}
                               onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
-                              className={`group ${shouldHide ? "hidden" : "inline-flex"} md:hidden items-center gap-2 px-5 py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
+                              className={`group ${shouldHide ? "hidden" : "inline-flex"} md:hidden items-center gap-2.5 px-5 py-3.5 md:px-5 md:py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105 active:scale-95`}
                             >
-                              <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                              <span className="text-xl md:text-lg group-hover:scale-110 transition-transform duration-200">
                                 {example.emoji}
                               </span>
-                              <span className="text-base font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
+                              <span className="text-base md:text-base font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
                                 {example.query}
                               </span>
                             </button>
@@ -1275,26 +1276,26 @@ We apologize for the inconvenience!`,
                           <button
                             key={index}
                             onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
-                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-5 py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105`}
+                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2.5 px-5 py-3.5 md:px-5 md:py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105 active:scale-95`}
                           >
-                            <span className="text-lg group-hover:scale-110 transition-transform duration-200">
+                            <span className="text-xl md:text-lg group-hover:scale-110 transition-transform duration-200">
                               {example.emoji}
                             </span>
-                            <span className="text-base font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
+                            <span className="text-base md:text-base font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
                               {example.query}
                             </span>
                           </button>
                         )
                       })}
 
-                      {/* Show More Button - Mobile Only */}
+                      {/* Show More Button - Mobile Only with larger touch target */}
                       {!showAllExamples && (
                         <button
                           onClick={() => setShowAllExamples(true)}
-                          className="md:hidden group inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-miami-aqua/50 bg-miami-aqua/5 hover:bg-miami-aqua/10 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/20"
+                          className="md:hidden group inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-miami-aqua/50 bg-miami-aqua/5 hover:bg-miami-aqua/10 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/20 active:scale-95"
                         >
-                          <span className="text-lg group-hover:scale-110 transition-transform duration-200">+</span>
-                          <span className="text-sm font-medium text-miami-aqua transition-colors whitespace-nowrap">
+                          <span className="text-xl group-hover:scale-110 transition-transform duration-200">+</span>
+                          <span className="text-base font-medium text-miami-aqua transition-colors whitespace-nowrap">
                             More
                           </span>
                         </button>
@@ -1387,7 +1388,6 @@ We apologize for the inconvenience!`,
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {searchState.messages.map((message, index) => (
                 <div key={message.id} className="space-y-4">
-                  {/* Query */}
                   <div
                     ref={(el) => {
                       messageRefs.current[message.id] = el
@@ -1395,9 +1395,9 @@ We apologize for the inconvenience!`,
                     className="w-full max-w-3xl mx-auto scroll-mt-24"
                   >
                     <div className="relative bg-gradient-to-r from-miami-aqua/10 via-miami-blue/10 to-miami-purple/10 rounded-2xl p-[2px] shadow-lg">
-                      <div className="bg-background rounded-2xl px-5 py-4 flex items-start gap-3">
+                      <div className="bg-background rounded-2xl px-4 md:px-5 py-4 flex items-start gap-3">
                         <svg
-                          className="w-5 h-5 text-miami-aqua flex-shrink-0 mt-0.5"
+                          className="w-5 h-5 md:w-5 md:h-5 text-miami-aqua flex-shrink-0 mt-0.5"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -1409,7 +1409,9 @@ We apologize for the inconvenience!`,
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                           />
                         </svg>
-                        <p className="text-base text-foreground/90 flex-1">{message.query}</p>
+                        <p className="text-base md:text-base text-foreground/90 flex-1 leading-relaxed">
+                          {message.query}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -1493,12 +1495,11 @@ We apologize for the inconvenience!`,
           </Suspense>
         )}
 
-        {/* Fixed Search Bar at Bottom */}
         {(searchState.hasSearched || user) && (
           <div
-            className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+            className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"} shadow-[0_-4px_12px_rgba(0,0,0,0.1)]`}
           >
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-3">
+            <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-4 space-y-3">
               <div className="flex items-end gap-3">
                 <div className="flex-1">
                   <SearchInput
@@ -1519,15 +1520,14 @@ We apologize for the inconvenience!`,
                     hasHistory={recentSearches.length > 0}
                   />
                 </div>
-                {/* Removed FloatingActionMenu here */}
               </div>
               {searchState.contentType === "image" && searchState.imageRateLimit && (
-                <div className="text-center text-xs text-muted-foreground">
+                <div className="text-center text-sm md:text-xs text-muted-foreground font-medium">
                   {searchState.imageRateLimit.remaining} of {searchState.imageRateLimit.limit} images remaining today
                 </div>
               )}
               {searchState.contentType === "search" && searchState.rateLimitInfo && (
-                <div className="text-center text-xs text-muted-foreground">
+                <div className="text-center text-sm md:text-xs text-muted-foreground font-medium">
                   {searchState.rateLimitInfo.remaining} of {searchState.rateLimitInfo.limit} queries remaining today
                 </div>
               )}
