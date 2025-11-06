@@ -235,6 +235,10 @@ export default function Home() {
   const searchInputRef = useRef<SearchInputRef>(null)
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
+  const userHasScrolledRef = useRef(false)
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastMessageCountRef = useRef(0)
+
   const userId = user?.id || null
   const isAdmin = user?.role === "owner" || user?.role === "admin"
 
@@ -626,17 +630,44 @@ We apologize for the inconvenience!`,
     toast.info("Voice search coming soon!")
   }
 
-  // </CHANGE> Scroll immediately when query is entered, not when answer completes
   useEffect(() => {
-    if (searchState.messages.length > 0) {
-      const latestMessage = searchState.messages[searchState.messages.length - 1]
+    const handleScroll = () => {
+      userHasScrolledRef.current = true
+
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+
+      // Reset after user stops scrolling for 2 seconds
+      scrollTimeoutRef.current = setTimeout(() => {
+        userHasScrolledRef.current = false
+      }, 2000)
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const messages = searchState.messages
+    const currentMessageCount = messages.length
+
+    // Only scroll if a new message was added (not just updated)
+    if (currentMessageCount > lastMessageCountRef.current && currentMessageCount > 0) {
+      const latestMessage = messages[currentMessageCount - 1]
       const messageElement = messageRefs.current[latestMessage.id]
 
-      if (messageElement) {
-        // Scroll immediately when message is added (query entered)
+      // Don't auto-scroll if user is actively scrolling
+      if (messageElement && !userHasScrolledRef.current) {
         setTimeout(() => {
-          // Calculate offset for fixed header (header height + padding)
-          const headerOffset = 100 // Adjust based on your header height
+          const headerOffset = 100
           const elementPosition = messageElement.getBoundingClientRect().top
           const offsetPosition = elementPosition + window.pageYOffset - headerOffset
 
@@ -647,7 +678,10 @@ We apologize for the inconvenience!`,
         }, 100)
       }
     }
-  }, [searchState.messages]) // Now depends on searchState.messages to trigger scroll on any message update
+
+    // Update the last message count
+    lastMessageCountRef.current = currentMessageCount
+  }, [searchState.messages])
 
   return (
     <ErrorBoundary>
@@ -668,7 +702,7 @@ We apologize for the inconvenience!`,
         onToggleHistory={handleToggleHistory}
         onLogout={handleLogout}
         isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        setIsCollapsed={setIsSidebarCollapsed}
       />
 
       <div
@@ -868,7 +902,8 @@ We apologize for the inconvenience!`,
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                      data-sheet-trigger="true"
+                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20 pointer-events-auto"
                       aria-label="Open menu"
                     >
                       <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
@@ -1035,7 +1070,7 @@ We apologize for the inconvenience!`,
         )}
 
         {!searchState.hasSearched && !user && (
-          <div className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300">
+          <div className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 pointer-events-none">
             <div className="max-w-3xl mx-auto">
               <div className="flex items-center justify-between h-14 md:h-12 relative">
                 <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -1043,7 +1078,8 @@ We apologize for the inconvenience!`,
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
+                      data-sheet-trigger="true"
+                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20 pointer-events-auto"
                       aria-label="Open menu"
                     >
                       <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
@@ -1210,7 +1246,7 @@ We apologize for the inconvenience!`,
                         alt="MIAMI.AI"
                         width={320}
                         height={64}
-                        className="neon-glow max-w-full h-auto w-72 md:w-auto"
+                        className="neon-glow max-w-full h-auto w-72 md:w-6/12"
                         priority
                       />
                     </div>
@@ -1497,7 +1533,7 @@ We apologize for the inconvenience!`,
 
         {(searchState.hasSearched || user) && (
           <div
-            className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"} shadow-[0_-4px_12px_rgba(0,0,0,0.1)]`}
+            className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
             <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-4 space-y-3">
               <div className="flex items-end gap-3">

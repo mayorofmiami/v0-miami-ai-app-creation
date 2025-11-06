@@ -7,8 +7,7 @@ import PlusIcon from "@/components/icons/Plus"
 import ClockIcon from "@/components/icons/Clock"
 import SunIcon from "@/components/icons/Sun"
 import MoonIcon from "@/components/icons/Moon"
-import PalmtreeIcon from "@/components/icons/Palmtree"
-import ChevronLeftIcon from "@/components/icons/ChevronLeft"
+import Palmtree from "@/components/icons/Palmtree"
 import ShieldIcon from "@/components/icons/Shield"
 import Link from "next/link"
 import { useTheme } from "next-themes"
@@ -23,7 +22,7 @@ interface CollapsibleSidebarProps {
   onToggleHistory: () => void
   onLogout: () => void
   isCollapsed: boolean
-  onToggleCollapse: () => void
+  setIsCollapsed: (collapsed: boolean) => void
 }
 
 export function CollapsibleSidebar({
@@ -35,7 +34,7 @@ export function CollapsibleSidebar({
   onToggleHistory,
   onLogout,
   isCollapsed,
-  onToggleCollapse,
+  setIsCollapsed,
 }: CollapsibleSidebarProps) {
   const { theme, setTheme } = useTheme()
 
@@ -46,7 +45,7 @@ export function CollapsibleSidebar({
   const isAdmin = user?.role === "owner" || user?.role === "admin"
 
   return (
-    <aside
+    <div
       className={`hidden md:flex fixed left-0 top-0 h-screen bg-background border-r border-border flex-col transition-all duration-300 z-50 ${
         isCollapsed ? "w-16" : "w-64"
       }`}
@@ -61,15 +60,11 @@ export function CollapsibleSidebar({
         <Button
           variant="ghost"
           size="icon"
-          onClick={onToggleCollapse}
-          className="h-8 w-8 hover:bg-muted"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="h-9 w-9 rounded-full hover:bg-accent flex-shrink-0"
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {isCollapsed ? (
-            <PalmtreeIcon className="h-5 w-5 text-miami-aqua" />
-          ) : (
-            <ChevronLeftIcon className="h-5 w-5 text-muted-foreground" />
-          )}
+          <Palmtree className="h-5 w-5" />
         </Button>
       </div>
 
@@ -227,6 +222,6 @@ export function CollapsibleSidebar({
           </div>
         )}
       </div>
-    </aside>
+    </div>
   )
 }

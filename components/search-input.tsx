@@ -133,8 +133,25 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        console.log("[v0] Click outside detected")
+      // Only run if dropdowns are actually open
+      if (!showSuggestions && !isMenuOpen) {
+        return
+      }
+
+      const target = event.target as HTMLElement
+
+      // Don't close if clicking on Sheet triggers or dialog elements
+      if (
+        target.closest("[data-sheet-trigger]") ||
+        target.closest('[role="dialog"]') ||
+        target.closest("[data-radix-dialog-overlay]") ||
+        target.closest("[data-radix-dialog-content]") ||
+        target.closest('button[aria-label="Open menu"]')
+      ) {
+        return
+      }
+
+      if (wrapperRef.current && !wrapperRef.current.contains(target)) {
         setShowSuggestions(false)
         setIsMenuOpen(false)
       }
@@ -142,7 +159,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
     document.addEventListener("click", handleClickOutside)
     return () => document.removeEventListener("click", handleClickOutside)
-  }, [])
+  }, [showSuggestions, isMenuOpen])
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -473,9 +490,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
               <button
                 onClick={() => handleContentTypeChange("image")}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
-                  contentType === "image"
-                    ? "bg-miami-pink/20 text-miami-pink"
-                    : "hover:bg-muted/50 text-muted-foreground"
+                  contentType === "image" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-foreground"
                 }`}
               >
                 <ImageIcon className="w-3.5 h-3.5" />
@@ -492,15 +507,15 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleModeChangeCallback("quick")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
-                      mode === "quick" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted/50 text-muted-foreground"
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
+                      mode === "quick" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted/50 text-foreground"
                     }`}
                   >
                     Quick
                   </button>
                   <button
                     onClick={() => handleModeChangeCallback("deep")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
                       mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-foreground"
                     }`}
                   >
