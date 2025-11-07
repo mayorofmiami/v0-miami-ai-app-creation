@@ -5,7 +5,6 @@ import { initializeDatabase } from "@/lib/db-init"
 import { getCachedResponse, setCachedResponse } from "@/lib/cache"
 import { checkRateLimit as checkModelRateLimit } from "@/lib/rate-limiter"
 import { trackModelUsage } from "@/lib/cost-tracker"
-import { webSearchTool } from "@/lib/tools"
 import { searchRequestSchema, validateRequest } from "@/lib/validation"
 
 export const maxDuration = 30
@@ -98,6 +97,8 @@ export async function POST(request: Request) {
 
     const { query, mode, userId, selectedModel, attachments } = validation.data
 
+    console.log(`[v0] Starting search - query: "${query}", mode: ${mode}, userId: ${userId || "none"}`)
+
     const isTimeSensitive = isTimeSensitiveQuery(query)
 
     console.log(`[v0] Checking cache - isTimeSensitive: ${isTimeSensitive}, query: ${query}, mode: ${mode}`)
@@ -158,14 +159,18 @@ export async function POST(request: Request) {
         },
       })
     } else if (cached) {
-      // Cache exists but answer is empty, skip it
+      console.log(`[v0] Cache exists but invalid, proceeding with fresh search`)
     }
+
+    console.log(`[v0] Proceeding with fresh search, checking rate limits...`)
 
     const ipAddress = getClientIp(request)
     const rateLimitCheck = await checkRateLimit(
       userId && typeof userId === "string" && userId.length > 0 ? userId : null,
       ipAddress,
     )
+
+    console.log(`[v0] Rate limit check - allowed: ${rateLimitCheck.allowed}, remaining: ${rateLimitCheck.remaining}`)
 
     if (!rateLimitCheck.allowed) {
       return Response.json(
@@ -228,7 +233,7 @@ export async function POST(request: Request) {
     const hasTavilyKey = !!process.env.TAVILY_API_KEY
 
     let webSearchResults = null
-    if (hasTavilyKey && isTimeSensitive && !attachments?.length) {
+    if (hasTavilyKey && !attachments?.length) {
       try {
         const searchResponse = await fetch("https://api.tavily.com/search", {
           method: "POST",
@@ -246,6 +251,7 @@ export async function POST(request: Request) {
         if (searchResponse.ok) {
           const searchData = await searchResponse.json()
           webSearchResults = searchData.results || []
+          console.log(`[v0] Pre-fetched ${webSearchResults.length} web search results`)
         }
       } catch (error) {
         console.error("Web search failed:", error)
@@ -309,7 +315,10 @@ Provide comprehensive, detailed answers with in-depth analysis while maintaining
 ${
   hasTavilyKey
     ? `- You have access to current information from web search results
-- When web search results are provided, use them as your primary source
+- When you need current information, use the webSearch tool
+- Added explicit instruction to always generate text after tool use
+- IMPORTANT: After using webSearch, you MUST synthesize the results into a comprehensive text response
+- Never just return tool results - always generate a proper answer based on what you found
 - Synthesize information from multiple sources
 - Cite your sources when using web search results
 - Provide direct, comprehensive answers based on the latest information`
@@ -344,13 +353,15 @@ Create clean, scannable responses using markdown:
 - Professional but friendly tone
 ${hasTavilyKey ? "- Use web search proactively for current information - don't deflect or make excuses" : ""}
 - Answer questions confidently and comprehensively
+- Added reminder to always generate complete text responses
+- ALWAYS generate a complete text response - never finish without providing an answer
 
 ${hasTavilyKey && webSearchResults ? "\n**IMPORTANT:** Web search results have been provided below. Use them as your primary source of information. Do not mention knowledge cutoffs or limitations - answer the question directly using the search results.\n" : ""}
 
 Provide accurate, concise answers that are both informative and visually appealing.`
 
     try {
-      const tools = hasTavilyKey && !webSearchResults ? { webSearch: webSearchTool } : undefined
+      console.log(`[v0] Creating AI stream with model: ${modelSelection.model}`)
 
       let messages
       if (webSearchResults && webSearchResults.length > 0) {
@@ -393,7 +404,6 @@ Provide accurate, concise answers that are both informative and visually appeali
         messages,
         maxTokens: mode === "deep" ? 2000 : 800,
         temperature: mode === "deep" ? 0.7 : 0.5,
-        ...(tools && { tools, maxSteps: 5 }),
         onFinish: async ({ text, usage }) => {
           if (usage) {
             await trackModelUsage(
@@ -436,11 +446,15 @@ Provide accurate, concise answers that are both informative and visually appeali
         },
       })
 
+      console.log("[v0] StreamText result obtained, creating custom stream")
+
       const encoder = new TextEncoder()
 
       const customStream = new ReadableStream({
         async start(controller) {
           try {
+            console.log("[v0] Starting custom stream controller")
+
             if (!modelSelection) {
               throw new Error("Model selection is undefined")
             }
@@ -454,80 +468,106 @@ Provide accurate, concise answers that are both informative and visually appeali
               },
             })
             controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
-
-            const relatedSearchesPromise = (async () => {
-              try {
-                const { streamText: relatedStream } = await import("ai")
-                const relatedResult = relatedStream({
-                  model: "openai/gpt-4o-mini",
-                  prompt: `Based on this search query, generate exactly 5 contextually relevant follow-up questions.
-
-Original Query: "${query}"
-
-Generate 5 follow-up questions that:
-- Are directly relevant to the topic being searched
-- Naturally extend the conversation about this specific subject
-- Cover different angles (deeper dive, related topics, practical applications, comparisons, current trends)
-- Are concise and actionable
-- Feel natural and conversational
-${query.toLowerCase().includes("miami") ? "- Include Miami-specific context where relevant" : ""}
-
-Return ONLY the 5 questions, one per line, without numbering or bullet points.`,
-                  maxTokens: 200,
-                  temperature: 0.7,
-                })
-
-                let relatedText = ""
-                for await (const chunk of relatedResult.textStream) {
-                  relatedText += chunk
-                }
-
-                return relatedText
-                  .split("\n")
-                  .map((q) => q.trim())
-                  .filter((q) => q.length > 0)
-                  .slice(0, 5)
-              } catch (error) {
-                console.error("Failed to generate related searches:", error)
-                return []
-              }
-            })()
+            console.log("[v0] Sent model data to client")
 
             let chunkCount = 0
             let totalText = ""
 
-            for await (const chunk of result.textStream) {
-              chunkCount++
-              totalText += chunk
+            console.log("[v0] Starting to read text stream...")
+            console.log(`[v0] Tools enabled: ${!!undefined}, mode: ${mode}`)
 
-              const textData = JSON.stringify({
-                type: "text",
-                content: chunk,
+            try {
+              console.log("[v0] Reading from textStream (handles tools automatically)")
+              for await (const textChunk of result.textStream) {
+                chunkCount++
+                totalText += textChunk
+
+                if (chunkCount % 10 === 0) {
+                  console.log(`[v0] Processed ${chunkCount} chunks, total length: ${totalText.length}`)
+                }
+
+                const textData = JSON.stringify({
+                  type: "text",
+                  content: textChunk,
+                })
+                controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
+              }
+
+              console.log(
+                `[v0] Finished streaming. Total chunks: ${chunkCount}, total text length: ${totalText.length}`,
+              )
+            } catch (streamError) {
+              console.error("[v0] ERROR reading text stream:", streamError)
+              console.error("[v0] Stream error details:", {
+                name: streamError instanceof Error ? streamError.name : "unknown",
+                message: streamError instanceof Error ? streamError.message : String(streamError),
+                stack: streamError instanceof Error ? streamError.stack : "no stack",
               })
-              controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
+
+              // If we got some chunks before the error, don't throw - just finish gracefully
+              if (chunkCount > 0) {
+                console.log(`[v0] Recovered from stream error after ${chunkCount} chunks`)
+              } else {
+                // No chunks received - this is a real problem
+                throw streamError
+              }
             }
 
-            const relatedSearches = await Promise.race([
-              relatedSearchesPromise,
-              new Promise<string[]>((resolve) => setTimeout(() => resolve([]), 500)),
-            ])
+            console.log("[v0] Text stream complete, now generating related searches...")
 
-            if (relatedSearches.length > 0) {
-              const relatedData = JSON.stringify({
-                type: "related_searches",
-                content: relatedSearches,
+            try {
+              console.log("[v0] Generating related searches...")
+              const relatedResult = streamText({
+                model: "openai/gpt-4o-mini",
+                prompt: `Based on this search query, generate exactly 5 contextually relevant follow-up questions that naturally build upon the topic. 
+
+Original query: "${query}"
+
+Requirements:
+- Make them genuinely interesting and useful
+- Vary the depth and angle (some broad, some specific)
+- Keep them concise (under 80 characters)
+- Make them natural extensions of the original query
+- Don't just rephrase the original query
+
+Return ONLY a JSON array of 5 questions, no other text:
+["question 1", "question 2", "question 3", "question 4", "question 5"]`,
+                maxTokens: 200,
+                temperature: 0.8,
               })
-              controller.enqueue(encoder.encode(`data: ${relatedData}\n\n`))
+
+              let relatedText = ""
+              for await (const chunk of relatedResult.textStream) {
+                relatedText += chunk
+              }
+
+              try {
+                const relatedSearches = JSON.parse(relatedText)
+                if (Array.isArray(relatedSearches) && relatedSearches.length === 5) {
+                  const relatedData = JSON.stringify({
+                    type: "related_searches",
+                    content: relatedSearches,
+                  })
+                  controller.enqueue(encoder.encode(`data: ${relatedData}\n\n`))
+                  console.log("[v0] Sent related searches to client")
+                }
+              } catch (parseError) {
+                console.error("[v0] Failed to parse related searches:", parseError)
+              }
+            } catch (relatedError) {
+              console.error("[v0] Error generating related searches:", relatedError)
+              // Don't fail the entire request if related searches fail
             }
 
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))
+            console.log("[v0] Stream complete, sent [DONE]")
             controller.close()
           } catch (error) {
-            console.error("Error in stream:", error)
+            console.error("[v0] Error in stream controller:", error)
             try {
               controller.error(error)
             } catch (e) {
-              // Controller already closed, ignore
+              console.error("[v0] Failed to send error to controller:", e)
             }
           }
         },

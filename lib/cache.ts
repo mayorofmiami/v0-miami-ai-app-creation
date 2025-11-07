@@ -66,7 +66,7 @@ export async function setCachedResponse(
 
     // Set with 24 hour expiration
     await redis.setex(key, 24 * 60 * 60, cached)
-    console.log(`[v0] Cached response for query: ${query}`)
+    console.log(`[v0] Saved response to cache for query: ${query}`)
   } catch (error) {
     console.error("[v0] Cache set error:", error)
   }
