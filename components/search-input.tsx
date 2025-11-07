@@ -7,10 +7,11 @@ import XIcon from "@/components/icons/X"
 import ImageIcon from "@/components/icons/Image"
 import Settings from "@/components/icons/Settings"
 import Paperclip from "@/components/icons/Paperclip"
-import type { ModelId, Attachment } from "@/components/model-selector"
+import type { ModelId } from "@/components/model-selector"
 import { AttachmentList } from "@/components/search-input/attachment-list"
 import { SearchSuggestions } from "@/components/search-input/search-suggestions"
 import { SearchInputMenu } from "@/components/search-input/search-input-menu"
+import type { Attachment, User } from "@/types"
 
 const MODEL_OPTIONS = [
   { id: "auto" as ModelId, name: "Auto", description: "Let us choose" },
@@ -30,7 +31,7 @@ interface SearchInputProps {
   onModeChange?: (mode: "quick" | "deep") => void
   onCancel?: () => void
   recentSearches?: string[]
-  user?: any
+  user?: User
   selectedModel?: ModelId
   onModelChange?: (model: ModelId) => void
   onHistoryClick?: () => void
@@ -144,7 +145,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   )
 
   const handleFocus = useCallback(() => {
-    console.log("[v0] handleFocus called")
     setIsFocused(true)
     setTimeout(() => {
       if (inputRef.current) {
@@ -158,7 +158,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   }, [])
 
   const handleBlur = useCallback(() => {
-    console.log("[v0] handleBlur called")
     setIsFocused(false)
   }, [])
 

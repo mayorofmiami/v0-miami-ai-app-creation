@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useState, memo } from "react"
 import { Button } from "@/components/ui/button"
 import Search from "@/components/icons/Search"
 
@@ -9,7 +9,7 @@ interface RelatedSearchesProps {
   onSearchClick: (search: string) => void
 }
 
-export function RelatedSearches({ searches, onSearchClick }: RelatedSearchesProps) {
+export const RelatedSearches = memo(function RelatedSearches({ searches, onSearchClick }: RelatedSearchesProps) {
   const [showAll, setShowAll] = useState(false)
 
   const handleSearchClick = useCallback(
@@ -73,4 +73,4 @@ export function RelatedSearches({ searches, onSearchClick }: RelatedSearchesProp
       )}
     </div>
   )
-}
+})

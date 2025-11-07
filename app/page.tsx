@@ -1,73 +1,26 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback, useReducer, Suspense } from "react"
+import { useState, useRef, useEffect, useCallback, useReducer, Suspense, useMemo } from "react"
 import { SearchInput } from "@/components/search-input"
-import { SearchResponse } from "@/components/search-response"
 import { HistorySidebar } from "@/components/history-sidebar"
-import { RelatedSearches } from "@/components/related-searches"
-import { ImageResult } from "@/components/image-result"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
 import type { ModelId } from "@/components/model-selector"
-import { ModelBadge } from "@/components/model-badge"
 import Image from "next/image"
 import type { SearchHistory } from "@/lib/db"
 import { toast } from "@/lib/toast"
 import { ErrorBoundary } from "@/components/error-boundary"
-import { SkeletonSearch } from "@/components/skeleton-search"
 import { generateRelatedSearches } from "@/lib/search-suggestions"
 import type { SearchInputRef } from "@/components/search-input"
-import { ResponseActions } from "@/components/response-actions"
 import { useTheme } from "next-themes"
-import type { Attachment } from "@/types" // Import Attachment type
-import { ExampleQueries } from "@/components/example-queries"
+import type { Attachment } from "@/types"
+import type { SearchState, SearchAction, SearchMode, ContentType, User } from "@/types"
 import { PageHeader } from "@/components/page-header"
-import { handleSearchError, handleImageError } from "@/lib/error-handlers"
-
-type ConversationMessage = {
-  id: string
-  type: "search" | "image"
-  query: string
-  response?: string
-  citations?: Array<{ title: string; url: string; snippet: string }>
-  modelInfo?: { model: string; reason: string; autoSelected: boolean }
-  relatedSearches?: string[]
-  generatedImage?: {
-    url: string
-    prompt: string
-    model: string
-    resolution: string
-    createdAt: string
-  }
-  attachments?: Attachment[] // Add attachments field
-  isStreaming?: boolean
-}
-
-type SearchState = {
-  mode: "quick" | "deep"
-  contentType: "search" | "image"
-  isLoading: boolean
-  messages: ConversationMessage[]
-  hasSearched: boolean
-  rateLimitInfo: { remaining: number; limit: number } | null
-  imageRateLimit: { currentCount: number; limit: number; remaining: number } | null
-}
-
-type SearchAction =
-  | { type: "START_SEARCH"; query: string; mode: "quick" | "deep" }
-  | { type: "START_IMAGE_GENERATION"; prompt: string }
-  | { type: "UPDATE_CURRENT_RESPONSE"; response: string }
-  | { type: "SET_CURRENT_CITATIONS"; citations: Array<{ title: string; url: string; snippet: string }> }
-  | { type: "SET_CURRENT_MODEL_INFO"; modelInfo: { model: string; reason: string; autoSelected: boolean } }
-  | { type: "SET_CURRENT_RELATED_SEARCHES"; relatedSearches: string[] }
-  | { type: "SET_GENERATED_IMAGE"; image: any; rateLimit: any }
-  | { type: "SET_RATE_LIMIT"; rateLimitInfo: { remaining: number; limit: number } }
-  | { type: "SEARCH_COMPLETE" }
-  | { type: "SEARCH_ERROR"; error: string }
-  | { type: "CLEAR_SEARCH" }
-  | { type: "SET_MODE"; mode: "quick" | "deep" }
-  | { type: "SET_CONTENT_TYPE"; contentType: "search" | "image" }
-  | { type: "LOAD_FROM_HISTORY"; history: any }
+import { ExampleQueries } from "@/components/example-queries"
+import { handleSearchError } from "@/lib/error-handling"
+import { handleImageError } from "@/lib/error-handling"
+import { SearchFormContainer } from "@/components/search-page/search-form-container"
+import { ConversationView } from "@/components/search-page/conversation-view"
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -219,7 +172,7 @@ export default function Home() {
 
   // User state
   const [recentSearches, setRecentSearches] = useState<string[]>([])
-  const [user, setUser] = useState<{ id: string; email: string; name: string | null; role?: string } | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [selectedModel, setSelectedModel] = useState<ModelId>("auto")
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -312,7 +265,7 @@ export default function Home() {
   }, [])
 
   const handleSearch = useCallback(
-    async (query: string, searchMode: "quick" | "deep", attachments?: Attachment[]) => {
+    async (query: string, searchMode: SearchMode, attachments?: Attachment[]) => {
       if (searchState.isLoading) {
         return
       }
@@ -483,7 +436,7 @@ export default function Home() {
   )
 
   const handleSearchOrGenerate = useCallback(
-    (query: string, searchMode: "quick" | "deep", attachments?: Attachment[]) => {
+    (query: string, searchMode: SearchMode, attachments?: Attachment[]) => {
       if (searchState.contentType === "image") {
         handleImageGeneration(query)
       } else {
@@ -526,37 +479,34 @@ export default function Home() {
     }, 100)
   }, [])
 
-  const handleFeatureAction = useCallback((query: string, actionMode: "quick" | "deep") => {
+  const isAdmin = useMemo(() => user?.role === "owner" || user?.role === "admin", [user?.role])
+
+  const lastMessage = useMemo(() => {
+    return searchState.messages.length > 0 ? searchState.messages[searchState.messages.length - 1] : null
+  }, [searchState.messages])
+
+  const handleRegenerate = useCallback(() => {
+    if (lastMessage) {
+      handleSearch(lastMessage.query, searchState.mode)
+    }
+  }, [lastMessage, handleSearch, searchState.mode])
+
+  const handleContentTypeChange = useCallback((type: ContentType) => {
+    dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })
+  }, [])
+
+  const handleFeatureAction = useCallback((query: string, actionMode: SearchMode) => {
     if (actionMode === "deep" && !query) {
-      // Just switch to deep mode and focus input
       dispatchSearch({ type: "SET_MODE", mode: "deep" })
       setTimeout(() => {
         searchInputRef.current?.focus()
       }, 100)
     } else if (query) {
-      // Focus input with pre-filled query
       dispatchSearch({ type: "SET_MODE", mode: actionMode })
       setTimeout(() => {
         searchInputRef.current?.focus()
-        // Optionally pre-fill the query
-        // This would require adding a prop to SearchInput to set initial value
       }, 100)
     }
-  }, [])
-
-  const handleRegenerate = () => {
-    const lastMessage = searchState.messages[searchState.messages.length - 1]
-    if (lastMessage) {
-      handleSearch(lastMessage.query, searchState.mode)
-    }
-  }
-
-  const handleHistoryToggle = useCallback(() => {
-    setUIState((prev) => ({ ...prev, showHistory: !prev.showHistory }))
-  }, [])
-
-  const handleContentTypeChange = useCallback((type: "search" | "image") => {
-    dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })
   }, [])
 
   useEffect(() => {
@@ -600,8 +550,6 @@ export default function Home() {
       userHasScrolledRef.current = false
     }
   }, [searchState.hasSearched])
-
-  const isAdmin = user?.role === "owner" || user?.role === "admin"
 
   return (
     <ErrorBoundary>
@@ -650,7 +598,6 @@ export default function Home() {
           searchMode={searchState.mode}
         />
 
-        {/* Main Content */}
         <main
           className={`flex-1 container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 max-w-full overflow-x-hidden ${searchState.hasSearched ? "pb-36 md:pb-32 pt-20 md:pt-24" : user ? "pt-20 md:pt-24" : ""}`}
         >
@@ -685,7 +632,7 @@ export default function Home() {
                           user={user}
                           selectedModel={selectedModel}
                           onModelChange={handleModelChange}
-                          onHistoryClick={handleHistoryToggle}
+                          onHistoryClick={handleToggleHistory}
                           contentType={searchState.contentType}
                           onContentTypeChange={handleContentTypeChange}
                         />
@@ -704,7 +651,6 @@ export default function Home() {
                 <div className="flex flex-col items-center min-h-[calc(100vh-12rem)] space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex justify-center mb-4"></div>
 
-                  {/* Personalized Greeting */}
                   <div className="text-center space-y-2">
                     <h1 className="text-2xl sm:text-3xl font-semibold bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple bg-clip-text text-transparent">
                       Hello, {user.name || "there"}
@@ -722,104 +668,18 @@ export default function Home() {
               )}
             </>
           ) : (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {searchState.messages.map((message, index) => (
-                <div key={message.id} className="space-y-4">
-                  <div
-                    ref={(el) => {
-                      messageRefs.current[message.id] = el
-                    }}
-                    className="w-full max-w-3xl mx-auto scroll-mt-24"
-                  >
-                    <div className="relative bg-gradient-to-r from-miami-aqua/10 via-miami-blue/10 to-miami-purple/10 rounded-2xl p-[2px] shadow-lg">
-                      <div className="bg-background rounded-2xl px-4 md:px-5 py-4 flex items-start gap-3">
-                        <svg
-                          className="w-5 h-5 md:w-5 md:h-5 text-miami-aqua flex-shrink-0 mt-0.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                          />
-                        </svg>
-                        <p className="text-base md:text-base text-foreground/90 flex-1 leading-relaxed">
-                          {message.query}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Response */}
-                  {message.isStreaming && !message.response && !message.generatedImage ? (
-                    <SkeletonSearch />
-                  ) : message.response || message.generatedImage ? (
-                    <>
-                      <Suspense fallback={<SkeletonSearch />}>
-                        {message.generatedImage ? (
-                          <ImageResult
-                            imageUrl={message.generatedImage.url}
-                            prompt={message.generatedImage.prompt}
-                            model={message.generatedImage.model}
-                            resolution={message.generatedImage.resolution}
-                            createdAt={message.generatedImage.createdAt}
-                            onRegenerate={() => handleImageGeneration(message.generatedImage!.prompt)}
-                          />
-                        ) : (
-                          <SearchResponse
-                            response={message.response || ""}
-                            citations={message.citations || []}
-                            isStreaming={message.isStreaming || false}
-                            actions={
-                              !message.isStreaming && message.response && index === searchState.messages.length - 1 ? (
-                                <ResponseActions
-                                  query={message.query}
-                                  response={message.response}
-                                  searchId={undefined}
-                                  userId={user?.id}
-                                  onRegenerate={handleRegenerate}
-                                />
-                              ) : null
-                            }
-                            modelBadge={
-                              user && message.modelInfo ? (
-                                <ModelBadge
-                                  model={message.modelInfo.model}
-                                  reason={message.modelInfo.reason}
-                                  autoSelected={message.modelInfo.autoSelected}
-                                />
-                              ) : null
-                            }
-                          />
-                        )}
-                      </Suspense>
-
-                      {/* Related Searches - Only show for last message */}
-                      {!message.isStreaming &&
-                        message.response &&
-                        !message.generatedImage &&
-                        index === searchState.messages.length - 1 &&
-                        message.relatedSearches &&
-                        message.relatedSearches.length > 0 && (
-                          <Suspense fallback={<div className="h-20" />}>
-                            <RelatedSearches
-                              searches={message.relatedSearches}
-                              onSearchClick={(search) => handleSearch(search, searchState.mode)}
-                            />
-                          </Suspense>
-                        )}
-                    </>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            <ConversationView
+              messages={searchState.messages}
+              messageRefs={messageRefs}
+              user={user}
+              searchMode={searchState.mode}
+              onRegenerate={handleRegenerate}
+              onRelatedSearchClick={(search) => handleSearch(search, searchState.mode)}
+              onImageRegenerate={handleImageGeneration}
+            />
           )}
         </main>
 
-        {/* History Sidebar */}
         {uiState.showHistory && (
           <Suspense fallback={<div className="fixed inset-y-0 right-0 w-80 bg-background border-l border-border" />}>
             <HistorySidebar
@@ -832,43 +692,25 @@ export default function Home() {
           </Suspense>
         )}
 
-        {(searchState.hasSearched || user) && (
-          <div
-            className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-300 ${uiState.isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
-          >
-            <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-4 space-y-3">
-              <div className="flex items-end gap-3">
-                <div className="flex-1">
-                  <SearchInput
-                    ref={searchInputRef}
-                    onSearch={handleSearchOrGenerate}
-                    isLoading={searchState.isLoading}
-                    mode={searchState.mode}
-                    onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-                    onCancel={handleCancelSearch}
-                    recentSearches={recentSearches}
-                    user={user}
-                    selectedModel={selectedModel}
-                    onModelChange={setSelectedModel}
-                    onHistoryClick={handleHistoryToggle}
-                    contentType={searchState.contentType}
-                    onContentTypeChange={handleContentTypeChange}
-                  />
-                </div>
-              </div>
-              {searchState.contentType === "image" && searchState.imageRateLimit && (
-                <div className="text-center text-sm md:text-xs text-muted-foreground font-medium">
-                  {searchState.imageRateLimit.remaining} of {searchState.imageRateLimit.limit} images remaining today
-                </div>
-              )}
-              {searchState.contentType === "search" && searchState.rateLimitInfo && (
-                <div className="text-center text-sm md:text-xs text-muted-foreground font-medium">
-                  {searchState.rateLimitInfo.remaining} of {searchState.rateLimitInfo.limit} queries remaining today
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <SearchFormContainer
+          searchInputRef={searchInputRef}
+          onSearch={handleSearchOrGenerate}
+          isLoading={searchState.isLoading}
+          mode={searchState.mode}
+          onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+          onCancel={handleCancelSearch}
+          recentSearches={recentSearches}
+          user={user}
+          selectedModel={selectedModel}
+          onModelChange={handleModelChange}
+          onHistoryClick={handleToggleHistory}
+          contentType={searchState.contentType}
+          onContentTypeChange={handleContentTypeChange}
+          rateLimitInfo={searchState.rateLimitInfo}
+          imageRateLimit={searchState.imageRateLimit}
+          isSidebarCollapsed={uiState.isSidebarCollapsed}
+          hasSearched={searchState.hasSearched}
+        />
       </div>
     </ErrorBoundary>
   )

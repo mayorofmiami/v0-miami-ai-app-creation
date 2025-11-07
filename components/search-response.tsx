@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, memo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
@@ -20,7 +20,13 @@ interface SearchResponseProps {
   modelBadge?: ReactNode
 }
 
-export function SearchResponse({ response, citations, isStreaming, actions, modelBadge }: SearchResponseProps) {
+export const SearchResponse = memo(function SearchResponse({
+  response,
+  citations,
+  isStreaming,
+  actions,
+  modelBadge,
+}: SearchResponseProps) {
   const [displayedText, setDisplayedText] = useState("")
   const [isSourcesExpanded, setIsSourcesExpanded] = useState(false)
 
@@ -280,4 +286,4 @@ export function SearchResponse({ response, citations, isStreaming, actions, mode
       )}
     </div>
   )
-}
+})

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, memo } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import DownloadIcon from "@/components/icons/Download"
@@ -16,7 +16,14 @@ interface ImageResultProps {
   onRegenerate?: () => void
 }
 
-export function ImageResult({ imageUrl, prompt, model, resolution, createdAt, onRegenerate }: ImageResultProps) {
+export const ImageResult = memo(function ImageResult({
+  imageUrl,
+  prompt,
+  model,
+  resolution,
+  createdAt,
+  onRegenerate,
+}: ImageResultProps) {
   const [isDownloading, setIsDownloading] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -97,4 +104,4 @@ export function ImageResult({ imageUrl, prompt, model, resolution, createdAt, on
       </div>
     </div>
   )
-}
+})

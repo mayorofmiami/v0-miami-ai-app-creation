@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { MobileDrawer } from "@/components/mobile-drawer"
+import type { User } from "@/types"
 
 interface PageHeaderProps {
   hasSearched: boolean
@@ -11,7 +12,7 @@ interface PageHeaderProps {
   onOpenChange: (open: boolean) => void
   isAdmin: boolean
   recentSearches: string[]
-  user: any
+  user: User | null
   isLoadingUser: boolean
   theme: string | undefined
   setTheme: (theme: string) => void
@@ -50,25 +51,27 @@ export function PageHeader({
   return (
     <div
       className={`fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 ${
-        !hasSearched && !isAuthenticated ? "pointer-events-none" : ""
-      } ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+        isSidebarCollapsed ? "md:left-16" : "md:left-64"
+      }`}
     >
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between h-14 md:h-12 relative">
-          <MobileDrawer
-            isOpen={isDrawerOpen}
-            onOpenChange={onOpenChange}
-            isAdmin={isAdmin}
-            recentSearches={recentSearches}
-            user={user}
-            isLoadingUser={isLoadingUser}
-            theme={theme || "dark"}
-            setTheme={setTheme}
-            handleNewChat={handleNewChat}
-            handleToggleHistory={handleToggleHistory}
-            handleSearch={handleSearch}
-            searchMode={searchMode}
-          />
+          <div className="pointer-events-auto">
+            <MobileDrawer
+              isOpen={isDrawerOpen}
+              onOpenChange={onOpenChange}
+              isAdmin={isAdmin}
+              recentSearches={recentSearches}
+              user={user}
+              isLoadingUser={isLoadingUser}
+              theme={theme || "dark"}
+              setTheme={setTheme}
+              handleNewChat={handleNewChat}
+              handleToggleHistory={handleToggleHistory}
+              handleSearch={handleSearch}
+              searchMode={searchMode}
+            />
+          </div>
 
           {showLogo && (
             <div className={logoPositionClass}>

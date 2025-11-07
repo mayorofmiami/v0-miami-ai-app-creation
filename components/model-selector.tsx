@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import Check from "@/components/icons/Check"
 import Sparkles from "@/components/icons/Sparkles"
@@ -19,16 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-
-export type ModelId =
-  | "auto"
-  | "openai/gpt-4o-mini"
-  | "openai/gpt-4o"
-  | "anthropic/claude-3.5-sonnet"
-  | "anthropic/claude-3.5-haiku"
-  | "google/gemini-2.0-flash"
-  | "groq/llama-3.1-8b"
-  | "groq/llama-3.3-70b"
+import type { ModelId } from "@/types"
 
 interface ModelOption {
   id: ModelId
