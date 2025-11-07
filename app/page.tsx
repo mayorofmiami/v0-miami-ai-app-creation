@@ -22,6 +22,7 @@ import { useTheme } from "next-themes"
 import type { Attachment } from "@/types" // Import Attachment type
 import { ExampleQueries } from "@/components/example-queries"
 import { PageHeader } from "@/components/page-header"
+import { handleSearchError, handleImageError } from "@/lib/error-handlers"
 
 type ConversationMessage = {
   id: string
@@ -345,55 +346,15 @@ export default function Home() {
           signal: abortControllerRef.current.signal,
         })
 
-        if (res.status === 429) {
-          const error = await res.json()
-
-          if (error.type === "ai_gateway_rate_limit" || error.type === "ai_gateway_error") {
-            toast.error(
-              "AI Service Temporarily Limited",
-              "Free AI credits have rate limits due to abuse. Please try again in a few minutes, or contact support to purchase AI credits.",
-              10000,
-            )
-            dispatchSearch({
-              type: "SEARCH_ERROR",
-              error: `⚠️ **AI Service Temporarily Limited**
-Vercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.
-
-**What you can do:**
-- Wait a few minutes and try again
-- Try a different AI model from the settings menu
-- Contact support to purchase AI credits for unrestricted access
-
-We apologize for the inconvenience!`,
-            })
-          } else {
-            toast.error(
-              "Rate Limit Exceeded",
-              error.reason ||
-                `You've reached your query limit. ${user ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`,
-            )
-            dispatchSearch({
-              type: "SEARCH_ERROR",
-              error: `⚠️ Rate limit exceeded. ${user ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
-            })
-          }
+        if (res.status === 429 || !res.ok) {
+          const errorData = await res.json()
+          const errorMessage = handleSearchError({
+            error: errorData,
+            user,
+            status: res.status,
+          })
+          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
           return
-        }
-
-        if (!res.ok) {
-          const error = await res.json()
-          const errorMessage = error.error || "Search failed"
-
-          if (res.status === 503 && errorMessage.includes("API key")) {
-            toast.error("Configuration Error", "Please add TAVILY_API_KEY to environment variables in the Vars section")
-            dispatchSearch({
-              type: "SEARCH_ERROR",
-              error: "⚠️ Search is not configured. Please add your TAVILY_API_KEY to the environment variables.",
-            })
-            return
-          }
-
-          throw new Error(errorMessage)
         }
 
         const remaining = res.headers.get("X-RateLimit-Remaining")
@@ -493,19 +454,14 @@ We apologize for the inconvenience!`,
           body: JSON.stringify(body),
         })
 
-        if (res.status === 429) {
-          const error = await res.json()
-          toast.error("Rate Limit Exceeded", error.message)
-          dispatchSearch({
-            type: "SEARCH_ERROR",
-            error: `⚠️ ${error.message}`,
-          })
-          return
-        }
-
         if (!res.ok) {
-          const error = await res.json()
-          throw new Error(error.error || "Image generation failed")
+          const errorData = await res.json()
+          const errorMessage = handleImageError({
+            error: errorData,
+            status: res.status,
+          })
+          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
+          return
         }
 
         const data = await res.json()
@@ -595,10 +551,13 @@ We apologize for the inconvenience!`,
     }
   }
 
-  const handleVoiceSearch = () => {
-    // Voice search logic would go here
-    toast.info("Voice search coming soon!")
-  }
+  const handleHistoryToggle = useCallback(() => {
+    setUIState((prev) => ({ ...prev, showHistory: !prev.showHistory }))
+  }, [])
+
+  const handleContentTypeChange = useCallback((type: "search" | "image") => {
+    dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -678,7 +637,7 @@ We apologize for the inconvenience!`,
           isAuthenticated={!!user}
           isSidebarCollapsed={uiState.isSidebarCollapsed}
           isDrawerOpen={uiState.isDrawerOpen}
-          onDrawerOpenChange={(open) => setUIState((prev) => ({ ...prev, isDrawerOpen: open }))}
+          onOpenChange={(open) => setUIState((prev) => ({ ...prev, isDrawerOpen: open }))}
           isAdmin={isAdmin}
           recentSearches={recentSearches}
           user={user}
@@ -726,13 +685,9 @@ We apologize for the inconvenience!`,
                           user={user}
                           selectedModel={selectedModel}
                           onModelChange={handleModelChange}
-                          onHistoryClick={handleToggleHistory}
+                          onHistoryClick={handleHistoryToggle}
                           contentType={searchState.contentType}
-                          onContentTypeChange={(type) =>
-                            dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })
-                          }
-                          onVoiceSearch={handleVoiceSearch}
-                          hasHistory={recentSearches.length > 0}
+                          onContentTypeChange={handleContentTypeChange}
                         />
                       </div>
                     </div>
@@ -746,7 +701,7 @@ We apologize for the inconvenience!`,
               )}
 
               {user && (
-                <div className="flex flex-col items-center min-h-[calc(100vh-12rem)] space-y-8 sm:space-y-12 animate-in fade-in duration-700 justify-center pb-32">
+                <div className="flex flex-col items-center min-h-[calc(100vh-12rem)] space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex justify-center mb-4"></div>
 
                   {/* Personalized Greeting */}
@@ -894,12 +849,10 @@ We apologize for the inconvenience!`,
                     recentSearches={recentSearches}
                     user={user}
                     selectedModel={selectedModel}
-                    onModelChange={handleModelChange}
-                    onHistoryClick={handleToggleHistory}
+                    onModelChange={setSelectedModel}
+                    onHistoryClick={handleHistoryToggle}
                     contentType={searchState.contentType}
-                    onContentTypeChange={(type) => dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })}
-                    onVoiceSearch={handleVoiceSearch}
-                    hasHistory={recentSearches.length > 0}
+                    onContentTypeChange={handleContentTypeChange}
                   />
                 </div>
               </div>

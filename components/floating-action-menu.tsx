@@ -1,10 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import SearchIcon from "@/components/icons/Search"
-import ImageIcon from "@/components/icons/Image"
-import SparklesIcon from "@/components/icons/Sparkles"
-import MicIcon from "@/components/icons/Mic"
 import SettingsIcon from "@/components/icons/Settings"
 import HistoryIcon from "@/components/icons/History"
 import CheckIcon from "@/components/icons/Check"
@@ -22,30 +18,30 @@ const MODEL_OPTIONS = [
 ]
 
 interface FloatingActionMenuProps {
-  contentType: "search" | "image"
-  onContentTypeChange: (type: "search" | "image") => void
-  mode: "quick" | "deep"
-  onModeChange: (mode: "quick" | "deep") => void
+  onNewChat: () => void
+  onHistoryClick: () => void
+  onCollectionClick: () => void
+  onCopyShareLink?: () => void
+  onSettingsClick?: () => void
+  isListening?: boolean
+  hasSearched?: boolean
+  shareUrl?: string
   selectedModel: ModelId
   onModelChange: (model: ModelId) => void
-  onVoiceSearch?: () => void
-  onHistoryClick?: () => void
-  isListening?: boolean
-  hasHistory?: boolean
   user?: { id: string; email: string; name: string | null; role?: string } | null
 }
 
-export function FloatingActionMenu({
-  contentType,
-  onContentTypeChange,
-  mode,
-  onModeChange,
+export default function FloatingActionMenu({
+  onNewChat,
+  onHistoryClick,
+  onCollectionClick,
+  onCopyShareLink,
+  onSettingsClick,
+  isListening = false,
+  hasSearched = false,
+  shareUrl,
   selectedModel,
   onModelChange,
-  onVoiceSearch,
-  onHistoryClick,
-  isListening,
-  hasHistory,
   user,
 }: FloatingActionMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -79,74 +75,55 @@ export function FloatingActionMenu({
               <div className="p-4 border-b border-border/50">
                 <div className="flex gap-2">
                   <button
-                    onClick={() => {
-                      onContentTypeChange("search")
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      contentType === "search"
-                        ? "bg-miami-aqua/10 text-miami-aqua border border-miami-aqua/30"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    }`}
+                    onClick={onNewChat}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 bg-miami-aqua/10 text-miami-aqua border border-miami-aqua/30"
                   >
-                    <SearchIcon className="w-4 h-4" />
-                    Search
+                    New Chat
                   </button>
                   <button
-                    onClick={() => {
-                      onContentTypeChange("image")
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      contentType === "image"
-                        ? "bg-miami-pink/10 text-miami-pink border border-miami-pink/30"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    }`}
+                    onClick={onCollectionClick}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-miami-pink/10 hover:text-miami-pink hover:border border-miami-pink/30"
                   >
-                    <ImageIcon className="w-4 h-4" />
-                    Image
+                    Collection
                   </button>
                 </div>
               </div>
 
               {/* Options */}
               <div className="p-2">
-                <button
-                  onClick={() => {
-                    onModeChange(mode === "quick" ? "deep" : "quick")
-                  }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm hover:bg-muted/50 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-md ${mode === "deep" ? "bg-miami-pink/10" : "bg-muted"}`}>
-                      <SparklesIcon
-                        className={`w-4 h-4 ${mode === "deep" ? "text-miami-pink" : "text-muted-foreground"}`}
-                      />
-                    </div>
-                    <span className="font-medium">Deep Research</span>
-                  </div>
-                  {mode === "deep" && (
-                    <div className="w-5 h-5 rounded-full bg-miami-pink/10 flex items-center justify-center">
-                      <CheckIcon className="w-3 h-3 text-miami-pink" />
-                    </div>
-                  )}
-                </button>
-
-                {onVoiceSearch && (
+                {onCopyShareLink && shareUrl && (
                   <button
                     onClick={() => {
-                      onVoiceSearch()
+                      onCopyShareLink()
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm hover:bg-muted/50 transition-colors group ${isListening ? "bg-red-500/10" : ""}`}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm hover:bg-muted/50 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`p-1.5 rounded-md ${isListening ? "bg-red-500/10 animate-pulse" : "bg-muted"}`}>
-                        <MicIcon className={`w-4 h-4 ${isListening ? "text-red-500" : "text-muted-foreground"}`} />
+                      <div className="p-1.5 rounded-md bg-muted">
+                        <SettingsIcon className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <span className="font-medium">{isListening ? "Listening..." : "Voice Search"}</span>
+                      <span className="font-medium">Copy Share Link</span>
                     </div>
                   </button>
                 )}
 
-                {onHistoryClick && hasHistory && (
+                {onSettingsClick && (
+                  <button
+                    onClick={() => {
+                      onSettingsClick()
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-1.5 rounded-md bg-muted">
+                        <SettingsIcon className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <span className="font-medium">Settings</span>
+                    </div>
+                  </button>
+                )}
+
+                {onHistoryClick && hasSearched && (
                   <button
                     onClick={() => {
                       onHistoryClick()

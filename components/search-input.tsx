@@ -24,19 +24,18 @@ const MODEL_OPTIONS = [
 ]
 
 interface SearchInputProps {
-  onSearch: (query: string, mode: "quick" | "deep", attachments?: Attachment[]) => void
+  onSearch: (query: string, attachments?: Attachment[]) => void
   isLoading?: boolean
-  mode: "quick" | "deep"
-  onModeChange: (mode: "quick" | "deep") => void
+  mode?: "quick" | "deep"
+  onModeChange?: (mode: "quick" | "deep") => void
   onCancel?: () => void
   recentSearches?: string[]
-  user?: { id: string; email: string; name: string | null; role?: string } | null
+  user?: any
   selectedModel?: ModelId
   onModelChange?: (model: ModelId) => void
   onHistoryClick?: () => void
   contentType?: "search" | "image"
   onContentTypeChange?: (type: "search" | "image") => void
-  onVoiceSearch?: () => void
   hasHistory?: boolean
 }
 
@@ -59,7 +58,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     onHistoryClick,
     contentType = "search",
     onContentTypeChange,
-    onVoiceSearch,
     hasHistory = false,
   },
   ref,
@@ -69,8 +67,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [isFocused, setIsFocused] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [recognition, setRecognition] = useState<any>(null)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -90,45 +86,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       setAttachments([])
     },
   }))
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-      const recognitionInstance = new SpeechRecognition()
-      recognitionInstance.continuous = false
-      recognitionInstance.interimResults = false
-      recognitionInstance.lang = "en-US"
-
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript
-        setQuery(transcript)
-        setIsListening(false)
-      }
-
-      recognitionInstance.onerror = (event: any) => {
-        console.error("[v0] Speech recognition error:", event.error)
-        setIsListening(false)
-      }
-
-      recognitionInstance.onend = () => {
-        setIsListening(false)
-      }
-
-      setRecognition(recognitionInstance)
-    }
-  }, [])
-
-  const filteredSuggestions = useMemo(() => {
-    if (query.length >= 2) {
-      return recentSearches.filter((s) => s.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
-    }
-    return []
-  }, [query, recentSearches])
-
-  useEffect(() => {
-    setSuggestions(filteredSuggestions)
-    setShowSuggestions(filteredSuggestions.length > 0)
-  }, [filteredSuggestions])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -160,18 +117,30 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     return () => document.removeEventListener("click", handleClickOutside)
   }, [showSuggestions, isMenuOpen])
 
+  const filteredSuggestions = useMemo(() => {
+    if (query.length >= 2) {
+      return recentSearches.filter((s) => s.toLowerCase().includes(query.toLowerCase())).slice(0, 5)
+    }
+    return []
+  }, [query, recentSearches])
+
+  useEffect(() => {
+    setSuggestions(filteredSuggestions)
+    setShowSuggestions(filteredSuggestions.length > 0)
+  }, [filteredSuggestions])
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
       if (query.trim() && !isLoading) {
-        onSearch(query, mode, attachments.length > 0 ? attachments : undefined)
+        onSearch(query, attachments.length > 0 ? attachments : undefined)
         setShowSuggestions(false)
         setIsFocused(false)
         setAttachments([]) // Clear attachments after search
         inputRef.current?.blur()
       }
     },
-    [query, isLoading, onSearch, mode, attachments],
+    [query, isLoading, onSearch, attachments],
   )
 
   const handleFocus = useCallback(() => {
@@ -206,7 +175,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       } else if (e.key === "Enter" && selectedIndex >= 0) {
         e.preventDefault()
         setQuery(suggestions[selectedIndex])
-        onSearch(suggestions[selectedIndex], mode)
+        onSearch(suggestions[selectedIndex])
         setShowSuggestions(false)
         setSelectedIndex(-1)
         inputRef.current?.blur()
@@ -215,33 +184,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         setSelectedIndex(-1)
       }
     },
-    [showSuggestions, suggestions, selectedIndex, onSearch, mode],
-  )
-
-  const handleVoiceSearch = useCallback(() => {
-    if (!recognition) {
-      alert("Voice search is not supported in your browser")
-      return
-    }
-
-    if (isListening) {
-      recognition.stop()
-      setIsListening(false)
-    } else {
-      recognition.start()
-      setIsListening(true)
-    }
-  }, [recognition, isListening])
-
-  const handleSuggestionClick = useCallback(
-    (suggestion: string) => {
-      setQuery(suggestion)
-      onSearch(suggestion, mode)
-      setShowSuggestions(false)
-      setSelectedIndex(-1)
-      inputRef.current?.blur()
-    },
-    [onSearch, mode],
+    [showSuggestions, suggestions, selectedIndex, onSearch],
   )
 
   const handleMenuToggle = useCallback((e: React.MouseEvent) => {
@@ -259,7 +202,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
   const handleModeChangeCallback = useCallback(
     (newMode: "quick" | "deep") => {
-      onModeChange(newMode)
+      onModeChange?.(newMode)
       setIsMenuOpen(false)
     },
     [onModeChange],
@@ -341,6 +284,17 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   const handleRemoveAttachment = useCallback((id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id))
   }, [])
+
+  const handleSuggestionClick = useCallback(
+    (suggestion: string) => {
+      setQuery(suggestion)
+      onSearch(suggestion)
+      setShowSuggestions(false)
+      setSelectedIndex(-1)
+      inputRef.current?.blur()
+    },
+    [onSearch],
+  )
 
   return (
     <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
@@ -457,11 +411,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       {contentType === "image" && !isLoading && (
         <p className="text-sm text-muted-foreground text-center mt-3">
           {user ? "50 images per day" : "3 free images per day • Sign up for 50/day"}
-        </p>
-      )}
-      {contentType === "search" && mode === "deep" && !isLoading && (
-        <p className="text-sm text-muted-foreground text-center mt-3">
-          Deep Research mode may take 30-60 seconds for comprehensive results
         </p>
       )}
       {contentType === "search" && attachments.length > 0 && !isLoading && (
