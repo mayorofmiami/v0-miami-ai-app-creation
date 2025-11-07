@@ -455,6 +455,44 @@ Provide accurate, concise answers that are both informative and visually appeali
             })
             controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
 
+            const relatedSearchesPromise = (async () => {
+              try {
+                const { streamText: relatedStream } = await import("ai")
+                const relatedResult = relatedStream({
+                  model: "openai/gpt-4o-mini",
+                  prompt: `Based on this search query, generate exactly 5 contextually relevant follow-up questions.
+
+Original Query: "${query}"
+
+Generate 5 follow-up questions that:
+- Are directly relevant to the topic being searched
+- Naturally extend the conversation about this specific subject
+- Cover different angles (deeper dive, related topics, practical applications, comparisons, current trends)
+- Are concise and actionable
+- Feel natural and conversational
+${query.toLowerCase().includes("miami") ? "- Include Miami-specific context where relevant" : ""}
+
+Return ONLY the 5 questions, one per line, without numbering or bullet points.`,
+                  maxTokens: 200,
+                  temperature: 0.7,
+                })
+
+                let relatedText = ""
+                for await (const chunk of relatedResult.textStream) {
+                  relatedText += chunk
+                }
+
+                return relatedText
+                  .split("\n")
+                  .map((q) => q.trim())
+                  .filter((q) => q.length > 0)
+                  .slice(0, 5)
+              } catch (error) {
+                console.error("Failed to generate related searches:", error)
+                return []
+              }
+            })()
+
             let chunkCount = 0
             let totalText = ""
 
@@ -469,41 +507,10 @@ Provide accurate, concise answers that are both informative and visually appeali
               controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
             }
 
-            let relatedSearches: string[] = []
-            try {
-              const { streamText: relatedStream } = await import("ai")
-              const relatedResult = relatedStream({
-                model: "openai/gpt-4o-mini",
-                prompt: `Based on this search query, generate exactly 5 contextually relevant follow-up questions.
-
-Original Query: "${query}"
-
-Generate 5 follow-up questions that:
-- Are directly relevant to the topic being searched
-- Naturally extend the conversation about this specific subject
-- Cover different angles (deeper dive, related topics, practical applications, comparisons, current trends)
-- Are concise and actionable
-- Feel natural and conversational
-${query.toLowerCase().includes("miami") ? "- Include Miami-specific context where relevant" : ""}
-
-Return ONLY the 5 questions, one per line, without numbering or bullet points.`,
-                maxTokens: 200,
-                temperature: 0.7,
-              })
-
-              let relatedText = ""
-              for await (const chunk of relatedResult.textStream) {
-                relatedText += chunk
-              }
-
-              relatedSearches = relatedText
-                .split("\n")
-                .map((q) => q.trim())
-                .filter((q) => q.length > 0)
-                .slice(0, 5)
-            } catch (error) {
-              console.error("Failed to generate related searches:", error)
-            }
+            const relatedSearches = await Promise.race([
+              relatedSearchesPromise,
+              new Promise<string[]>((resolve) => setTimeout(() => resolve([]), 500)),
+            ])
 
             if (relatedSearches.length > 0) {
               const relatedData = JSON.stringify({
