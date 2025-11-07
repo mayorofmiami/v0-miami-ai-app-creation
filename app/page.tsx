@@ -10,27 +10,18 @@ import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
 import type { ModelId } from "@/components/model-selector"
 import { ModelBadge } from "@/components/model-badge"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import Link from "next/link"
 import Image from "next/image"
 import type { SearchHistory } from "@/lib/db"
 import { toast } from "@/lib/toast"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { SkeletonSearch } from "@/components/skeleton-search"
 import { generateRelatedSearches } from "@/lib/search-suggestions"
-import { HelpMenu } from "@/components/help-menu"
 import type { SearchInputRef } from "@/components/search-input"
 import { ResponseActions } from "@/components/response-actions"
-import Menu from "@/components/icons/Menu"
-import User from "@/components/icons/User"
-import Shield from "@/components/icons/Shield"
-import Clock from "@/components/icons/Clock"
-import Plus from "@/components/icons/Plus"
-import Sun from "@/components/icons/Sun"
-import Moon from "@/components/icons/Moon"
 import { useTheme } from "next-themes"
 import type { Attachment } from "@/types" // Import Attachment type
+import { ExampleQueries } from "@/components/example-queries"
+import { PageHeader } from "@/components/page-header"
 
 type ConversationMessage = {
   id: string
@@ -219,12 +210,11 @@ export default function Home() {
     imageRateLimit: null,
   })
 
-  // UI state (kept separate as it's not related to search)
-  const [showHistory, setShowHistory] = useState(false)
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [shouldFocusInput, setShouldFocusInput] = useState(false)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
-  const [showAllExamples, setShowAllExamples] = useState(false)
+  const [uiState, setUIState] = useState({
+    showHistory: false,
+    isDrawerOpen: false,
+    isSidebarCollapsed: true,
+  })
 
   // User state
   const [recentSearches, setRecentSearches] = useState<string[]>([])
@@ -236,11 +226,6 @@ export default function Home() {
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   const userHasScrolledRef = useRef(false)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const lastMessageCountRef = useRef(0)
-
-  const userId = user?.id || null
-  const isAdmin = user?.role === "owner" || user?.role === "admin"
 
   useEffect(() => {
     async function loadInitialData() {
@@ -271,36 +256,24 @@ export default function Home() {
     loadInitialData()
   }, [])
 
-  // They are now combined in the loadInitialData effect above
-
   useEffect(() => {
     if (window.location.hash === "#history") {
-      setShowHistory(true)
+      setUIState((prev) => ({ ...prev, showHistory: true }))
       // Clear the hash after opening
       window.history.replaceState(null, "", window.location.pathname)
     }
   }, [])
 
-  useEffect(() => {
-    if (shouldFocusInput && !searchState.hasSearched) {
-      // Wait for next frame to ensure component is mounted
-      requestAnimationFrame(() => {
-        searchInputRef.current?.focus()
-        setShouldFocusInput(false)
-      })
-    }
-  }, [shouldFocusInput, searchState.hasSearched])
-
   const handleModelChange = async (newModel: ModelId) => {
     setSelectedModel(newModel)
 
-    if (userId) {
+    if (user?.id) {
       try {
         await fetch("/api/model-preference", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId,
+            userId: user.id,
             modelPreference: newModel === "auto" ? "auto" : "manual",
             selectedModel: newModel === "auto" ? null : newModel,
           }),
@@ -319,9 +292,9 @@ export default function Home() {
     }
   }
 
-  const handleFocusSearch = () => {
+  const handleFocusSearch = useCallback(() => {
     searchInputRef.current?.focus()
-  }
+  }, [])
 
   const handleClearSearch = () => {
     dispatchSearch({ type: "CLEAR_SEARCH" })
@@ -333,10 +306,9 @@ export default function Home() {
     toast.info(`Switched to ${newMode === "quick" ? "Quick Search" : "Deep Research"} mode`)
   }
 
-  const handleToggleHistory = () => {
-    setIsDrawerOpen(false)
-    setShowHistory((prev) => !prev)
-  }
+  const handleToggleHistory = useCallback(() => {
+    setUIState((prev) => ({ ...prev, showHistory: !prev.showHistory }))
+  }, [])
 
   const handleSearch = useCallback(
     async (query: string, searchMode: "quick" | "deep", attachments?: Attachment[]) => {
@@ -354,8 +326,8 @@ export default function Home() {
 
       try {
         const body: any = { query, mode: searchMode }
-        if (userId) {
-          body.userId = userId
+        if (user?.id) {
+          body.userId = user.id
         }
 
         if (selectedModel !== "auto") {
@@ -398,11 +370,11 @@ We apologize for the inconvenience!`,
             toast.error(
               "Rate Limit Exceeded",
               error.reason ||
-                `You've reached your query limit. ${userId ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`,
+                `You've reached your query limit. ${user ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`,
             )
             dispatchSearch({
               type: "SEARCH_ERROR",
-              error: `⚠️ Rate limit exceeded. ${userId ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
+              error: `⚠️ Rate limit exceeded. ${user ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`,
             })
           }
           return
@@ -501,7 +473,7 @@ We apologize for the inconvenience!`,
         abortControllerRef.current = null
       }
     },
-    [userId, selectedModel, searchState.isLoading],
+    [user, selectedModel, searchState.isLoading],
   )
 
   const handleImageGeneration = useCallback(
@@ -513,7 +485,7 @@ We apologize for the inconvenience!`,
       dispatchSearch({ type: "START_IMAGE_GENERATION", prompt })
 
       try {
-        const body: any = { prompt, userId }
+        const body: any = { prompt, userId: user?.id }
 
         const res = await fetch("/api/generate-image", {
           method: "POST",
@@ -551,7 +523,7 @@ We apologize for the inconvenience!`,
         dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, image generation failed. Please try again." })
       }
     },
-    [userId, searchState.isLoading],
+    [user, searchState.isLoading],
   )
 
   const handleSearchOrGenerate = useCallback(
@@ -583,24 +555,22 @@ We apologize for the inconvenience!`,
       await fetch("/api/auth/logout", { method: "POST", body: formData })
       setUser(null)
       toast.success("Logged out successfully")
-      setIsDrawerOpen(false)
+      setUIState((prev) => ({ ...prev, isDrawerOpen: false }))
     } catch (error) {
       toast.error("Failed to log out")
     }
   }
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
+    handleCancelSearch()
     handleClearSearch()
-    setIsDrawerOpen(false)
-    setShowAllExamples(false)
-
-    searchInputRef.current?.clear()
+    setUIState((prev) => ({ ...prev, isDrawerOpen: false }))
     setTimeout(() => {
       searchInputRef.current?.focus()
-    }, 500)
-  }
+    }, 100)
+  }, [])
 
-  const handleFeatureAction = (query: string, actionMode: "quick" | "deep") => {
+  const handleFeatureAction = useCallback((query: string, actionMode: "quick" | "deep") => {
     if (actionMode === "deep" && !query) {
       // Just switch to deep mode and focus input
       dispatchSearch({ type: "SET_MODE", mode: "deep" })
@@ -609,14 +579,14 @@ We apologize for the inconvenience!`,
       }, 100)
     } else if (query) {
       // Focus input with pre-filled query
-      dispatchSearch({ type: "SET_MODE", actionMode })
+      dispatchSearch({ type: "SET_MODE", mode: actionMode })
       setTimeout(() => {
         searchInputRef.current?.focus()
         // Optionally pre-fill the query
         // This would require adding a prop to SearchInput to set initial value
       }, 100)
     }
-  }
+  }, [])
 
   const handleRegenerate = () => {
     const lastMessage = searchState.messages[searchState.messages.length - 1]
@@ -633,25 +603,12 @@ We apologize for the inconvenience!`,
   useEffect(() => {
     const handleScroll = () => {
       userHasScrolledRef.current = true
-
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
-
-      // Reset after user stops scrolling for 2 seconds
-      scrollTimeoutRef.current = setTimeout(() => {
-        userHasScrolledRef.current = false
-      }, 2000)
     }
 
     window.addEventListener("scroll", handleScroll, { passive: true })
 
     return () => {
       window.removeEventListener("scroll", handleScroll)
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
     }
   }, [])
 
@@ -659,12 +616,11 @@ We apologize for the inconvenience!`,
     const messages = searchState.messages
     const currentMessageCount = messages.length
 
-    // Only scroll if a new message was added (not just updated)
-    if (currentMessageCount > lastMessageCountRef.current && currentMessageCount > 0) {
+    if (currentMessageCount > 0) {
       const latestMessage = messages[currentMessageCount - 1]
       const messageElement = messageRefs.current[latestMessage.id]
 
-      // Don't auto-scroll if user is actively scrolling
+      // Only auto-scroll if user hasn't manually scrolled
       if (messageElement && !userHasScrolledRef.current) {
         setTimeout(() => {
           const headerOffset = 100
@@ -678,10 +634,15 @@ We apologize for the inconvenience!`,
         }, 100)
       }
     }
-
-    // Update the last message count
-    lastMessageCountRef.current = currentMessageCount
   }, [searchState.messages])
+
+  useEffect(() => {
+    if (searchState.hasSearched) {
+      userHasScrolledRef.current = false
+    }
+  }, [searchState.hasSearched])
+
+  const isAdmin = user?.role === "owner" || user?.role === "admin"
 
   return (
     <ErrorBoundary>
@@ -701,535 +662,34 @@ We apologize for the inconvenience!`,
         onSearchSelect={(search) => handleSearch(search, searchState.mode)}
         onToggleHistory={handleToggleHistory}
         onLogout={handleLogout}
-        isCollapsed={isSidebarCollapsed}
-        setIsCollapsed={setIsSidebarCollapsed}
+        isCollapsed={uiState.isSidebarCollapsed}
+        setIsCollapsed={(collapsed) => setUIState((prev) => ({ ...prev, isSidebarCollapsed: collapsed }))}
       />
 
       <div
-        className={`min-h-screen flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "md:ml-16" : "md:ml-64"}`}
+        className={`min-h-screen flex flex-col transition-all duration-300 ${uiState.isSidebarCollapsed ? "md:ml-16" : "md:ml-64"}`}
       >
         {searchState.hasSearched && (
           <div className="fixed inset-x-0 top-0 h-26 md:h-32 bg-gradient-to-b from-background via-background to-transparent pointer-events-none z-40" />
         )}
 
-        {searchState.hasSearched && (
-          <div
-            className={`fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
-          >
-            <div className="max-w-3xl mx-auto">
-              <div className="flex items-center justify-between h-14 md:h-12 relative">
-                {/* Menu Button - Mobile only with larger touch target */}
-                <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20"
-                      aria-label="Open menu"
-                    >
-                      <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                        <Menu size={28} className="text-miami-aqua md:w-6 md:h-6" />
-                      </span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
-                    <div className="flex flex-col items-center gap-4 py-4">
-                      <Image
-                        src="/miami-ai-logo.png"
-                        alt="MIAMI.AI"
-                        width={180}
-                        height={36}
-                        className="h-9 w-auto"
-                        priority
-                      />
-                    </div>
-
-                    {/* Navigation - Top Section */}
-                    <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
-                        onClick={handleNewChat}
-                      >
-                        <span className="text-xl mr-3">
-                          <Plus size={20} />
-                        </span>
-                        New Chat
-                      </Button>
-
-                      {isAdmin && (
-                        <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
-                          >
-                            <span className="text-xl mr-3">
-                              <Shield size={20} className="text-miami-aqua" />
-                            </span>
-                            Admin Dashboard
-                          </Button>
-                        </Link>
-                      )}
-
-                      {recentSearches.length > 0 && (
-                        <div className="pt-5 border-t border-border mt-2">
-                          <div className="flex items-center justify-between px-4 mb-3">
-                            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                              Recent Chats
-                            </p>
-                            <button
-                              onClick={handleToggleHistory}
-                              className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
-                            >
-                              See All
-                            </button>
-                          </div>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {recentSearches.slice(0, 5).map((search, index) => (
-                              <button
-                                key={index}
-                                onClick={() => {
-                                  handleSearch(search, searchState.mode)
-                                  setIsDrawerOpen(false)
-                                }}
-                                className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <span className="text-muted-foreground flex-shrink-0">
-                                    <Clock size={16} />
-                                  </span>
-                                  <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                                    {search}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="pt-5 border-t border-border mt-2">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start text-base px-4 py-6 h-auto hover:bg-accent"
-                          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                        >
-                          <Sun className="mr-3 h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                          <Moon className="mr-3 h-5 w-5 absolute left-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                          <span>Theme</span>
-                        </Button>
-                      </div>
-
-                      <div className="border-t border-border pt-3 mt-2">
-                        <HelpMenu isMobile />
-                      </div>
-                    </nav>
-
-                    {/* Account Section - Bottom */}
-                    <div className="border-t pt-6 pb-8 mt-auto">
-                      {isLoadingUser ? (
-                        <div className="flex items-center gap-3 px-4">
-                          <div className="w-12 h-12 rounded-full bg-muted/50 animate-pulse" />
-                          <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-muted/50 rounded w-24 animate-pulse" />
-                            <div className="h-3 bg-muted/50 rounded w-32 animate-pulse" />
-                          </div>
-                        </div>
-                      ) : user ? (
-                        <>
-                          <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
-                            <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                                <span className="text-miami-aqua text-2xl">
-                                  <User size={24} className="text-miami-aqua" />
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
-                                  {user.name || "User"}
-                                </p>
-                                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                              </div>
-                            </div>
-                          </Link>
-                        </>
-                      ) : (
-                        <div className="flex flex-col gap-3 px-4">
-                          <Link href="/login" onClick={() => setIsDrawerOpen(false)} className="block">
-                            <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-12 rounded-lg shadow-sm hover:shadow-md transition-all text-base">
-                              Sign In
-                            </Button>
-                          </Link>
-                          <Link href="/signup" onClick={() => setIsDrawerOpen(false)} className="block">
-                            <Button
-                              variant="outline"
-                              className="w-full h-12 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent text-base"
-                            >
-                              Sign Up
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-
-                {/* Logo - Centered with better mobile sizing */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 md:top-2 md:translate-y-0">
-                  <Image
-                    src="/miami-ai-logo.png"
-                    alt="MIAMI.AI"
-                    width={160}
-                    height={32}
-                    className="h-10 md:h-12 w-auto"
-                    priority
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!searchState.hasSearched && user && (
-          <div
-            className={`fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
-          >
-            <div className="max-w-3xl mx-auto">
-              <div className="flex items-center justify-between h-14 md:h-12 relative">
-                {/* Menu Button - Mobile only with larger touch target */}
-                <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      data-sheet-trigger="true"
-                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20 pointer-events-auto"
-                      aria-label="Open menu"
-                    >
-                      <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                        <Menu size={28} className="text-miami-aqua md:w-6 md:h-6" />
-                      </span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
-                    <div className="flex flex-col items-center gap-4 py-4">
-                      <Image
-                        src="/miami-ai-logo.png"
-                        alt="MIAMI.AI"
-                        width={180}
-                        height={36}
-                        className="h-9 w-auto"
-                        priority
-                      />
-                    </div>
-
-                    {/* Navigation - Top Section */}
-                    <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
-                        onClick={handleNewChat}
-                      >
-                        <span className="text-xl mr-3">
-                          <Plus size={20} />
-                        </span>
-                        New Chat
-                      </Button>
-
-                      {isAdmin && (
-                        <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
-                          >
-                            <span className="text-xl mr-3">
-                              <Shield size={20} className="text-miami-aqua" />
-                            </span>
-                            Admin Dashboard
-                          </Button>
-                        </Link>
-                      )}
-
-                      {recentSearches.length > 0 && (
-                        <div className="pt-5 border-t border-border mt-2">
-                          <div className="flex items-center justify-between px-4 mb-3">
-                            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                              Recent Chats
-                            </p>
-                            <button
-                              onClick={handleToggleHistory}
-                              className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
-                            >
-                              See All
-                            </button>
-                          </div>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {recentSearches.slice(0, 5).map((search, index) => (
-                              <button
-                                key={index}
-                                onClick={() => {
-                                  handleSearch(search, searchState.mode)
-                                  setIsDrawerOpen(false)
-                                }}
-                                className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <span className="text-muted-foreground flex-shrink-0">
-                                    <Clock size={16} />
-                                  </span>
-                                  <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                                    {search}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="pt-5 border-t border-border mt-2">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start text-base px-4 py-6 h-auto hover:bg-accent"
-                          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                        >
-                          <Sun className="mr-3 h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                          <Moon className="mr-3 h-5 w-5 absolute left-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                          <span>Theme</span>
-                        </Button>
-                      </div>
-
-                      <div className="border-t border-border pt-3 mt-2">
-                        <HelpMenu isMobile />
-                      </div>
-                    </nav>
-
-                    {/* Account Section - Bottom */}
-                    <div className="border-t pt-6 pb-8 mt-auto">
-                      {isLoadingUser ? (
-                        <div className="flex items-center gap-3 px-4">
-                          <div className="w-12 h-12 rounded-full bg-muted/50 animate-pulse" />
-                          <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-muted/50 rounded w-24 animate-pulse" />
-                            <div className="h-3 bg-muted/50 rounded w-32 animate-pulse" />
-                          </div>
-                        </div>
-                      ) : user ? (
-                        <>
-                          <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
-                            <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                                <span className="text-miami-aqua text-2xl">
-                                  <User size={24} className="text-miami-aqua" />
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
-                                  {user.name || "User"}
-                                </p>
-                                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                              </div>
-                            </div>
-                          </Link>
-                        </>
-                      ) : (
-                        <div className="flex flex-col gap-3 px-4">
-                          <Link href="/login" onClick={() => setIsDrawerOpen(false)} className="block">
-                            <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-12 rounded-lg shadow-sm hover:shadow-md transition-all text-base">
-                              Sign In
-                            </Button>
-                          </Link>
-                          <Link href="/signup" onClick={() => setIsDrawerOpen(false)} className="block">
-                            <Button
-                              variant="outline"
-                              className="w-full h-12 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent text-base"
-                            >
-                              Sign Up
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-
-                {/* Logo - Centered */}
-                <div className="absolute left-1/2 -translate-x-1/2">
-                  <Image
-                    src="/miami-ai-logo.png"
-                    alt="MIAMI.AI"
-                    width={140}
-                    height={28}
-                    className="h-12 w-auto"
-                    priority
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!searchState.hasSearched && !user && (
-          <div className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 pointer-events-none">
-            <div className="max-w-3xl mx-auto">
-              <div className="flex items-center justify-between h-14 md:h-12 relative">
-                <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      data-sheet-trigger="true"
-                      className="md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20 pointer-events-auto"
-                      aria-label="Open menu"
-                    >
-                      <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-                        <Menu size={28} className="text-miami-aqua md:w-6 md:h-6" />
-                      </span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
-                    <div className="flex flex-col items-center gap-4 py-4">
-                      <Image
-                        src="/miami-ai-logo.png"
-                        alt="MIAMI.AI"
-                        width={180}
-                        height={36}
-                        className="h-9 w-auto"
-                        priority
-                      />
-                    </div>
-
-                    <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
-                        onClick={handleNewChat}
-                      >
-                        <span className="text-xl mr-3">
-                          <Plus size={20} />
-                        </span>
-                        New Chat
-                      </Button>
-
-                      {isAdmin && (
-                        <Link href="/admin" onClick={() => setIsDrawerOpen(false)}>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start text-base text-miami-aqua hover:text-miami-aqua hover:bg-miami-aqua/10 h-12 px-4"
-                          >
-                            <span className="text-xl mr-3">
-                              <Shield size={20} className="text-miami-aqua" />
-                            </span>
-                            Admin Dashboard
-                          </Button>
-                        </Link>
-                      )}
-
-                      {recentSearches.length > 0 && (
-                        <div className="pt-5 border-t border-border mt-2">
-                          <div className="flex items-center justify-between px-4 mb-3">
-                            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                              Recent Chats
-                            </p>
-                            <button
-                              onClick={handleToggleHistory}
-                              className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
-                            >
-                              See All
-                            </button>
-                          </div>
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {recentSearches.slice(0, 5).map((search, index) => (
-                              <button
-                                key={index}
-                                onClick={() => {
-                                  handleSearch(search, searchState.mode)
-                                  setIsDrawerOpen(false)
-                                }}
-                                className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <span className="text-muted-foreground flex-shrink-0">
-                                    <Clock size={16} />
-                                  </span>
-                                  <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                                    {search}
-                                  </span>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="pt-5 border-t border-border mt-2">
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start text-base px-4 py-6 h-auto hover:bg-accent"
-                          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                        >
-                          <Sun className="mr-3 h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                          <Moon className="mr-3 h-5 w-5 absolute left-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                          <span>Theme</span>
-                        </Button>
-                      </div>
-
-                      <div className="border-t border-border pt-3 mt-2">
-                        <HelpMenu isMobile />
-                      </div>
-                    </nav>
-
-                    <div className="border-t pt-6 pb-8 mt-auto">
-                      {isLoadingUser ? (
-                        <div className="flex items-center gap-3 px-4">
-                          <div className="w-12 h-12 rounded-full bg-muted/50 animate-pulse" />
-                          <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-muted/50 rounded w-24 animate-pulse" />
-                            <div className="h-3 bg-muted/50 rounded w-32 animate-pulse" />
-                          </div>
-                        </div>
-                      ) : user ? (
-                        <>
-                          <Link href="/profile" onClick={() => setIsDrawerOpen(false)}>
-                            <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
-                                <span className="text-miami-aqua text-2xl">
-                                  <User size={24} className="text-miami-aqua" />
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
-                                  {user.name || "User"}
-                                </p>
-                                <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                              </div>
-                            </div>
-                          </Link>
-                        </>
-                      ) : (
-                        <div className="flex flex-col gap-3 px-4">
-                          <Link href="/login" onClick={() => setIsDrawerOpen(false)} className="block">
-                            <Button className="w-full bg-miami-aqua hover:bg-miami-aqua/90 text-white font-medium h-12 rounded-lg shadow-sm hover:shadow-md transition-all text-base">
-                              Sign In
-                            </Button>
-                          </Link>
-                          <Link href="/signup" onClick={() => setIsDrawerOpen(false)} className="block">
-                            <Button
-                              variant="outline"
-                              className="w-full h-12 rounded-lg border-2 border-border hover:border-miami-aqua hover:bg-miami-aqua/5 font-medium transition-all bg-transparent text-base"
-                            >
-                              Sign Up
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
-          </div>
-        )}
+        <PageHeader
+          hasSearched={searchState.hasSearched}
+          isAuthenticated={!!user}
+          isSidebarCollapsed={uiState.isSidebarCollapsed}
+          isDrawerOpen={uiState.isDrawerOpen}
+          onDrawerOpenChange={(open) => setUIState((prev) => ({ ...prev, isDrawerOpen: open }))}
+          isAdmin={isAdmin}
+          recentSearches={recentSearches}
+          user={user}
+          isLoadingUser={isLoadingUser}
+          theme={theme || "dark"}
+          setTheme={setTheme}
+          handleNewChat={handleNewChat}
+          handleToggleHistory={handleToggleHistory}
+          handleSearch={handleSearchOrGenerate}
+          searchMode={searchState.mode}
+        />
 
         {/* Main Content */}
         <main
@@ -1277,66 +737,10 @@ We apologize for the inconvenience!`,
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2.5 md:gap-3 justify-center">
-                      {[
-                        { query: "Which Miami AI startups raised funding in 2025?", emoji: "🤖" },
-                        { query: "Is Miami real estate overvalued vs Austin?", emoji: "🏠" },
-                        { query: "Best coworking spaces in Wynwood", emoji: "💼" },
-                        { query: "Miami's crypto scene in 2025", emoji: "₿" },
-                        { query: "Top new restaurants in Brickell", emoji: "🍽️" },
-                        { query: "Remote work visa options for Miami", emoji: "✈️" },
-                        { query: "Miami Beach climate adaptation plans", emoji: "🌊" },
-                        { query: "Best nightlife spots in South Beach", emoji: "🎉" },
-                      ].map((example, index) => {
-                        const shouldHide = index >= 3 && !showAllExamples
-                        const hideOnDesktop = index >= 6
-
-                        if (hideOnDesktop) {
-                          return (
-                            <button
-                              key={index}
-                              onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
-                              className={`group ${shouldHide ? "hidden" : "inline-flex"} md:hidden items-center gap-2.5 px-5 py-3.5 md:px-5 md:py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105 active:scale-95`}
-                            >
-                              <span className="text-xl md:text-lg group-hover:scale-110 transition-transform duration-200">
-                                {example.emoji}
-                              </span>
-                              <span className="text-base md:text-base font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
-                                {example.query}
-                              </span>
-                            </button>
-                          )
-                        }
-
-                        return (
-                          <button
-                            key={index}
-                            onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
-                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2.5 px-5 py-3.5 md:px-5 md:py-3 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/10 hover:scale-105 active:scale-95`}
-                          >
-                            <span className="text-xl md:text-lg group-hover:scale-110 transition-transform duration-200">
-                              {example.emoji}
-                            </span>
-                            <span className="text-base md:text-base font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
-                              {example.query}
-                            </span>
-                          </button>
-                        )
-                      })}
-
-                      {/* Show More Button - Mobile Only with larger touch target */}
-                      {!showAllExamples && (
-                        <button
-                          onClick={() => setShowAllExamples(true)}
-                          className="md:hidden group inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-miami-aqua/50 bg-miami-aqua/5 hover:bg-miami-aqua/10 transition-all duration-300 hover:shadow-md hover:shadow-miami-aqua/20 active:scale-95"
-                        >
-                          <span className="text-xl group-hover:scale-110 transition-transform duration-200">+</span>
-                          <span className="text-base font-medium text-miami-aqua transition-colors whitespace-nowrap">
-                            More
-                          </span>
-                        </button>
-                      )}
-                    </div>
+                    <ExampleQueries
+                      onQueryClick={(query) => handleSearchOrGenerate(query, searchState.mode)}
+                      variant="default"
+                    />
                   </div>
                 </div>
               )}
@@ -1354,68 +758,10 @@ We apologize for the inconvenience!`,
                   </div>
 
                   <div className="w-full max-w-3xl px-4">
-                    {/* Example Search Queries */}
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {[
-                        { query: "Which Miami AI startups raised funding in 2025?", emoji: "🤖" },
-                        { query: "Is Miami real estate overvalued vs Austin?", emoji: "🏠" },
-                        { query: "Best coworking spaces in Wynwood", emoji: "💼" },
-                        { query: "Miami's crypto scene in 2025", emoji: "₿" },
-                        { query: "Top new restaurants in Brickell", emoji: "🍽️" },
-                        { query: "Remote work visa options for Miami", emoji: "✈️" },
-                        { query: "Miami Beach climate adaptation plans", emoji: "🌊" },
-                        { query: "Best nightlife spots in South Beach", emoji: "🎉" },
-                      ].map((example, index) => {
-                        const shouldHide = index >= 3 && !showAllExamples
-                        const hideOnDesktop = index >= 6
-
-                        // Don't render pills 6-7 at all on desktop
-                        if (hideOnDesktop) {
-                          return (
-                            <button
-                              key={index}
-                              onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
-                              className={`group ${shouldHide ? "hidden" : "inline-flex"} md:hidden items-center gap-2 px-4 py-2 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-200 hover:shadow-sm hover:shadow-miami-aqua/10`}
-                            >
-                              <span className="text-base group-hover:scale-110 transition-transform duration-200">
-                                {example.emoji}
-                              </span>
-                              <span className="text-sm font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
-                                {example.query}
-                              </span>
-                            </button>
-                          )
-                        }
-
-                        return (
-                          <button
-                            key={index}
-                            onClick={() => handleSearchOrGenerate(example.query, searchState.mode)}
-                            className={`group ${shouldHide ? "hidden md:inline-flex" : "inline-flex"} items-center gap-2 px-4 py-2 rounded-full border border-border/50 hover:border-miami-aqua/50 bg-background/50 hover:bg-miami-aqua/5 transition-all duration-200 hover:shadow-sm hover:shadow-miami-aqua/10`}
-                          >
-                            <span className="text-base group-hover:scale-110 transition-transform duration-200">
-                              {example.emoji}
-                            </span>
-                            <span className="text-sm font-medium text-foreground/80 group-hover:text-miami-aqua transition-colors whitespace-nowrap">
-                              {example.query}
-                            </span>
-                          </button>
-                        )
-                      })}
-
-                      {/* Show More Button - Mobile Only */}
-                      {!showAllExamples && (
-                        <button
-                          onClick={() => setShowAllExamples(true)}
-                          className="md:hidden group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-miami-aqua/50 bg-miami-aqua/5 hover:bg-miami-aqua/10 transition-all duration-200"
-                        >
-                          <span className="text-base group-hover:scale-110 transition-transform duration-200">+</span>
-                          <span className="text-xs font-medium text-miami-aqua transition-colors whitespace-nowrap">
-                            More
-                          </span>
-                        </button>
-                      )}
-                    </div>
+                    <ExampleQueries
+                      onQueryClick={(query) => handleSearchOrGenerate(query, searchState.mode)}
+                      variant="compact"
+                    />
                   </div>
                 </div>
               )}
@@ -1478,7 +824,7 @@ We apologize for the inconvenience!`,
                                   query={message.query}
                                   response={message.response}
                                   searchId={undefined}
-                                  userId={userId}
+                                  userId={user?.id}
                                   onRegenerate={handleRegenerate}
                                 />
                               ) : null
@@ -1519,21 +865,21 @@ We apologize for the inconvenience!`,
         </main>
 
         {/* History Sidebar */}
-        {showHistory && (
+        {uiState.showHistory && (
           <Suspense fallback={<div className="fixed inset-y-0 right-0 w-80 bg-background border-l border-border" />}>
             <HistorySidebar
-              userId={userId}
-              onClose={() => setShowHistory(false)}
+              userId={user?.id}
+              onClose={() => setUIState((prev) => ({ ...prev, showHistory: false }))}
               onSelectHistory={handleSelectHistory}
               localSearches={recentSearches}
-              isOpen={showHistory}
+              isOpen={uiState.showHistory}
             />
           </Suspense>
         )}
 
         {(searchState.hasSearched || user) && (
           <div
-            className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+            className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-300 ${uiState.isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
           >
             <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-4 space-y-3">
               <div className="flex items-end gap-3">

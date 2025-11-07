@@ -4,14 +4,13 @@ import type React from "react"
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback, useMemo } from "react"
 import SearchIcon from "@/components/icons/Search"
 import XIcon from "@/components/icons/X"
-import ClockIcon from "@/components/icons/Clock"
 import ImageIcon from "@/components/icons/Image"
 import Settings from "@/components/icons/Settings"
-import Sparkles from "@/components/icons/Sparkles"
-import History from "@/components/icons/History"
 import Paperclip from "@/components/icons/Paperclip"
-import X from "@/components/icons/X"
 import type { ModelId, Attachment } from "@/components/model-selector"
+import { AttachmentList } from "@/components/search-input/attachment-list"
+import { SearchSuggestions } from "@/components/search-input/search-suggestions"
+import { SearchInputMenu } from "@/components/search-input/search-input-menu"
 
 const MODEL_OPTIONS = [
   { id: "auto" as ModelId, name: "Auto", description: "Let us choose" },
@@ -345,39 +344,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
   return (
     <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
-      {attachments.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
-          {attachments.map((attachment) => (
-            <div
-              key={attachment.id}
-              className="relative group flex items-center gap-2 px-3 py-2 bg-muted rounded-lg border border-border"
-            >
-              {attachment.preview ? (
-                <img
-                  src={attachment.preview || "/placeholder.svg"}
-                  alt={attachment.name}
-                  className="w-10 h-10 object-cover rounded"
-                />
-              ) : (
-                <div className="w-10 h-10 bg-muted-foreground/10 rounded flex items-center justify-center">
-                  <Paperclip className="w-5 h-5 text-muted-foreground" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{attachment.name}</p>
-                <p className="text-xs text-muted-foreground">{(attachment.size / 1024).toFixed(1)} KB</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleRemoveAttachment(attachment.id)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-background rounded"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} />
 
       {/* Search Form */}
       <form onSubmit={handleSubmit} className="relative">
@@ -469,124 +436,21 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       </form>
 
       {isMenuOpen && (
-        <div
-          ref={menuRef}
-          className="absolute right-0 bottom-full mb-2 w-48 bg-card/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
-        >
-          {/* Content Type Selection */}
-          <div className="p-1.5">
-            <div className="flex gap-1">
-              <button
-                onClick={() => handleContentTypeChange("search")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
-                  contentType === "search"
-                    ? "bg-miami-aqua/20 text-miami-aqua"
-                    : "hover:bg-muted/50 text-muted-foreground"
-                }`}
-              >
-                <SearchIcon className="w-3.5 h-3.5" />
-                Search
-              </button>
-              <button
-                onClick={() => handleContentTypeChange("image")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
-                  contentType === "image" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-foreground"
-                }`}
-              >
-                <ImageIcon className="w-3.5 h-3.5" />
-                Image
-              </button>
-            </div>
-          </div>
-
-          {/* Search Mode (only show for search content type) */}
-          {contentType === "search" && (
-            <>
-              <div className="h-px bg-border/30 mx-1.5" />
-              <div className="p-1.5">
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => handleModeChangeCallback("quick")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
-                      mode === "quick" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted/50 text-foreground"
-                    }`}
-                  >
-                    Quick
-                  </button>
-                  <button
-                    onClick={() => handleModeChangeCallback("deep")}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
-                      mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-foreground"
-                    }`}
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    Deep
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Model Selection (only show for search content type and authenticated users) */}
-          {contentType === "search" && onModelChange && user && (
-            <>
-              <div className="h-px bg-border/30 mx-1.5" />
-              <div className="p-1.5 max-h-48 overflow-y-auto">
-                {MODEL_OPTIONS.map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => handleModelChangeCallback(model.id)}
-                    className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
-                      selectedModel === model.id
-                        ? "bg-miami-aqua/20 text-miami-aqua"
-                        : "hover:bg-muted/50 text-foreground"
-                    }`}
-                  >
-                    <span className="text-xs font-medium">{model.name}</span>
-                    {selectedModel === model.id && <div className="w-1.5 h-1.5 rounded-full bg-miami-aqua" />}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* History Button */}
-          {hasHistory && onHistoryClick && (
-            <>
-              <div className="h-px bg-border/30 mx-1.5" />
-              <div className="p-1.5">
-                <button
-                  onClick={handleHistoryClickCallback}
-                  className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-all text-xs font-medium text-muted-foreground"
-                >
-                  <History className="w-3.5 h-3.5" />
-                  History
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <SearchInputMenu
+          contentType={contentType}
+          mode={mode}
+          selectedModel={selectedModel}
+          hasHistory={hasHistory}
+          showModelSelection={!!onModelChange && !!user}
+          onContentTypeChange={handleContentTypeChange}
+          onModeChange={handleModeChangeCallback}
+          onModelChange={handleModelChangeCallback}
+          onHistoryClick={handleHistoryClickCallback}
+        />
       )}
 
-      {/* Suggestions dropdown */}
-      {showSuggestions && suggestions.length > 0 && query.length >= 2 && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-card border border-border rounded-lg shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          {suggestions.map((suggestion, index) => (
-            <button
-              key={index}
-              onClick={(e) => {
-                e.preventDefault()
-                handleSuggestionClick(suggestion)
-              }}
-              className={`w-full px-5 py-4 text-left flex items-center gap-3 transition-colors ${
-                index === selectedIndex ? "bg-miami-aqua/10" : "hover:bg-muted"
-              }`}
-            >
-              <ClockIcon className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-              <span className="text-base break-all">{suggestion}</span>
-            </button>
-          ))}
-        </div>
+      {showSuggestions && query.length >= 2 && (
+        <SearchSuggestions suggestions={suggestions} selectedIndex={selectedIndex} onSelect={handleSuggestionClick} />
       )}
 
       {/* Rate limit messages */}
