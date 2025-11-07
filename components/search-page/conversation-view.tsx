@@ -104,16 +104,11 @@ export function ConversationView({
               </Suspense>
 
               {/* Related Searches - Only show for last message */}
-              {!message.isStreaming &&
-                message.response &&
-                !message.generatedImage &&
-                index === messages.length - 1 &&
-                message.relatedSearches &&
-                message.relatedSearches.length > 0 && (
-                  <Suspense fallback={<div className="h-20" />}>
-                    <RelatedSearches searches={message.relatedSearches} onSearchClick={onRelatedSearchClick} />
-                  </Suspense>
-                )}
+              {!message.isStreaming && message.response && !message.generatedImage && index === messages.length - 1 && (
+                <Suspense fallback={<div className="h-20" />}>
+                  <RelatedSearches query={message.query} onSearchClick={onRelatedSearchClick} />
+                </Suspense>
+              )}
             </>
           ) : null}
         </div>

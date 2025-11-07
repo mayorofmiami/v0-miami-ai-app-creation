@@ -12,6 +12,14 @@ import ShieldIcon from "@/components/icons/Shield"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { HelpMenu } from "@/components/help-menu"
+import { useEffect, useState } from "react"
+
+interface Thread {
+  id: string
+  title: string
+  message_count: number
+  last_message_at: string
+}
 
 interface CollapsibleSidebarProps {
   user: { id: string; email: string; name: string | null; role?: string } | null
@@ -37,12 +45,38 @@ export function CollapsibleSidebar({
   setIsCollapsed,
 }: CollapsibleSidebarProps) {
   const { theme, setTheme } = useTheme()
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [isLoadingThreads, setIsLoadingThreads] = useState(false)
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
   }
 
   const isAdmin = user?.role === "owner" || user?.role === "admin"
+
+  useEffect(() => {
+    async function fetchThreads() {
+      if (!user?.id) {
+        setThreads([])
+        return
+      }
+
+      setIsLoadingThreads(true)
+      try {
+        const response = await fetch(`/api/threads?userId=${user.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setThreads(data.threads || [])
+        }
+      } catch (error) {
+        console.error("Failed to fetch threads:", error)
+      } finally {
+        setIsLoadingThreads(false)
+      }
+    }
+
+    fetchThreads()
+  }, [user?.id])
 
   return (
     <div
@@ -94,45 +128,92 @@ export function CollapsibleSidebar({
           </Link>
         )}
 
-        {/* Recent Chats */}
-        {recentSearches.length > 0 && (
-          <div className={`pt-4 ${isCollapsed ? "" : "border-t border-border"}`}>
-            {!isCollapsed && (
-              <div className="flex items-center justify-between px-3 mb-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Chats</p>
-                <button
-                  onClick={onToggleHistory}
-                  className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
-                >
-                  See All
-                </button>
+        {user
+          ? // Authenticated: Show threads
+            threads.length > 0 && (
+              <div className={`pt-4 ${isCollapsed ? "" : "border-t border-border"}`}>
+                {!isCollapsed && (
+                  <div className="flex items-center justify-between px-3 mb-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Chats</p>
+                    <button
+                      onClick={onToggleHistory}
+                      className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                    >
+                      See All
+                    </button>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  {(isCollapsed ? threads.slice(0, 3) : threads.slice(0, 5)).map((thread) => (
+                    <button
+                      key={thread.id}
+                      onClick={() => onSearchSelect(thread.title)}
+                      className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
+                        isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
+                      }`}
+                      title={isCollapsed ? thread.title : undefined}
+                    >
+                      {isCollapsed ? (
+                        <ClockIcon className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <ClockIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                              {thread.title}
+                            </p>
+                            {thread.message_count > 1 && (
+                              <p className="text-xs text-muted-foreground">{thread.message_count} messages</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          : // Non-authenticated: Show recent searches from local storage
+            recentSearches.length > 0 && (
+              <div className={`pt-4 ${isCollapsed ? "" : "border-t border-border"}`}>
+                {!isCollapsed && (
+                  <div className="flex items-center justify-between px-3 mb-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Recent Searches
+                    </p>
+                    <button
+                      onClick={onToggleHistory}
+                      className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                    >
+                      See All
+                    </button>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  {(isCollapsed ? recentSearches.slice(0, 3) : recentSearches.slice(0, 5)).map((search, index) => (
+                    <button
+                      key={`${search}-${index}`}
+                      onClick={() => onSearchSelect(search)}
+                      className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
+                        isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
+                      }`}
+                      title={isCollapsed ? search : undefined}
+                    >
+                      {isCollapsed ? (
+                        <ClockIcon className="w-5 h-5 text-muted-foreground" />
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <ClockIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                            {search}
+                          </span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-            <div className="space-y-1">
-              {(isCollapsed ? recentSearches.slice(0, 3) : recentSearches.slice(0, 5)).map((search, index) => (
-                <button
-                  key={index}
-                  onClick={() => onSearchSelect(search)}
-                  className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
-                    isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
-                  }`}
-                  title={isCollapsed ? search : undefined}
-                >
-                  {isCollapsed ? (
-                    <ClockIcon className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <ClockIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <span className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                        {search}
-                      </span>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Theme Toggle */}
         <div className={`pt-4 mt-auto ${isCollapsed ? "" : "border-t border-border"}`}>

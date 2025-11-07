@@ -3,25 +3,30 @@
 import { useEffect, useState, useCallback } from "react"
 import X from "@/components/icons/X"
 import Clock from "@/components/icons/Clock"
-import Sparkles from "@/components/icons/Sparkles"
 import SearchIcon from "@/components/icons/SearchIcon"
 import ChevronLeft from "@/components/icons/ChevronLeft"
 import ChevronRight from "@/components/icons/ChevronRight"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { SearchHistory } from "@/lib/db"
+
+interface Thread {
+  id: string
+  title: string
+  message_count: number
+  updated_at: string
+}
 
 interface HistorySidebarProps {
   userId: string | null
   onClose: () => void
-  onSelectHistory: (history: SearchHistory) => void
-  localSearches?: string[]
+  onSelectThread: (threadId: string) => void
+  localThreads?: Thread[]
   isOpen: boolean
 }
 
-export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches = [], isOpen }: HistorySidebarProps) {
-  const [history, setHistory] = useState<SearchHistory[]>([])
-  const [filteredHistory, setFilteredHistory] = useState<SearchHistory[]>([])
+export function HistorySidebar({ userId, onClose, onSelectThread, localThreads = [], isOpen }: HistorySidebarProps) {
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [filteredThreads, setFilteredThreads] = useState<Thread[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchFilter, setSearchFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
@@ -30,46 +35,37 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
   useEffect(() => {
     if (!isOpen) return
 
-    async function fetchHistory() {
+    async function fetchThreads() {
       if (!userId) {
-        const localHistory: SearchHistory[] = localSearches.map((query, index) => ({
-          id: `local-${index}`,
-          user_id: "local",
-          query,
-          mode: "quick" as const,
-          response: "",
-          citations: [],
-          created_at: new Date().toISOString(),
-        }))
-        setHistory(localHistory)
-        setFilteredHistory(localHistory)
+        setThreads(localThreads)
+        setFilteredThreads(localThreads)
         setIsLoading(false)
         return
       }
       try {
-        const res = await fetch(`/api/history?userId=${userId}`)
+        const res = await fetch(`/api/threads?userId=${userId}`)
         const data = await res.json()
-        setHistory(data.history || [])
-        setFilteredHistory(data.history || [])
+        setThreads(data.threads || [])
+        setFilteredThreads(data.threads || [])
       } catch (error) {
-        console.error("Failed to fetch history:", error)
+        console.error("Failed to fetch threads:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchHistory()
-  }, [userId, localSearches, isOpen])
+    fetchThreads()
+  }, [userId, localThreads, isOpen])
 
   useEffect(() => {
     if (searchFilter.trim()) {
-      const filtered = history.filter((item) => item.query.toLowerCase().includes(searchFilter.toLowerCase()))
-      setFilteredHistory(filtered)
+      const filtered = threads.filter((item) => item.title.toLowerCase().includes(searchFilter.toLowerCase()))
+      setFilteredThreads(filtered)
       setCurrentPage(1)
     } else {
-      setFilteredHistory(history)
+      setFilteredThreads(threads)
     }
-  }, [searchFilter, history])
+  }, [searchFilter, threads])
 
   const formatDate = useCallback((dateString: string) => {
     const date = new Date(dateString)
@@ -86,12 +82,12 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
     return date.toLocaleDateString()
   }, [])
 
-  const handleSelectHistory = useCallback(
-    (item: SearchHistory) => {
-      onSelectHistory(item)
+  const handleSelectThread = useCallback(
+    (threadId: string) => {
+      onSelectThread(threadId)
       onClose()
     },
-    [onSelectHistory, onClose],
+    [onSelectThread, onClose],
   )
 
   const handlePreviousPage = useCallback(() => {
@@ -102,10 +98,10 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
     setCurrentPage((p) => Math.min(totalPages, p + 1))
   }, [])
 
-  const totalPages = Math.ceil(filteredHistory.length / itemsPerPage)
+  const totalPages = Math.ceil(filteredThreads.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentItems = filteredHistory.slice(startIndex, endIndex)
+  const currentItems = filteredThreads.slice(startIndex, endIndex)
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex">
@@ -115,7 +111,7 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-miami-aqua" />
-              <h2 className="text-lg font-bold">Search History</h2>
+              <h2 className="text-lg font-bold">Recent Chats</h2>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-5 h-5" />
@@ -123,45 +119,43 @@ export function HistorySidebar({ userId, onClose, onSelectHistory, localSearches
           </div>
           <Input
             type="text"
-            placeholder="Filter history..."
+            placeholder="Filter conversations..."
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             className="bg-background/50"
           />
         </div>
 
-        {/* History List */}
+        {/* Thread List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {isLoading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading history...</div>
+            <div className="text-center py-12 text-muted-foreground">Loading conversations...</div>
           ) : currentItems.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>{searchFilter ? "No matching searches" : "No search history yet"}</p>
+              <p>{searchFilter ? "No matching conversations" : "No conversations yet"}</p>
               <p className="text-sm mt-2">
-                {searchFilter ? "Try a different filter" : "Your searches will appear here"}
+                {searchFilter ? "Try a different filter" : "Your conversations will appear here"}
               </p>
             </div>
           ) : (
-            currentItems.map((item) => (
+            currentItems.map((thread) => (
               <button
-                key={item.id}
-                onClick={() => handleSelectHistory(item)}
+                key={thread.id}
+                onClick={() => handleSelectThread(thread.id)}
                 className="w-full text-left p-3 rounded-lg bg-muted/50 hover:bg-muted border border-border hover:border-miami-aqua/50 transition-all group"
               >
                 <div className="flex items-start gap-2 mb-2">
-                  {item.mode === "deep" ? (
-                    <Sparkles className="w-4 h-4 text-miami-pink flex-shrink-0 mt-0.5" />
-                  ) : (
-                    <SearchIcon className="w-4 h-4 text-miami-aqua flex-shrink-0 mt-0.5" />
-                  )}
+                  <SearchIcon className="w-4 h-4 text-miami-aqua flex-shrink-0 mt-0.5" />
                   <p className="font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2 text-pretty">
-                    {item.query}
+                    {thread.title}
                   </p>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{formatDate(item.created_at)}</span>
-                  <span className="capitalize">{item.mode}</span>
+                  <span>{formatDate(thread.updated_at)}</span>
+                  <span>
+                    {thread.message_count} message{thread.message_count !== 1 ? "s" : ""}
+                  </span>
                 </div>
               </button>
             ))

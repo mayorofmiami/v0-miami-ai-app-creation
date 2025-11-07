@@ -95,15 +95,24 @@ export async function POST(request: Request) {
       )
     }
 
-    const { query, mode, userId, selectedModel, attachments } = validation.data
+    const { query, mode, userId, selectedModel, attachments, conversationHistory, threadId } = validation.data
 
-    console.log(`[v0] Starting search - query: "${query}", mode: ${mode}, userId: ${userId || "none"}`)
+    console.log(
+      `[v0] Starting search - query: "${query}", mode: ${mode}, userId: ${userId || "none"}, threadId: ${threadId || "none"}`,
+    )
 
+    const hasConversationHistory = conversationHistory && conversationHistory.length > 0
     const isTimeSensitive = isTimeSensitiveQuery(query)
 
-    console.log(`[v0] Checking cache - isTimeSensitive: ${isTimeSensitive}, query: ${query}, mode: ${mode}`)
-    const cached = !isTimeSensitive ? await getCachedResponse(query, mode) : null
-    console.log(`[v0] Cache check result:`, cached ? "FOUND" : "NOT FOUND")
+    console.log(
+      `[v0] Checking cache - isTimeSensitive: ${isTimeSensitive}, query: ${query}, mode: ${mode}, hasHistory: ${hasConversationHistory}`,
+    )
+
+    const cached = !isTimeSensitive && !hasConversationHistory ? await getCachedResponse(query, mode) : null
+    console.log(
+      `[v0] Cache check result:`,
+      cached ? "FOUND" : hasConversationHistory ? "SKIPPED (has conversation history)" : "NOT FOUND",
+    )
 
     if (cached && cached.answer && cached.answer.trim().length > 0 && isValidCachedResponse(cached.answer)) {
       console.log(`[v0] Returning cached response, answer length: ${cached.answer.length}`)
@@ -230,28 +239,31 @@ export async function POST(request: Request) {
       }
     }
 
-    const hasTavilyKey = !!process.env.TAVILY_API_KEY
+    const hasSerperKey = !!process.env.SERPER_API_KEY
 
     let webSearchResults = null
-    if (hasTavilyKey && !attachments?.length) {
+    if (hasSerperKey && !attachments?.length) {
       try {
-        const searchResponse = await fetch("https://api.tavily.com/search", {
+        const searchResponse = await fetch("https://google.serper.dev/search", {
           method: "POST",
           headers: {
+            "X-API-KEY": process.env.SERPER_API_KEY as string,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            api_key: process.env.TAVILY_API_KEY,
-            query: query,
-            search_depth: "basic",
-            max_results: 5,
+            q: query,
+            num: 5,
           }),
         })
 
         if (searchResponse.ok) {
           const searchData = await searchResponse.json()
-          webSearchResults = searchData.results || []
-          console.log(`[v0] Pre-fetched ${webSearchResults.length} web search results`)
+          webSearchResults = (searchData.organic || []).slice(0, 5).map((result: any) => ({
+            title: result.title || "Untitled",
+            url: result.link,
+            content: result.snippet || "",
+          }))
+          console.log(`[v0] Pre-fetched ${webSearchResults.length} web search results from Serper`)
         }
       } catch (error) {
         console.error("Web search failed:", error)
@@ -261,11 +273,11 @@ export async function POST(request: Request) {
 
     const systemInstruction =
       mode === "deep"
-        ? `You are Miami.ai, an advanced AI assistant with ${hasTavilyKey ? "real-time web search capabilities" : "comprehensive knowledge"}${attachments && attachments.length > 0 ? " and vision capabilities" : ""}.
+        ? `You are Miami.ai, an advanced AI assistant with ${hasSerperKey ? "real-time web search capabilities" : "comprehensive knowledge"}${attachments && attachments.length > 0 ? " and vision capabilities" : ""}.
 
 **Knowledge & Search:**
 ${
-  hasTavilyKey
+  hasSerperKey
     ? `- You have access to real-time web search for current information
 - Use the webSearch tool when you need up-to-date data, current events, or recent statistics
 - Always cite your sources when using web search results
@@ -309,11 +321,11 @@ Use rich markdown formatting to create visually appealing, easy-to-scan response
 - End with a brief summary or key takeaway when appropriate
 
 Provide comprehensive, detailed answers with in-depth analysis while maintaining excellent readability.`
-        : `You are Miami.ai, a fast and knowledgeable AI assistant${hasTavilyKey ? " with real-time web search capabilities" : ""}${attachments && attachments.length > 0 ? " and vision capabilities" : ""}.
+        : `You are Miami.ai, a fast and knowledgeable AI assistant${hasSerperKey ? " with real-time web search capabilities" : ""}${attachments && attachments.length > 0 ? " and vision capabilities" : ""}.
 
 **Your Capabilities:**
 ${
-  hasTavilyKey
+  hasSerperKey
     ? `- You have access to current information from web search results
 - When you need current information, use the webSearch tool
 - Added explicit instruction to always generate text after tool use
@@ -351,12 +363,12 @@ Create clean, scannable responses using markdown:
 - Easy to scan quickly
 - Visually organized with emojis and formatting
 - Professional but friendly tone
-${hasTavilyKey ? "- Use web search proactively for current information - don't deflect or make excuses" : ""}
+${hasSerperKey ? "- Use web search proactively for current information - don't deflect or make excuses" : ""}
 - Answer questions confidently and comprehensively
 - Added reminder to always generate complete text responses
 - ALWAYS generate a complete text response - never finish without providing an answer
 
-${hasTavilyKey && webSearchResults ? "\n**IMPORTANT:** Web search results have been provided below. Use them as your primary source of information. Do not mention knowledge cutoffs or limitations - answer the question directly using the search results.\n" : ""}
+${hasSerperKey && webSearchResults ? "\n**IMPORTANT:** Web search results have been provided below. Use them as your primary source of information. Do not mention knowledge cutoffs or limitations - answer the question directly using the search results.\n" : ""}
 
 Provide accurate, concise answers that are both informative and visually appealing.`
 
@@ -364,21 +376,23 @@ Provide accurate, concise answers that are both informative and visually appeali
       console.log(`[v0] Creating AI stream with model: ${modelSelection.model}`)
 
       let messages
-      if (webSearchResults && webSearchResults.length > 0) {
-        const searchContext = webSearchResults
-          .map(
-            (result: any, index: number) => `[${index + 1}] ${result.title}\n${result.content}\nSource: ${result.url}`,
-          )
-          .join("\n\n")
+      if (conversationHistory && conversationHistory.length > 0) {
+        const recentHistory = conversationHistory.slice(-10)
+        messages = [...recentHistory]
 
-        const enhancedQuery = `${query}\n\n---\nWeb Search Results:\n${searchContext}`
-        messages = [{ role: "user" as const, content: enhancedQuery }]
-      } else if (attachments && attachments.length > 0) {
-        const imageAttachments = attachments.filter((a: any) => a.type.startsWith("image/"))
-        if (imageAttachments.length > 0) {
-          // For images, use messages format with content array
-          messages = [
-            {
+        if (webSearchResults && webSearchResults.length > 0) {
+          const searchContext = webSearchResults
+            .map(
+              (result: any, index: number) =>
+                `[${index + 1}] ${result.title}\n${result.content}\nSource: ${result.url}`,
+            )
+            .join("\n\n")
+          const enhancedQuery = `${query}\n\n---\nWeb Search Results:\n${searchContext}`
+          messages.push({ role: "user" as const, content: enhancedQuery })
+        } else if (attachments && attachments.length > 0) {
+          const imageAttachments = attachments.filter((a: any) => a.type.startsWith("image/"))
+          if (imageAttachments.length > 0) {
+            messages.push({
               role: "user" as const,
               content: [
                 { type: "text" as const, text: query },
@@ -387,15 +401,45 @@ Provide accurate, concise answers that are both informative and visually appeali
                   image: img.url,
                 })),
               ],
-            },
-          ]
+            })
+          } else {
+            messages.push({ role: "user" as const, content: query })
+          }
         } else {
-          // For non-image attachments, use simple prompt
-          messages = [{ role: "user" as const, content: query }]
+          messages.push({ role: "user" as const, content: query })
         }
       } else {
-        // No attachments, use simple prompt
-        messages = [{ role: "user" as const, content: query }]
+        if (webSearchResults && webSearchResults.length > 0) {
+          const searchContext = webSearchResults
+            .map(
+              (result: any, index: number) =>
+                `[${index + 1}] ${result.title}\n${result.content}\nSource: ${result.url}`,
+            )
+            .join("\n\n")
+
+          const enhancedQuery = `${query}\n\n---\nWeb Search Results:\n${searchContext}`
+          messages = [{ role: "user" as const, content: enhancedQuery }]
+        } else if (attachments && attachments.length > 0) {
+          const imageAttachments = attachments.filter((a: any) => a.type.startsWith("image/"))
+          if (imageAttachments.length > 0) {
+            messages = [
+              {
+                role: "user" as const,
+                content: [
+                  { type: "text" as const, text: query },
+                  ...imageAttachments.map((img: any) => ({
+                    type: "image" as const,
+                    image: img.url,
+                  })),
+                ],
+              },
+            ]
+          } else {
+            messages = [{ role: "user" as const, content: query }]
+          }
+        } else {
+          messages = [{ role: "user" as const, content: query }]
+        }
       }
 
       const result = streamText({
@@ -424,6 +468,20 @@ Provide accurate, concise answers that are both informative and visually appeali
 
           if (userId && typeof userId === "string" && userId.length > 0) {
             try {
+              let finalThreadId = threadId
+
+              // If no thread ID exists, create a new thread for authenticated users
+              if (!finalThreadId && conversationHistory && conversationHistory.length === 0) {
+                const { createThread } = await import("@/lib/db")
+                const newThread = await createThread(userId, query.slice(0, 100))
+                if (newThread) {
+                  finalThreadId = newThread.id
+                }
+              }
+
+              // Calculate position in thread
+              const positionInThread = conversationHistory ? Math.floor(conversationHistory.length / 2) + 1 : 1
+
               await createSearchHistory(
                 userId,
                 query,
@@ -433,7 +491,13 @@ Provide accurate, concise answers that are both informative and visually appeali
                 modelSelection.model,
                 modelSelection.autoSelected,
                 modelSelection.reason,
+                finalThreadId || null,
+                positionInThread,
               )
+
+              if (finalThreadId) {
+                // We'll add this to the stream response headers
+              }
             } catch (error) {
               console.error("Failed to save search to history:", error)
             }
@@ -513,52 +577,6 @@ Provide accurate, concise answers that are both informative and visually appeali
               }
             }
 
-            console.log("[v0] Text stream complete, now generating related searches...")
-
-            try {
-              console.log("[v0] Generating related searches...")
-              const relatedResult = streamText({
-                model: "openai/gpt-4o-mini",
-                prompt: `Based on this search query, generate exactly 5 contextually relevant follow-up questions that naturally build upon the topic. 
-
-Original query: "${query}"
-
-Requirements:
-- Make them genuinely interesting and useful
-- Vary the depth and angle (some broad, some specific)
-- Keep them concise (under 80 characters)
-- Make them natural extensions of the original query
-- Don't just rephrase the original query
-
-Return ONLY a JSON array of 5 questions, no other text:
-["question 1", "question 2", "question 3", "question 4", "question 5"]`,
-                maxTokens: 200,
-                temperature: 0.8,
-              })
-
-              let relatedText = ""
-              for await (const chunk of relatedResult.textStream) {
-                relatedText += chunk
-              }
-
-              try {
-                const relatedSearches = JSON.parse(relatedText)
-                if (Array.isArray(relatedSearches) && relatedSearches.length === 5) {
-                  const relatedData = JSON.stringify({
-                    type: "related_searches",
-                    content: relatedSearches,
-                  })
-                  controller.enqueue(encoder.encode(`data: ${relatedData}\n\n`))
-                  console.log("[v0] Sent related searches to client")
-                }
-              } catch (parseError) {
-                console.error("[v0] Failed to parse related searches:", parseError)
-              }
-            } catch (relatedError) {
-              console.error("[v0] Error generating related searches:", relatedError)
-              // Don't fail the entire request if related searches fail
-            }
-
             controller.enqueue(encoder.encode("data: [DONE]\n\n"))
             console.log("[v0] Stream complete, sent [DONE]")
             controller.close()
@@ -578,6 +596,7 @@ Return ONLY a JSON array of 5 questions, no other text:
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          ...(threadId ? { "X-Thread-Id": threadId } : {}),
         },
       })
     } catch (error: any) {

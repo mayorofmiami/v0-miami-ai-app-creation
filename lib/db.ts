@@ -13,6 +13,8 @@ export interface SearchHistory {
   model_used?: string
   auto_selected?: boolean
   selection_reason?: string
+  thread_id?: string | null
+  position_in_thread?: number | null
   created_at: string
 }
 
@@ -57,6 +59,72 @@ export interface RateLimit {
   updated_at: string
 }
 
+export interface Thread {
+  id: string
+  user_id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
+export async function createThread(userId: string, title: string) {
+  try {
+    const result = await sql`
+      INSERT INTO threads (user_id, title)
+      VALUES (${userId}, ${title})
+      RETURNING *
+    `
+    return result[0] as Thread
+  } catch (error: any) {
+    console.error("[v0] Create thread error:", error?.message || error)
+    return null
+  }
+}
+
+export async function getUserThreads(userId: string, limit = 20) {
+  try {
+    const result = await sql`
+      SELECT t.*, 
+             (SELECT COUNT(*) FROM search_history WHERE thread_id = t.id) as message_count,
+             (SELECT created_at FROM search_history WHERE thread_id = t.id ORDER BY created_at DESC LIMIT 1) as last_message_at
+      FROM threads t
+      WHERE t.user_id = ${userId}
+      ORDER BY t.updated_at DESC
+      LIMIT ${limit}
+    `
+    return result as (Thread & { message_count: number; last_message_at: string })[]
+  } catch (error: any) {
+    console.error("[v0] Get user threads error:", error?.message || error)
+    return []
+  }
+}
+
+export async function getThreadMessages(threadId: string) {
+  try {
+    const result = await sql`
+      SELECT * FROM search_history
+      WHERE thread_id = ${threadId}
+      ORDER BY position_in_thread ASC
+    `
+    return result as SearchHistory[]
+  } catch (error: any) {
+    console.error("[v0] Get thread messages error:", error?.message || error)
+    return []
+  }
+}
+
+export async function updateThreadTimestamp(threadId: string) {
+  try {
+    await sql`
+      UPDATE threads
+      SET updated_at = NOW()
+      WHERE id = ${threadId}
+    `
+  } catch (error: any) {
+    console.error("[v0] Update thread timestamp error:", error?.message || error)
+  }
+}
+
 // Search History Functions
 export async function createSearchHistory(
   userId: string,
@@ -67,12 +135,27 @@ export async function createSearchHistory(
   modelUsed?: string,
   autoSelected?: boolean,
   selectionReason?: string,
+  threadId?: string | null,
+  positionInThread?: number | null,
 ) {
   const result = await sql`
-    INSERT INTO search_history (user_id, query, response, citations, mode, model_used, auto_selected, selection_reason)
-    VALUES (${userId}, ${query}, ${response}, ${JSON.stringify(citations)}, ${mode}, ${modelUsed || null}, ${autoSelected ?? true}, ${selectionReason || null})
+    INSERT INTO search_history (
+      user_id, query, response, citations, mode, model_used, 
+      auto_selected, selection_reason, thread_id, position_in_thread
+    )
+    VALUES (
+      ${userId}, ${query}, ${response}, ${JSON.stringify(citations)}, ${mode}, 
+      ${modelUsed || null}, ${autoSelected ?? true}, ${selectionReason || null},
+      ${threadId || null}, ${positionInThread || null}
+    )
     RETURNING *
   `
+
+  // Update thread timestamp if this is part of a thread
+  if (threadId) {
+    await updateThreadTimestamp(threadId)
+  }
+
   return result[0] as SearchHistory
 }
 

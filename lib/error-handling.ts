@@ -39,8 +39,8 @@ We apologize for the inconvenience!`
 
   // Configuration errors (503 with API key message)
   if (status === 503 && (error.error?.includes("API key") || error.message?.includes("API key"))) {
-    toast.error("Configuration Error", "Please add TAVILY_API_KEY to environment variables in the Vars section")
-    return "⚠️ Search is not configured. Please add your TAVILY_API_KEY to the environment variables."
+    toast.error("Configuration Error", "Please add SERPER_API_KEY to environment variables in the Vars section")
+    return "⚠️ Search is not configured. Please add your SERPER_API_KEY to the environment variables."
   }
 
   // Generic errors

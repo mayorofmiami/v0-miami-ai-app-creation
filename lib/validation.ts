@@ -31,6 +31,12 @@ export const attachmentSchema = z.object({
   url: z.string().url(),
 })
 
+// Conversation message schema for context memory
+export const conversationMessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string(),
+})
+
 // Search request validation
 export const searchRequestSchema = z.object({
   query: z.string().min(1, "Query is required").max(1000, "Query must be 1000 characters or less").trim(),
@@ -38,6 +44,8 @@ export const searchRequestSchema = z.object({
   userId: z.string().uuid().optional(),
   selectedModel: modelIdSchema.optional(),
   attachments: z.array(attachmentSchema).max(5).optional(),
+  conversationHistory: z.array(conversationMessageSchema).max(20).optional(),
+  threadId: z.string().uuid().optional(), // Added threadId to track conversations
 })
 
 // Image generation request validation

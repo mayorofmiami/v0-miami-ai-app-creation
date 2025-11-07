@@ -10,7 +10,6 @@ import Image from "next/image"
 import type { SearchHistory } from "@/lib/db"
 import { toast } from "@/lib/toast"
 import { ErrorBoundary } from "@/components/error-boundary"
-import { generateRelatedSearches } from "@/lib/search-suggestions"
 import type { SearchInputRef } from "@/components/search-input"
 import { useTheme } from "next-themes"
 import type { Attachment } from "@/types"
@@ -80,12 +79,7 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
         ),
       }
     case "SET_CURRENT_RELATED_SEARCHES":
-      return {
-        ...state,
-        messages: state.messages.map((msg, idx) =>
-          idx === state.messages.length - 1 ? { ...msg, relatedSearches: action.relatedSearches } : msg,
-        ),
-      }
+      return state
     case "SET_GENERATED_IMAGE":
       return {
         ...state,
@@ -143,7 +137,6 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
                   autoSelected: action.history.auto_selected ?? true,
                 }
               : undefined,
-            relatedSearches: generateRelatedSearches(action.history.query),
             generatedImage: action.history.generated_image || undefined,
             isStreaming: false,
           },
@@ -172,6 +165,8 @@ export default function Home() {
     isDrawerOpen: false,
     isSidebarCollapsed: true,
   })
+
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null)
 
   // User state
   const [recentSearches, setRecentSearches] = useState<string[]>(() =>
@@ -292,6 +287,9 @@ export default function Home() {
         const body: any = { query, mode: searchMode }
         if (user?.id) {
           body.userId = user.id
+          if (currentThreadId) {
+            body.threadId = currentThreadId
+          }
         }
 
         if (selectedModel !== "auto") {
@@ -300,6 +298,15 @@ export default function Home() {
 
         if (attachments && attachments.length > 0) {
           body.attachments = attachments
+        }
+
+        if (searchState.messages.length > 0) {
+          body.conversationHistory = searchState.messages
+            .map((msg) => ({
+              role: msg.type === "search" ? "user" : "assistant",
+              content: msg.type === "search" ? msg.query : msg.response || "",
+            }))
+            .filter((msg) => msg.content.trim().length > 0)
         }
 
         const res = await fetch("/api/search", {
@@ -318,6 +325,11 @@ export default function Home() {
           })
           dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
           return
+        }
+
+        const threadId = res.headers.get("X-Thread-Id")
+        if (threadId && !currentThreadId) {
+          setCurrentThreadId(threadId)
         }
 
         const remaining = res.headers.get("X-RateLimit-Remaining")
@@ -367,8 +379,6 @@ export default function Home() {
                       autoSelected: parsed.content?.autoSelected ?? parsed.autoSelected ?? true,
                     },
                   })
-                } else if (parsed.type === "related_searches") {
-                  dispatchSearch({ type: "SET_CURRENT_RELATED_SEARCHES", relatedSearches: parsed.content || [] })
                 }
               } catch (e) {
                 // Ignore parse errors
@@ -398,7 +408,7 @@ export default function Home() {
         abortControllerRef.current = null
       }
     },
-    [user, selectedModel, searchState.isLoading],
+    [user, selectedModel, searchState.isLoading, currentThreadId],
   )
 
   const handleImageGeneration = useCallback(
@@ -484,6 +494,7 @@ export default function Home() {
   const handleNewChat = useCallback(() => {
     handleCancelSearch()
     handleClearSearch()
+    setCurrentThreadId(null)
     setUIState((prev) => ({ ...prev, isDrawerOpen: false }))
     setTimeout(() => {
       searchInputRef.current?.focus()
