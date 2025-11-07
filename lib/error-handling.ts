@@ -8,26 +8,44 @@ interface HandleSearchErrorParams {
 }
 
 export function handleSearchError({ error, user, status }: HandleSearchErrorParams): string {
-  if (status === 429) {
-    if (error.type === "ai_gateway_rate_limit") {
-      toast.error(
-        "AI Service Temporarily Limited",
-        "Our AI provider is experiencing high demand. Please try again in a few moments.",
-        10000,
-      )
-      return "⚠️ AI Service Temporarily Limited\n\nOur AI provider is currently experiencing high demand. Please try again in a few moments. We apologize for the inconvenience."
-    }
+  // AI Gateway rate limits
+  if (error.type === "ai_gateway_rate_limit" || error.type === "ai_gateway_error") {
+    toast.error(
+      "AI Service Temporarily Limited",
+      "Free AI credits have rate limits due to abuse. Please try again in a few minutes, or contact support to purchase AI credits.",
+      10000,
+    )
+    return `⚠️ **AI Service Temporarily Limited**
+Vercel's free AI credits currently have rate limits in place due to abuse. This is a temporary measure while they work on a resolution.
 
-    const message = user
-      ? "You've reached your daily search limit. Your limit will reset tomorrow."
-      : "You've reached the free search limit. Sign up for more searches!"
+**What you can do:**
+- Wait a few minutes and try again
+- Try a different AI model from the settings menu
+- Contact support to purchase AI credits for unrestricted access
 
-    toast.error("Rate Limit Exceeded", message)
-    return `⚠️ Rate limit exceeded. ${message}`
+We apologize for the inconvenience!`
   }
 
-  // Generic error
-  toast.error("Search failed", error.error || "Please try again")
+  // Standard rate limits (429)
+  if (status === 429) {
+    const reason =
+      error.reason ||
+      `You've reached your query limit. ${user ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`
+
+    toast.error("Rate Limit Exceeded", reason)
+
+    return `⚠️ Rate limit exceeded. ${user ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`
+  }
+
+  // Configuration errors (503 with API key message)
+  if (status === 503 && (error.error?.includes("API key") || error.message?.includes("API key"))) {
+    toast.error("Configuration Error", "Please add TAVILY_API_KEY to environment variables in the Vars section")
+    return "⚠️ Search is not configured. Please add your TAVILY_API_KEY to the environment variables."
+  }
+
+  // Generic errors
+  const errorMessage = error.error || error.message || "Search failed"
+  toast.error("Search failed", errorMessage)
   return "Sorry, something went wrong. Please try again."
 }
 
@@ -38,11 +56,11 @@ interface HandleImageErrorParams {
 
 export function handleImageError({ error, status }: HandleImageErrorParams): string {
   if (status === 429) {
-    const message = error.message || "You've reached your daily image generation limit."
+    const message = error.message || "Rate limit exceeded"
     toast.error("Rate Limit Exceeded", message)
     return `⚠️ ${message}`
   }
 
-  toast.error("Image generation failed", error.error || "Please try again")
+  toast.error("Image generation failed", error.message || "Please try again")
   return "Sorry, image generation failed. Please try again."
 }

@@ -1,4 +1,6 @@
-export function exportToMarkdown(query: string, response: string, citations: any[], mode: string): string {
+import type { Citation } from "@/types"
+
+export function exportToMarkdown(query: string, response: string, citations: Citation[], mode: string): string {
   let markdown = `# ${query}\n\n`
   markdown += `**Mode:** ${mode === "quick" ? "Quick Search" : "Deep Research"}\n\n`
   markdown += `**Date:** ${new Date().toLocaleDateString()}\n\n`
@@ -29,7 +31,7 @@ export function downloadMarkdown(content: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-export function exportToText(query: string, response: string, citations: any[], mode: string): string {
+export function exportToText(query: string, response: string, citations: Citation[], mode: string): string {
   let text = `${query}\n\n`
   text += `Mode: ${mode === "quick" ? "Quick Search" : "Deep Research"}\n`
   text += `Date: ${new Date().toLocaleDateString()}\n\n`

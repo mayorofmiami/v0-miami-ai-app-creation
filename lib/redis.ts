@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis"
+import type { Citation } from "@/types"
 
 // Initialize Redis client with Upstash
 export const redis = new Redis({
@@ -21,7 +22,7 @@ export const CACHE_TTL = {
 }
 
 // Cache search results
-export async function cacheSearchResult(query: string, mode: string, response: string, citations: any[]) {
+export async function cacheSearchResult(query: string, mode: string, response: string, citations: Citation[]) {
   try {
     const key = CACHE_KEYS.search(query, mode)
     await redis.setex(key, CACHE_TTL.search, JSON.stringify({ response, citations, cachedAt: Date.now() }))

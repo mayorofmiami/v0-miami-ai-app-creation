@@ -10,11 +10,12 @@ import Check from "@/components/icons/Check"
 import MoreVertical from "@/components/icons/MoreVertical"
 import { exportToMarkdown, downloadMarkdown, exportToText, downloadText } from "@/lib/export"
 import { toast } from "@/lib/toast"
+import type { Citation } from "@/types"
 
 interface SearchActionsProps {
   query: string
   response: string
-  citations: any[]
+  citations: Citation[]
   mode: string
   searchId?: string
   userId?: string

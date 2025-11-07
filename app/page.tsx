@@ -19,8 +19,6 @@ import { PageHeader } from "@/components/page-header"
 import { ExampleQueries } from "@/components/example-queries"
 import { handleSearchError } from "@/lib/error-handling"
 import { handleImageError } from "@/lib/error-handling"
-import { SearchFormContainer } from "@/components/search-page/search-form-container"
-import { ConversationView } from "@/components/search-page/conversation-view"
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -668,15 +666,7 @@ export default function Home() {
               )}
             </>
           ) : (
-            <ConversationView
-              messages={searchState.messages}
-              messageRefs={messageRefs}
-              user={user}
-              searchMode={searchState.mode}
-              onRegenerate={handleRegenerate}
-              onRelatedSearchClick={(search) => handleSearch(search, searchState.mode)}
-              onImageRegenerate={handleImageGeneration}
-            />
+            <div>{/* Placeholder for ConversationView component */}</div>
           )}
         </main>
 
@@ -692,25 +682,7 @@ export default function Home() {
           </Suspense>
         )}
 
-        <SearchFormContainer
-          searchInputRef={searchInputRef}
-          onSearch={handleSearchOrGenerate}
-          isLoading={searchState.isLoading}
-          mode={searchState.mode}
-          onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-          onCancel={handleCancelSearch}
-          recentSearches={recentSearches}
-          user={user}
-          selectedModel={selectedModel}
-          onModelChange={handleModelChange}
-          onHistoryClick={handleToggleHistory}
-          contentType={searchState.contentType}
-          onContentTypeChange={handleContentTypeChange}
-          rateLimitInfo={searchState.rateLimitInfo}
-          imageRateLimit={searchState.imageRateLimit}
-          isSidebarCollapsed={uiState.isSidebarCollapsed}
-          hasSearched={searchState.hasSearched}
-        />
+        <div>{/* Placeholder for SearchFormContainer component */}</div>
       </div>
     </ErrorBoundary>
   )
