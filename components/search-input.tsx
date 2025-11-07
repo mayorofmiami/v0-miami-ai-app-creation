@@ -25,7 +25,7 @@ const MODEL_OPTIONS = [
 ]
 
 interface SearchInputProps {
-  onSearch: (query: string, attachments?: Attachment[]) => void
+  onSearch: (query: string, mode: "quick" | "deep", attachments?: Attachment[]) => void
   isLoading?: boolean
   mode?: "quick" | "deep"
   onModeChange?: (mode: "quick" | "deep") => void
@@ -134,14 +134,14 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     (e: React.FormEvent) => {
       e.preventDefault()
       if (query.trim() && !isLoading) {
-        onSearch(query, attachments.length > 0 ? attachments : undefined)
+        onSearch(query, mode || "quick", attachments.length > 0 ? attachments : undefined)
         setShowSuggestions(false)
         setIsFocused(false)
         setAttachments([]) // Clear attachments after search
         inputRef.current?.blur()
       }
     },
-    [query, isLoading, onSearch, attachments],
+    [query, isLoading, onSearch, attachments, mode],
   )
 
   const handleFocus = useCallback(() => {
@@ -174,7 +174,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       } else if (e.key === "Enter" && selectedIndex >= 0) {
         e.preventDefault()
         setQuery(suggestions[selectedIndex])
-        onSearch(suggestions[selectedIndex])
+        onSearch(suggestions[selectedIndex], mode || "quick")
         setShowSuggestions(false)
         setSelectedIndex(-1)
         inputRef.current?.blur()
@@ -183,7 +183,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         setSelectedIndex(-1)
       }
     },
-    [showSuggestions, suggestions, selectedIndex, onSearch],
+    [showSuggestions, suggestions, selectedIndex, onSearch, mode],
   )
 
   const handleMenuToggle = useCallback((e: React.MouseEvent) => {
@@ -287,12 +287,12 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   const handleSuggestionClick = useCallback(
     (suggestion: string) => {
       setQuery(suggestion)
-      onSearch(suggestion)
+      onSearch(suggestion, mode || "quick")
       setShowSuggestions(false)
       setSelectedIndex(-1)
       inputRef.current?.blur()
     },
-    [onSearch],
+    [onSearch, mode],
   )
 
   return (

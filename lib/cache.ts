@@ -27,7 +27,9 @@ export function getCacheKey(query: string, mode: "quick" | "deep"): string {
 export async function getCachedResponse(query: string, mode: "quick" | "deep"): Promise<CachedResponse | null> {
   try {
     const key = getCacheKey(query, mode)
+    console.log(`[v0] Attempting to get cache for key: ${key}`)
     const cached = await redis.get<CachedResponse>(key)
+    console.log(`[v0] Cache result:`, cached ? `Found (answer length: ${cached.answer?.length})` : "Not found")
 
     if (cached && cached.timestamp) {
       // Check if cache is still valid (24 hours)
@@ -37,6 +39,8 @@ export async function getCachedResponse(query: string, mode: "quick" | "deep"): 
       if (age < maxAge) {
         console.log(`[v0] Cache hit for query: ${query}`)
         return cached
+      } else {
+        console.log(`[v0] Cache expired for query: ${query}`)
       }
     }
 

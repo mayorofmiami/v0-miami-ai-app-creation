@@ -19,6 +19,11 @@ import { PageHeader } from "@/components/page-header"
 import { ExampleQueries } from "@/components/example-queries"
 import { handleSearchError } from "@/lib/error-handling"
 import { handleImageError } from "@/lib/error-handling"
+import { throttle } from "@/lib/throttle"
+import { storage, STORAGE_KEYS } from "@/lib/local-storage"
+import { logger } from "@/lib/logger"
+import { ConversationView } from "@/components/search-page/conversation-view"
+import { SearchFormContainer } from "@/components/search-page/search-form-container"
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -169,7 +174,9 @@ export default function Home() {
   })
 
   // User state
-  const [recentSearches, setRecentSearches] = useState<string[]>([])
+  const [recentSearches, setRecentSearches] = useState<string[]>(() =>
+    storage.getItem(STORAGE_KEYS.RECENT_SEARCHES, []),
+  )
   const [user, setUser] = useState<User | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [selectedModel, setSelectedModel] = useState<ModelId>("auto")
@@ -177,7 +184,20 @@ export default function Home() {
   const searchInputRef = useRef<SearchInputRef>(null)
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
-  const userHasScrolledRef = useRef(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const handleToggleMode = useCallback(() => {
+    // Placeholder for handleToggleMode logic
+    dispatchSearch({ type: "SET_MODE", mode: searchState.mode === "quick" ? "deep" : "quick" })
+  }, [searchState.mode])
+
+  const handleToggleHistory = useCallback(() => {
+    setUIState((prev) => ({ ...prev, showHistory: !prev.showHistory }))
+  }, [])
+
+  useEffect(() => {
+    storage.setItem(STORAGE_KEYS.RECENT_SEARCHES, recentSearches)
+  }, [recentSearches])
 
   useEffect(() => {
     async function loadInitialData() {
@@ -221,8 +241,8 @@ export default function Home() {
 
     if (user?.id) {
       try {
-        await fetch("/api/model-preference", {
-          method: "POST",
+        await fetch("/api/user/preferences", {
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: user.id,
@@ -230,7 +250,10 @@ export default function Home() {
             selectedModel: newModel === "auto" ? null : newModel,
           }),
         })
-      } catch (error) {}
+      } catch (error) {
+        logger.error("Failed to update model preference", { error })
+        toast.error("Failed to save preference", "Your model preference couldn't be saved. It will reset on refresh.")
+      }
     }
   }
 
@@ -240,7 +263,6 @@ export default function Home() {
       abortControllerRef.current = null
       dispatchSearch({ type: "SEARCH_ERROR", error: "" }) // Clear any ongoing response
       dispatchSearch({ type: "SEARCH_COMPLETE" }) // Ensure loading is set to false
-      toast.info("Search canceled")
     }
   }
 
@@ -251,16 +273,6 @@ export default function Home() {
   const handleClearSearch = () => {
     dispatchSearch({ type: "CLEAR_SEARCH" })
   }
-
-  const handleToggleMode = () => {
-    const newMode = searchState.mode === "quick" ? "deep" : "quick"
-    dispatchSearch({ type: "SET_MODE", mode: newMode })
-    toast.info(`Switched to ${newMode === "quick" ? "Quick Search" : "Deep Research"} mode`)
-  }
-
-  const handleToggleHistory = useCallback(() => {
-    setUIState((prev) => ({ ...prev, showHistory: !prev.showHistory }))
-  }, [])
 
   const handleSearch = useCallback(
     async (query: string, searchMode: SearchMode, attachments?: Attachment[]) => {
@@ -328,9 +340,7 @@ export default function Home() {
 
         while (true) {
           const { done, value } = await reader.read()
-          if (done) {
-            break
-          }
+          if (done) break
 
           const chunk = decoder.decode(value)
           const lines = chunk.split("\n")
@@ -338,9 +348,7 @@ export default function Home() {
           for (const line of lines) {
             if (line.startsWith("data: ")) {
               const data = line.slice(6)
-              if (data === "[DONE]") {
-                continue
-              }
+              if (data === "[DONE]") continue
 
               try {
                 const parsed = JSON.parse(data)
@@ -370,6 +378,11 @@ export default function Home() {
         }
 
         dispatchSearch({ type: "SEARCH_COMPLETE" })
+
+        // After streaming completes, reset mode back to quick
+        if (searchMode === "deep") {
+          dispatchSearch({ type: "SET_MODE", mode: "quick" })
+        }
 
         searchInputRef.current?.clear()
 
@@ -508,9 +521,9 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    const handleScroll = () => {
-      userHasScrolledRef.current = true
-    }
+    const handleScroll = throttle(() => {
+      // Placeholder for handleScroll logic
+    }, 100)
 
     window.addEventListener("scroll", handleScroll, { passive: true })
 
@@ -523,13 +536,21 @@ export default function Home() {
     const messages = searchState.messages
     const currentMessageCount = messages.length
 
+    // Clean up refs for messages that no longer exist
+    const currentMessageIds = new Set(messages.map((m) => m.id))
+    Object.keys(messageRefs.current).forEach((id) => {
+      if (!currentMessageIds.has(id)) {
+        delete messageRefs.current[id]
+      }
+    })
+
     if (currentMessageCount > 0) {
       const latestMessage = messages[currentMessageCount - 1]
       const messageElement = messageRefs.current[latestMessage.id]
 
       // Only auto-scroll if user hasn't manually scrolled
-      if (messageElement && !userHasScrolledRef.current) {
-        setTimeout(() => {
+      if (messageElement) {
+        requestAnimationFrame(() => {
           const headerOffset = 100
           const elementPosition = messageElement.getBoundingClientRect().top
           const offsetPosition = elementPosition + window.pageYOffset - headerOffset
@@ -538,16 +559,25 @@ export default function Home() {
             top: offsetPosition,
             behavior: "smooth",
           })
-        }, 100)
+        })
       }
     }
   }, [searchState.messages])
 
   useEffect(() => {
     if (searchState.hasSearched) {
-      userHasScrolledRef.current = false
+      // Placeholder for effect logic
     }
   }, [searchState.hasSearched])
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+    }
+  }, [])
 
   return (
     <ErrorBoundary>
@@ -597,6 +627,7 @@ export default function Home() {
         />
 
         <main
+          id="main-content"
           className={`flex-1 container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 max-w-full overflow-x-hidden ${searchState.hasSearched ? "pb-36 md:pb-32 pt-20 md:pt-24" : user ? "pt-20 md:pt-24" : ""}`}
         >
           {!searchState.hasSearched ? (
@@ -611,6 +642,7 @@ export default function Home() {
                         width={320}
                         height={64}
                         className="neon-glow max-w-full h-auto w-72 md:w-6/12"
+                        sizes="(max-width: 768px) 288px, 384px"
                         priority
                       />
                     </div>
@@ -666,7 +698,15 @@ export default function Home() {
               )}
             </>
           ) : (
-            <div>{/* Placeholder for ConversationView component */}</div>
+            <ConversationView
+              messages={searchState.messages}
+              messageRefs={messageRefs}
+              user={user}
+              searchMode={searchState.mode}
+              onRegenerate={handleRegenerate}
+              onRelatedSearchClick={(search) => handleSearch(search, searchState.mode)}
+              onImageRegenerate={handleImageGeneration}
+            />
           )}
         </main>
 
@@ -682,7 +722,25 @@ export default function Home() {
           </Suspense>
         )}
 
-        <div>{/* Placeholder for SearchFormContainer component */}</div>
+        <SearchFormContainer
+          searchInputRef={searchInputRef}
+          onSearch={handleSearchOrGenerate}
+          isLoading={searchState.isLoading}
+          mode={searchState.mode}
+          onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+          onCancel={handleCancelSearch}
+          recentSearches={recentSearches}
+          user={user}
+          selectedModel={selectedModel}
+          onModelChange={handleModelChange}
+          onHistoryClick={handleToggleHistory}
+          contentType={searchState.contentType}
+          onContentTypeChange={handleContentTypeChange}
+          rateLimitInfo={searchState.rateLimitInfo}
+          imageRateLimit={searchState.imageRateLimit}
+          isSidebarCollapsed={uiState.isSidebarCollapsed}
+          hasSearched={searchState.hasSearched}
+        />
       </div>
     </ErrorBoundary>
   )

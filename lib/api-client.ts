@@ -1,7 +1,10 @@
+import { requestDeduplicator } from "./request-deduplicator"
+
 type FetchOptions = RequestInit & {
   timeout?: number
   retry?: number
   retryDelay?: number
+  dedupe?: boolean
 }
 
 interface ApiError extends Error {
@@ -26,13 +29,18 @@ class ApiClient {
   }
 
   private async fetchWithTimeout(url: string, options: FetchOptions): Promise<Response> {
-    const { timeout = 30000, ...fetchOptions } = options
+    const { timeout = 30000, dedupe = true, ...fetchOptions } = options
 
     const controller = new AbortController()
     const id = setTimeout(() => controller.abort(), timeout)
 
     try {
-      const response = await fetch(url, {
+      const fetchFn =
+        dedupe && (fetchOptions.method === "GET" || fetchOptions.method === "POST")
+          ? (u: string, o: RequestInit) => requestDeduplicator.fetch(u, o)
+          : fetch
+
+      const response = await fetchFn(url, {
         ...fetchOptions,
         signal: controller.signal,
       })

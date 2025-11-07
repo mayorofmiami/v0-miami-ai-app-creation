@@ -81,6 +81,7 @@ export function PageHeader({
                 width={logoWidth}
                 height={logoHeight}
                 className={logoClassName}
+                sizes="(max-width: 768px) 140px, 180px"
                 priority
               />
             </div>

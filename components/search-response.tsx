@@ -158,7 +158,7 @@ export const SearchResponse = memo(function SearchResponse({
               <div className="my-4 rounded-lg overflow-hidden border border-miami-aqua/30">
                 <img
                   src={src || "/placeholder.svg"}
-                  alt={alt || ""}
+                  alt={alt || "Image from search result"}
                   loading="lazy"
                   className="w-full h-auto object-cover"
                   onError={(e) => {

@@ -6,7 +6,7 @@ import type { User, ModelId, Attachment, RateLimitInfo } from "@/types"
 
 interface SearchFormContainerProps {
   searchInputRef: RefObject<SearchInputRef>
-  onSearch: (query: string, attachments?: Attachment[]) => void
+  onSearch: (query: string, mode: "quick" | "deep", attachments?: Attachment[]) => void
   isLoading: boolean
   mode: "quick" | "deep"
   onModeChange: (mode: "quick" | "deep") => void

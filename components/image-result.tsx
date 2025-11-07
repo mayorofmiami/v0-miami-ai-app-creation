@@ -58,7 +58,14 @@ export const ImageResult = memo(function ImageResult({
       {/* Image Display */}
       <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-muted/20">
         <div className="relative aspect-square w-full">
-          <Image src={imageUrl || "/placeholder.svg"} alt={prompt} fill className="object-contain" priority />
+          <Image
+            src={imageUrl || "/placeholder.svg"}
+            alt={prompt}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 768px, 896px"
+            priority
+          />
         </div>
       </div>
 

@@ -57,7 +57,15 @@ export function MobileDrawer({
       </SheetTrigger>
       <SheetContent side="left" className="w-[340px] sm:w-80 flex flex-col">
         <div className="flex flex-col items-center gap-4 py-4">
-          <Image src="/miami-ai-logo.png" alt="MIAMI.AI" width={180} height={36} className="h-9 w-auto" priority />
+          <Image
+            src="/miami-ai-logo.png"
+            alt="MIAMI.AI"
+            width={180}
+            height={36}
+            className="h-9 w-auto"
+            sizes="180px"
+            priority
+          />
         </div>
 
         <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">

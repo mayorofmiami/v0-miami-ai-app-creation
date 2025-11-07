@@ -6,6 +6,7 @@ import { getCachedResponse, setCachedResponse } from "@/lib/cache"
 import { checkRateLimit as checkModelRateLimit } from "@/lib/rate-limiter"
 import { trackModelUsage } from "@/lib/cost-tracker"
 import { webSearchTool } from "@/lib/tools"
+import { searchRequestSchema, validateRequest } from "@/lib/validation"
 
 export const maxDuration = 30
 
@@ -75,21 +76,36 @@ function isTimeSensitiveQuery(query: string): boolean {
   return timeSensitiveKeywords.some((keyword) => lowerQuery.includes(keyword))
 }
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
     await initializeDatabase()
 
-    const { query, mode, userId, selectedModel, attachments } = await req.json()
+    const body = await request.json()
+    const validation = validateRequest(searchRequestSchema, body)
 
-    if (!query || typeof query !== "string") {
-      return Response.json({ error: "Query is required" }, { status: 400 })
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({
+          error: validation.error,
+          code: "VALIDATION_ERROR",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
     }
+
+    const { query, mode, userId, selectedModel, attachments } = validation.data
 
     const isTimeSensitive = isTimeSensitiveQuery(query)
 
+    console.log(`[v0] Checking cache - isTimeSensitive: ${isTimeSensitive}, query: ${query}, mode: ${mode}`)
     const cached = !isTimeSensitive ? await getCachedResponse(query, mode) : null
+    console.log(`[v0] Cache check result:`, cached ? "FOUND" : "NOT FOUND")
 
     if (cached && cached.answer && cached.answer.trim().length > 0 && isValidCachedResponse(cached.answer)) {
+      console.log(`[v0] Returning cached response, answer length: ${cached.answer.length}`)
       const encoder = new TextEncoder()
       const stream = new ReadableStream({
         async start(controller) {
@@ -145,7 +161,7 @@ export async function POST(req: Request) {
       // Cache exists but answer is empty, skip it
     }
 
-    const ipAddress = getClientIp(req)
+    const ipAddress = getClientIp(request)
     const rateLimitCheck = await checkRateLimit(
       userId && typeof userId === "string" && userId.length > 0 ? userId : null,
       ipAddress,
@@ -413,7 +429,10 @@ Provide accurate, concise answers that are both informative and visually appeali
             }
           }
 
-          await incrementRateLimit(userId && typeof userId === "string" && userId.length > 0 ? userId : null, ipAddress)
+          await incrementRateLimit(
+            userId && typeof userId === "string" && userId.length > 0 ? userId : null,
+            getClientIp(request),
+          )
         },
       })
 
