@@ -101,6 +101,25 @@ export async function POST(request: Request) {
       `[v0] Starting search - query: "${query}", mode: ${mode}, userId: ${userId || "none"}, threadId: ${threadId || "none"}`,
     )
 
+    let finalThreadId = threadId
+
+    // If authenticated user and no thread ID exists, create a new thread
+    if (userId && typeof userId === "string" && userId.length > 0 && !finalThreadId) {
+      if (!conversationHistory || conversationHistory.length === 0) {
+        try {
+          const { createThread, generateThreadTitle } = await import("@/lib/db")
+          const smartTitle = await generateThreadTitle(query)
+          const newThread = await createThread(userId, smartTitle)
+          if (newThread) {
+            finalThreadId = newThread.id
+            console.log(`[v0] Created new thread: ${finalThreadId} with title: "${smartTitle}"`)
+          }
+        } catch (error) {
+          console.error("Failed to create thread:", error)
+        }
+      }
+    }
+
     const hasConversationHistory = conversationHistory && conversationHistory.length > 0
     const isTimeSensitive = isTimeSensitiveQuery(query)
 
@@ -165,6 +184,7 @@ export async function POST(request: Request) {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
+          ...(finalThreadId ? { "X-Thread-Id": finalThreadId } : {}),
         },
       })
     } else if (cached) {
@@ -468,18 +488,6 @@ Provide accurate, concise answers that are both informative and visually appeali
 
           if (userId && typeof userId === "string" && userId.length > 0) {
             try {
-              let finalThreadId = threadId
-
-              // If no thread ID exists, create a new thread for authenticated users
-              if (!finalThreadId && conversationHistory && conversationHistory.length === 0) {
-                const { createThread } = await import("@/lib/db")
-                const newThread = await createThread(userId, query.slice(0, 100))
-                if (newThread) {
-                  finalThreadId = newThread.id
-                }
-              }
-
-              // Calculate position in thread
               const positionInThread = conversationHistory ? Math.floor(conversationHistory.length / 2) + 1 : 1
 
               await createSearchHistory(
@@ -495,9 +503,9 @@ Provide accurate, concise answers that are both informative and visually appeali
                 positionInThread,
               )
 
-              if (finalThreadId) {
-                // We'll add this to the stream response headers
-              }
+              console.log(
+                `[v0] Saved search to history with threadId: ${finalThreadId || "none"}, position: ${positionInThread}`,
+              )
             } catch (error) {
               console.error("Failed to save search to history:", error)
             }
@@ -596,7 +604,9 @@ Provide accurate, concise answers that are both informative and visually appeali
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
-          ...(threadId ? { "X-Thread-Id": threadId } : {}),
+          "X-RateLimit-Remaining": rateLimitCheck.remaining.toString(),
+          "X-RateLimit-Limit": rateLimitCheck.limit.toString(),
+          ...(finalThreadId ? { "X-Thread-Id": finalThreadId } : {}),
         },
       })
     } catch (error: any) {

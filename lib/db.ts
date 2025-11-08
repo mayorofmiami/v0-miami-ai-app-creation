@@ -1,5 +1,6 @@
 import "server-only"
 import { neon } from "@neondatabase/serverless"
+import { generateText } from "ai"
 
 export const sql = neon(process.env.DATABASE_URL!)
 
@@ -78,6 +79,43 @@ export async function createThread(userId: string, title: string) {
   } catch (error: any) {
     console.error("[v0] Create thread error:", error?.message || error)
     return null
+  }
+}
+
+export async function generateThreadTitle(query: string): Promise<string> {
+  try {
+    const { text } = await generateText({
+      model: "openai/gpt-4o-mini",
+      prompt: `Generate a concise, descriptive title (max 6 words) for this search query. 
+      
+The title should be clear and catalog-friendly, like ChatGPT titles. Just return the title, nothing else.
+
+Examples:
+Query: "Which Miami AI startups raised funding in 2025?"
+Title: Miami AI startup funding 2025
+
+Query: "What are the best restaurants in Wynwood?"
+Title: Best Wynwood restaurants
+
+Query: "How does blockchain technology work?"
+Title: Blockchain technology explained
+
+Query: "${query}"
+Title:`,
+      maxTokens: 20,
+      temperature: 0.3,
+    })
+
+    // Clean up the response and limit length
+    const cleanTitle = text
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .slice(0, 60)
+    return cleanTitle || query.slice(0, 60)
+  } catch (error) {
+    console.error("[v0] Failed to generate thread title:", error)
+    // Fallback to truncated query
+    return query.slice(0, 60)
   }
 }
 

@@ -19,7 +19,7 @@ import { ExampleQueries } from "@/components/example-queries"
 import { handleSearchError } from "@/lib/error-handling"
 import { handleImageError } from "@/lib/error-handling"
 import { throttle } from "@/lib/throttle"
-import { storage, STORAGE_KEYS } from "@/lib/local-storage"
+import { storage, STORAGE_KEYS, threadStorage } from "@/lib/local-storage"
 import { logger } from "@/lib/logger"
 import { ConversationView } from "@/components/search-page/conversation-view"
 import { SearchFormContainer } from "@/components/search-page/search-form-container"
@@ -166,12 +166,13 @@ export default function Home() {
     isSidebarCollapsed: true,
   })
 
-  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null)
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return threadStorage.getCurrentThreadId()
+    }
+    return null
+  })
 
-  // User state
-  const [recentSearches, setRecentSearches] = useState<string[]>(() =>
-    storage.getItem(STORAGE_KEYS.RECENT_SEARCHES, []),
-  )
   const [user, setUser] = useState<User | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [selectedModel, setSelectedModel] = useState<ModelId>("auto")
@@ -180,6 +181,8 @@ export default function Home() {
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
 
   const handleToggleMode = useCallback(() => {
     // Placeholder for handleToggleMode logic
@@ -281,10 +284,27 @@ export default function Home() {
 
       abortControllerRef.current = new AbortController()
 
+      let effectiveThreadId = currentThreadId
+      if (!user?.id && !effectiveThreadId) {
+        effectiveThreadId = `local-thread-${Date.now()}`
+        setCurrentThreadId(effectiveThreadId)
+        threadStorage.setCurrentThreadId(effectiveThreadId)
+
+        const newThread = {
+          id: effectiveThreadId,
+          title: query.slice(0, 50), // Temporary title
+          queries: [],
+          lastMessageAt: Date.now(),
+          messageCount: 0,
+        }
+        threadStorage.addThread(newThread)
+      }
+
       dispatchSearch({ type: "START_SEARCH", query, mode: searchMode })
 
       try {
         const body: any = { query, mode: searchMode }
+
         if (user?.id) {
           body.userId = user.id
           if (currentThreadId) {
@@ -300,7 +320,7 @@ export default function Home() {
           body.attachments = attachments
         }
 
-        if (searchState.messages.length > 0) {
+        if (searchState.messages.length > 0 && currentThreadId) {
           body.conversationHistory = searchState.messages
             .map((msg) => ({
               role: msg.type === "search" ? "user" : "assistant",
@@ -308,6 +328,11 @@ export default function Home() {
             }))
             .filter((msg) => msg.content.trim().length > 0)
         }
+
+        console.log(
+          "[v0] Sending search request with threadId:",
+          user?.id ? currentThreadId || "none" : "client-side only",
+        )
 
         const res = await fetch("/api/search", {
           method: "POST",
@@ -328,7 +353,23 @@ export default function Home() {
         }
 
         const threadId = res.headers.get("X-Thread-Id")
-        if (threadId && !currentThreadId) {
+        console.log("[v0] Received threadId from server:", threadId || "none")
+
+        if (!user?.id && effectiveThreadId) {
+          const thread = threadStorage.getThread(effectiveThreadId)
+          if (thread) {
+            threadStorage.updateThread(effectiveThreadId, {
+              queries: [...thread.queries, query],
+              lastMessageAt: Date.now(),
+              messageCount: thread.messageCount + 1,
+            })
+          }
+
+          // Generate AI title after first query
+          if (thread && thread.messageCount === 0) {
+            generateThreadTitle(effectiveThreadId, query)
+          }
+        } else if (user?.id && threadId) {
           setCurrentThreadId(threadId)
         }
 
@@ -408,7 +449,7 @@ export default function Home() {
         abortControllerRef.current = null
       }
     },
-    [user, selectedModel, searchState.isLoading, currentThreadId],
+    [user, selectedModel, searchState.isLoading, currentThreadId, searchState.messages],
   )
 
   const handleImageGeneration = useCallback(
@@ -494,12 +535,17 @@ export default function Home() {
   const handleNewChat = useCallback(() => {
     handleCancelSearch()
     handleClearSearch()
+
     setCurrentThreadId(null)
+    if (!user?.id) {
+      threadStorage.clearCurrentThread()
+    }
+
     setUIState((prev) => ({ ...prev, isDrawerOpen: false }))
     setTimeout(() => {
       searchInputRef.current?.focus()
     }, 100)
-  }, [])
+  }, [user])
 
   const isAdmin = useMemo(() => user?.role === "owner" || user?.role === "admin", [user?.role])
 
@@ -589,6 +635,23 @@ export default function Home() {
       }
     }
   }, [])
+
+  const generateThreadTitle = async (threadId: string, query: string) => {
+    try {
+      const response = await fetch("/api/generate-thread-title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      })
+
+      if (response.ok) {
+        const { title } = await response.json()
+        threadStorage.updateThread(threadId, { title })
+      }
+    } catch (error) {
+      console.error("Failed to generate thread title:", error)
+    }
+  }
 
   return (
     <ErrorBoundary>

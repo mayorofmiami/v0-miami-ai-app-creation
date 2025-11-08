@@ -13,6 +13,7 @@ import Link from "next/link"
 import { useTheme } from "next-themes"
 import { HelpMenu } from "@/components/help-menu"
 import { useEffect, useState } from "react"
+import { threadStorage, type LocalThread } from "@/lib/local-storage"
 
 interface Thread {
   id: string
@@ -46,6 +47,7 @@ export function CollapsibleSidebar({
 }: CollapsibleSidebarProps) {
   const { theme, setTheme } = useTheme()
   const [threads, setThreads] = useState<Thread[]>([])
+  const [localThreads, setLocalThreads] = useState<LocalThread[]>([])
   const [isLoadingThreads, setIsLoadingThreads] = useState(false)
 
   const toggleTheme = () => {
@@ -76,6 +78,21 @@ export function CollapsibleSidebar({
     }
 
     fetchThreads()
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id) {
+      const threads = threadStorage.getThreads()
+      setLocalThreads(threads)
+
+      // Set up polling to update threads when they change
+      const interval = setInterval(() => {
+        const updatedThreads = threadStorage.getThreads()
+        setLocalThreads(updatedThreads)
+      }, 1000)
+
+      return () => clearInterval(interval)
+    }
   }, [user?.id])
 
   return (
@@ -129,7 +146,7 @@ export function CollapsibleSidebar({
         )}
 
         {user
-          ? // Authenticated: Show threads
+          ? // Authenticated: Show database threads
             threads.length > 0 && (
               <div className={`pt-4 ${isCollapsed ? "" : "border-t border-border"}`}>
                 {!isCollapsed && (
@@ -173,40 +190,37 @@ export function CollapsibleSidebar({
                 </div>
               </div>
             )
-          : // Non-authenticated: Show recent searches from local storage
-            recentSearches.length > 0 && (
+          : // Non-authenticated: Show local threads from localStorage
+            localThreads.length > 0 && (
               <div className={`pt-4 ${isCollapsed ? "" : "border-t border-border"}`}>
                 {!isCollapsed && (
                   <div className="flex items-center justify-between px-3 mb-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Recent Searches
-                    </p>
-                    <button
-                      onClick={onToggleHistory}
-                      className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
-                    >
-                      See All
-                    </button>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Chats</p>
                   </div>
                 )}
                 <div className="space-y-1">
-                  {(isCollapsed ? recentSearches.slice(0, 3) : recentSearches.slice(0, 5)).map((search, index) => (
+                  {(isCollapsed ? localThreads.slice(0, 3) : localThreads.slice(0, 5)).map((thread) => (
                     <button
-                      key={`${search}-${index}`}
-                      onClick={() => onSearchSelect(search)}
+                      key={thread.id}
+                      onClick={() => onSearchSelect(thread.queries[thread.queries.length - 1])}
                       className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
                         isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
                       }`}
-                      title={isCollapsed ? search : undefined}
+                      title={isCollapsed ? thread.title : undefined}
                     >
                       {isCollapsed ? (
                         <ClockIcon className="w-5 h-5 text-muted-foreground" />
                       ) : (
                         <div className="flex items-center gap-2">
                           <ClockIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                            {search}
-                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                              {thread.title}
+                            </p>
+                            {thread.messageCount > 1 && (
+                              <p className="text-xs text-muted-foreground">{thread.messageCount} messages</p>
+                            )}
+                          </div>
                         </div>
                       )}
                     </button>
