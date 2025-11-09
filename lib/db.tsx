@@ -207,6 +207,33 @@ export async function getSearchHistory(userId: string, limit = 10) {
   return result as SearchHistory[]
 }
 
+export async function getSearchById(searchId: string) {
+  try {
+    const result = await sql`
+      SELECT * FROM search_history
+      WHERE id = ${searchId}
+      LIMIT 1
+    `
+    return result[0] as SearchHistory | undefined
+  } catch (error: any) {
+    console.error("[v0] Get search by ID error:", error?.message || error)
+    return undefined
+  }
+}
+
+export async function updateSearchResponse(searchId: string, response: string) {
+  try {
+    await sql`
+      UPDATE search_history
+      SET response = ${response}
+      WHERE id = ${searchId}
+    `
+  } catch (error: any) {
+    console.error("[v0] Update search response error:", error?.message || error)
+    throw error
+  }
+}
+
 // Subscription Functions
 export async function getOrCreateSubscription(userId: string) {
   const existing = await sql`
@@ -391,7 +418,7 @@ export async function checkRateLimit(
   ipAddress: string | null,
 ): Promise<{ allowed: boolean; remaining: number; limit: number; reason?: string }> {
   try {
-    const limit = userId ? 100 : 1000 // Signed: 100, Unsigned: 1000
+    const limit = userId ? 1000 : 100 // Signed: 1000, Unsigned: 100
 
     // Get or create rate limit record
     const identifier = userId || ipAddress
@@ -466,12 +493,12 @@ export async function checkRateLimit(
   } catch (error: any) {
     if (error?.message?.includes('relation "rate_limits" does not exist')) {
       // Silently allow - rate limiting tables not set up yet
-      const limit = userId ? 100 : 1000
+      const limit = userId ? 1000 : 100
       return { allowed: true, remaining: limit, limit }
     }
     // Log other errors
     console.error("[v0] Rate limit check error:", error?.message || error)
-    const limit = userId ? 100 : 1000
+    const limit = userId ? 1000 : 100
     return { allowed: true, remaining: limit, limit }
   }
 }

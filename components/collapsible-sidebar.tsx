@@ -9,17 +9,26 @@ import SunIcon from "@/components/icons/Sun"
 import MoonIcon from "@/components/icons/Moon"
 import Palmtree from "@/components/icons/Palmtree"
 import ShieldIcon from "@/components/icons/Shield"
+import BookmarkIcon from "@/components/icons/Bookmark"
 import Link from "next/link"
 import { useTheme } from "next-themes"
-import { HelpMenu } from "@/components/help-menu"
 import { useEffect, useState } from "react"
 import { threadStorage, type LocalThread } from "@/lib/local-storage"
+import { HelpMenu } from "@/components/help-menu"
 
 interface Thread {
   id: string
   title: string
   message_count: number
   last_message_at: string
+}
+
+interface Bookmark {
+  id: string
+  query: string
+  response: string
+  created_at: string
+  bookmarked_at: string
 }
 
 interface CollapsibleSidebarProps {
@@ -32,6 +41,7 @@ interface CollapsibleSidebarProps {
   onLogout: () => void
   isCollapsed: boolean
   setIsCollapsed: (collapsed: boolean) => void
+  shouldLoadThreads?: boolean
 }
 
 export function CollapsibleSidebar({
@@ -44,11 +54,14 @@ export function CollapsibleSidebar({
   onLogout,
   isCollapsed,
   setIsCollapsed,
+  shouldLoadThreads = true,
 }: CollapsibleSidebarProps) {
   const { theme, setTheme } = useTheme()
   const [threads, setThreads] = useState<Thread[]>([])
   const [localThreads, setLocalThreads] = useState<LocalThread[]>([])
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
   const [isLoadingThreads, setIsLoadingThreads] = useState(false)
+  const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false)
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
@@ -58,7 +71,7 @@ export function CollapsibleSidebar({
 
   useEffect(() => {
     async function fetchThreads() {
-      if (!user?.id) {
+      if (!user?.id || !shouldLoadThreads) {
         setThreads([])
         return
       }
@@ -78,7 +91,31 @@ export function CollapsibleSidebar({
     }
 
     fetchThreads()
-  }, [user?.id])
+  }, [user?.id, shouldLoadThreads])
+
+  useEffect(() => {
+    async function fetchBookmarks() {
+      if (!user?.id || !shouldLoadThreads) {
+        setBookmarks([])
+        return
+      }
+
+      setIsLoadingBookmarks(true)
+      try {
+        const response = await fetch("/api/bookmarks")
+        if (response.ok) {
+          const data = await response.json()
+          setBookmarks(data.bookmarks || [])
+        }
+      } catch (error) {
+        console.error("Failed to fetch bookmarks:", error)
+      } finally {
+        setIsLoadingBookmarks(false)
+      }
+    }
+
+    fetchBookmarks()
+  }, [user?.id, shouldLoadThreads])
 
   useEffect(() => {
     if (!user?.id) {
@@ -145,6 +182,41 @@ export function CollapsibleSidebar({
           </Link>
         )}
 
+        {user && bookmarks.length > 0 && (
+          <div className={`pt-4 ${isCollapsed ? "" : "border-t border-border"}`}>
+            {!isCollapsed && (
+              <div className="flex items-center justify-between px-3 mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bookmarks</p>
+              </div>
+            )}
+            <div className="space-y-1">
+              {(isCollapsed ? bookmarks.slice(0, 3) : bookmarks.slice(0, 5)).map((bookmark) => (
+                <button
+                  key={bookmark.id}
+                  onClick={() => onSearchSelect(bookmark.query)}
+                  className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
+                    isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
+                  }`}
+                  title={isCollapsed ? bookmark.query : undefined}
+                >
+                  {isCollapsed ? (
+                    <BookmarkIcon className="w-5 h-5 text-miami-aqua fill-current" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <BookmarkIcon className="w-4 h-4 text-miami-aqua fill-current flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                          {bookmark.query}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {user
           ? // Authenticated: Show database threads
             threads.length > 0 && (
@@ -164,7 +236,10 @@ export function CollapsibleSidebar({
                   {(isCollapsed ? threads.slice(0, 3) : threads.slice(0, 5)).map((thread) => (
                     <button
                       key={thread.id}
-                      onClick={() => onSearchSelect(thread.title)}
+                      onClick={() => {
+                        // Restore thread conversation
+                        window.location.href = `/?thread=${thread.id}`
+                      }}
                       className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
                         isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
                       }`}

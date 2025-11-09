@@ -84,3 +84,30 @@ export async function clearUserCache(userId: string) {
     console.error("[v0] Cache clear error:", error)
   }
 }
+
+export async function getOrFetchWebSearch(query: string, fetcher: () => Promise<any>) {
+  try {
+    const key = `websearch:${query}`
+    const cached = await redis.get(key)
+
+    if (cached) {
+      console.log("[v0] Using cached web search results")
+      if (typeof cached === "string") {
+        return JSON.parse(cached)
+      }
+      return cached
+    }
+
+    // Fetch fresh results
+    const results = await fetcher()
+
+    // Cache for 1 hour (deduplicate across users)
+    await redis.setex(key, 60 * 60, JSON.stringify(results))
+
+    return results
+  } catch (error) {
+    console.error("[v0] Web search cache error:", error)
+    // Fallback to fetching without cache
+    return fetcher()
+  }
+}

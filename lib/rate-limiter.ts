@@ -12,18 +12,18 @@ export interface RateLimitConfig {
 
 // Model-specific rate limits
 export const MODEL_RATE_LIMITS: Record<string, RateLimitConfig> = {
-  // Expensive models - stricter limits for free users
-  "openai/gpt-4o": { maxRequests: 5, windowMs: 60 * 60 * 1000 }, // 5 per hour
-  "anthropic/claude-3.5-sonnet": { maxRequests: 5, windowMs: 60 * 60 * 1000 }, // 5 per hour
+  // Expensive models - more generous limits for authenticated users
+  "openai/gpt-4o": { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 per hour
+  "anthropic/claude-3.5-sonnet": { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 per hour
 
   // Medium cost models
-  "anthropic/claude-3.5-haiku": { maxRequests: 20, windowMs: 60 * 60 * 1000 }, // 20 per hour
-  "openai/gpt-4o-mini": { maxRequests: 50, windowMs: 60 * 60 * 1000 }, // 50 per hour
+  "anthropic/claude-3.5-haiku": { maxRequests: 200, windowMs: 60 * 60 * 1000 }, // 200 per hour
+  "openai/gpt-4o-mini": { maxRequests: 500, windowMs: 60 * 60 * 1000 }, // 500 per hour
 
   // Cheap models - more generous limits
-  "google/gemini-2.0-flash": { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 per hour
-  "groq/llama-3.1-8b": { maxRequests: 100, windowMs: 60 * 60 * 1000 }, // 100 per hour
-  "groq/llama-3.3-70b": { maxRequests: 50, windowMs: 60 * 60 * 1000 }, // 50 per hour
+  "google/gemini-2.0-flash": { maxRequests: 1000, windowMs: 60 * 60 * 1000 }, // 1000 per hour
+  "groq/llama-3.1-8b": { maxRequests: 1000, windowMs: 60 * 60 * 1000 }, // 1000 per hour
+  "groq/llama-3.3-70b": { maxRequests: 500, windowMs: 60 * 60 * 1000 }, // 500 per hour
 }
 
 export async function checkRateLimit(
@@ -52,6 +52,9 @@ export async function checkRateLimit(
 
     if (count >= config.maxRequests) {
       const ttl = await redis.ttl(key)
+      console.log(
+        `[v0] Model rate limit exceeded - userId: ${userId}, model: ${model}, count: ${count}/${config.maxRequests}`,
+      )
       return {
         allowed: false,
         remaining: 0,
@@ -62,6 +65,10 @@ export async function checkRateLimit(
     // Increment count
     await redis.incr(key)
     await redis.expire(key, Math.floor(config.windowMs / 1000))
+
+    console.log(
+      `[v0] Model rate limit check passed - userId: ${userId}, model: ${model}, remaining: ${config.maxRequests - count - 1}/${config.maxRequests}`,
+    )
 
     return {
       allowed: true,

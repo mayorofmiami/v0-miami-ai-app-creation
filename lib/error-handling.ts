@@ -30,11 +30,11 @@ We apologize for the inconvenience!`
   if (status === 429) {
     const reason =
       error.reason ||
-      `You've reached your query limit. ${user ? "Limit: 100 queries per 24 hours" : "Sign in for more queries (100/day) or wait for your limit to reset."}`
+      `You've reached your query limit. ${user ? "Limit: 1000 queries per 24 hours" : "Sign in for more queries (1000/day) or wait for your limit to reset."}`
 
     toast.error("Rate Limit Exceeded", reason)
 
-    return `⚠️ Rate limit exceeded. ${user ? "You've used all 100 queries for today." : "Sign in for 100 queries per day, or wait for your limit to reset (10 queries per 24 hours for unsigned users)."}`
+    return `⚠️ Rate limit exceeded. ${user ? "You've used all 1000 queries for today." : "Sign in for 1000 queries per day, or wait for your limit to reset (100 queries per 24 hours for unsigned users)."}`
   }
 
   // Configuration errors (503 with API key message)

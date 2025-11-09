@@ -1,11 +1,12 @@
 import { streamText } from "ai"
-import { checkRateLimit, incrementRateLimit, createSearchHistory } from "@/lib/db"
+import { checkRateLimit, incrementRateLimit, createSearchHistory, updateSearchResponse } from "@/lib/db"
 import { getModelById } from "@/lib/model-selection"
 import { initializeDatabase } from "@/lib/db-init"
 import { getCachedResponse, setCachedResponse } from "@/lib/cache"
-import { checkRateLimit as checkModelRateLimit } from "@/lib/rate-limiter"
+import { checkRateLimit as checkModelRateLimit, MODEL_RATE_LIMITS } from "@/lib/rate-limiter"
 import { trackModelUsage } from "@/lib/cost-tracker"
 import { searchRequestSchema, validateRequest } from "@/lib/validation"
+import { getSession } from "@/lib/auth"
 
 export const maxDuration = 30
 
@@ -79,6 +80,9 @@ export async function POST(request: Request) {
   try {
     await initializeDatabase()
 
+    const session = await getSession()
+    const sessionUserId = session?.userId || null
+
     const body = await request.json()
     const validation = validateRequest(searchRequestSchema, body)
 
@@ -95,7 +99,8 @@ export async function POST(request: Request) {
       )
     }
 
-    const { query, mode, userId, selectedModel, attachments, conversationHistory, threadId } = validation.data
+    const { query, mode, selectedModel, attachments, conversationHistory, threadId } = validation.data
+    const userId = sessionUserId // Use server-side session userId
 
     console.log(
       `[v0] Starting search - query: "${query}", mode: ${mode}, userId: ${userId || "none"}, threadId: ${threadId || "none"}`,
@@ -247,10 +252,13 @@ export async function POST(request: Request) {
 
     if (userId) {
       const modelRateLimit = await checkModelRateLimit(userId, modelSelection.model, "free")
+      console.log(
+        `[v0] Model rate limit check - model: ${modelSelection.model}, allowed: ${modelRateLimit.allowed}, remaining: ${modelRateLimit.remaining}`,
+      )
       if (!modelRateLimit.allowed) {
         return Response.json(
           {
-            error: `Rate limit exceeded for ${modelSelection.model}. Please try a different model or upgrade to Pro.`,
+            error: `Model rate limit exceeded for ${modelSelection.model}. You can use this model ${MODEL_RATE_LIMITS[modelSelection.model]?.maxRequests || 5} times per hour. Please try a different model or wait for the limit to reset.`,
             remaining: modelRateLimit.remaining,
             resetAt: modelRateLimit.resetAt,
           },
@@ -264,30 +272,36 @@ export async function POST(request: Request) {
     let webSearchResults = null
     if (hasSerperKey && !attachments?.length) {
       try {
-        const searchResponse = await fetch("https://google.serper.dev/search", {
-          method: "POST",
-          headers: {
-            "X-API-KEY": process.env.SERPER_API_KEY as string,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            q: query,
-            num: 5,
-          }),
+        const { getOrFetchWebSearch } = await import("@/lib/redis")
+
+        webSearchResults = await getOrFetchWebSearch(query, async () => {
+          console.log("[v0] Fetching fresh web search results from Serper")
+          const searchResponse = await fetch("https://google.serper.dev/search", {
+            method: "POST",
+            headers: {
+              "X-API-KEY": process.env.SERPER_API_KEY as string,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              q: query,
+              num: 5,
+            }),
+          })
+
+          if (searchResponse.ok) {
+            const searchData = await searchResponse.json()
+            return (searchData.organic || []).slice(0, 5).map((result: any) => ({
+              title: result.title || "Untitled",
+              url: result.link,
+              content: result.snippet || "",
+            }))
+          }
+          return []
         })
 
-        if (searchResponse.ok) {
-          const searchData = await searchResponse.json()
-          webSearchResults = (searchData.organic || []).slice(0, 5).map((result: any) => ({
-            title: result.title || "Untitled",
-            url: result.link,
-            content: result.snippet || "",
-          }))
-          console.log(`[v0] Pre-fetched ${webSearchResults.length} web search results from Serper`)
-        }
+        console.log(`[v0] Using ${webSearchResults.length} web search results (cached or fresh)`)
       } catch (error) {
         console.error("Web search failed:", error)
-        // Continue without search results
       }
     }
 
@@ -462,6 +476,35 @@ Provide accurate, concise answers that are both informative and visually appeali
         }
       }
 
+      let savedSearchId: string | null = null
+      if (userId && typeof userId === "string" && userId.length > 0) {
+        try {
+          const positionInThread = conversationHistory ? Math.floor(conversationHistory.length / 2) + 1 : 1
+          const sources = webSearchResults ? webSearchResults.map((r: any) => ({ title: r.title, url: r.url })) : []
+
+          // Create initial search record with placeholder response
+          const savedSearch = await createSearchHistory(
+            userId,
+            query,
+            "", // Empty response initially
+            sources,
+            mode,
+            modelSelection.model,
+            modelSelection.autoSelected,
+            modelSelection.reason,
+            finalThreadId || null,
+            positionInThread,
+          )
+
+          savedSearchId = savedSearch.id
+          console.log(
+            `[v0] Created search record with id: ${savedSearchId}, threadId: ${finalThreadId || "none"}, position: ${positionInThread}`,
+          )
+        } catch (error) {
+          console.error("Failed to create initial search record:", error)
+        }
+      }
+
       const result = streamText({
         model: modelSelection.model,
         system: systemInstruction,
@@ -486,28 +529,12 @@ Provide accurate, concise answers that are both informative and visually appeali
             model: modelSelection.model,
           })
 
-          if (userId && typeof userId === "string" && userId.length > 0) {
+          if (savedSearchId) {
             try {
-              const positionInThread = conversationHistory ? Math.floor(conversationHistory.length / 2) + 1 : 1
-
-              await createSearchHistory(
-                userId,
-                query,
-                text,
-                sources,
-                mode,
-                modelSelection.model,
-                modelSelection.autoSelected,
-                modelSelection.reason,
-                finalThreadId || null,
-                positionInThread,
-              )
-
-              console.log(
-                `[v0] Saved search to history with threadId: ${finalThreadId || "none"}, position: ${positionInThread}`,
-              )
+              await updateSearchResponse(savedSearchId, text)
+              console.log(`[v0] Updated search ${savedSearchId} with final response`)
             } catch (error) {
-              console.error("Failed to save search to history:", error)
+              console.error("Failed to update search response:", error)
             }
           }
 
@@ -569,19 +596,24 @@ Provide accurate, concise answers that are both informative and visually appeali
                 `[v0] Finished streaming. Total chunks: ${chunkCount}, total text length: ${totalText.length}`,
               )
             } catch (streamError) {
-              console.error("[v0] ERROR reading text stream:", streamError)
-              console.error("[v0] Stream error details:", {
-                name: streamError instanceof Error ? streamError.name : "unknown",
-                message: streamError instanceof Error ? streamError.message : String(streamError),
-                stack: streamError instanceof Error ? streamError.stack : "no stack",
-              })
+              const errorMessage = streamError instanceof Error ? streamError.message : String(streamError)
+              const isNetworkError = errorMessage.includes("network error") || errorMessage.includes("aborted")
 
-              // If we got some chunks before the error, don't throw - just finish gracefully
-              if (chunkCount > 0) {
-                console.log(`[v0] Recovered from stream error after ${chunkCount} chunks`)
+              // If we got chunks and it's a network error, it's likely just the stream closing normally
+              if (chunkCount > 0 && isNetworkError) {
+                console.log(`[v0] Stream completed after ${chunkCount} chunks (${totalText.length} characters)`)
               } else {
-                // No chunks received - this is a real problem
-                throw streamError
+                // This is a real error
+                console.error("[v0] ERROR reading text stream:", streamError)
+                console.error("[v0] Stream error details:", {
+                  name: streamError instanceof Error ? streamError.name : "unknown",
+                  message: errorMessage,
+                })
+
+                // If no chunks received, this is a real problem
+                if (chunkCount === 0) {
+                  throw streamError
+                }
               }
             }
 
@@ -607,6 +639,7 @@ Provide accurate, concise answers that are both informative and visually appeali
           "X-RateLimit-Remaining": rateLimitCheck.remaining.toString(),
           "X-RateLimit-Limit": rateLimitCheck.limit.toString(),
           ...(finalThreadId ? { "X-Thread-Id": finalThreadId } : {}),
+          ...(savedSearchId ? { "X-Search-Id": savedSearchId } : {}),
         },
       })
     } catch (error: any) {

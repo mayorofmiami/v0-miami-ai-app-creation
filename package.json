@@ -63,6 +63,7 @@
     "exa-js": "latest",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
+    "nanoid": "latest",
     "next": "16.0.0",
     "next-themes": "latest",
     "novel": "latest",
@@ -79,6 +80,7 @@
     "sonner": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
+    "tw-animate-css": "latest",
     "vaul": "^0.9.9",
     "vue-router": "latest",
     "zod": "3.25.76"
@@ -90,7 +92,6 @@
     "@types/react-dom": "^19",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
-    "tw-animate-css": "1.3.3",
     "typescript": "^5"
   }
 }

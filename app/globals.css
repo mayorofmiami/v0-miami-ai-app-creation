@@ -111,18 +111,17 @@
   --radius: 0.75rem;
 
   /* Mobile-optimized spacing scale */
-  --spacing-touch-target: 44px; /* Minimum touch target size */
-  --spacing-comfortable: 20px; /* Comfortable spacing between elements */
-  --spacing-section: 32px; /* Section spacing */
+  --spacing-touch-target: 44px;
+  --spacing-comfortable: 20px;
+  --spacing-section: 32px;
 
   /* Mobile-optimized typography scale */
-  --text-xs-mobile: 0.8125rem; /* 13px */
-  --text-sm-mobile: 0.9375rem; /* 15px */
-  --text-base-mobile: 1.0625rem; /* 17px */
-  --text-lg-mobile: 1.1875rem; /* 19px */
-  --text-xl-mobile: 1.375rem; /* 22px */
+  --text-xs-mobile: 0.8125rem;
+  --text-sm-mobile: 0.9375rem;
+  --text-base-mobile: 1.0625rem;
+  --text-lg-mobile: 1.1875rem;
+  --text-xl-mobile: 1.375rem;
 
-  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -173,18 +172,15 @@
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  /* Prevent horizontal scrolling */
   overflow-x: hidden;
   max-width: 100vw;
 }
 
-/* Ensure all containers respect viewport width */
 html {
   overflow-x: hidden;
   max-width: 100vw;
 }
 
-/* Neon glow effect */
 .neon-glow {
   text-shadow: 0 0 8px var(--color-miami-aqua), 0 0 16px var(--color-miami-aqua), 0 0 24px var(--color-miami-aqua);
 }
@@ -197,7 +193,6 @@ html {
   box-shadow: 0 0 8px var(--color-miami-pink), 0 0 16px var(--color-miami-pink), inset 0 0 8px rgba(255, 182, 193, 0.08);
 }
 
-/* Gradient text */
 .gradient-text {
   background: linear-gradient(135deg, var(--color-miami-aqua) 0%, var(--color-miami-pink) 100%);
   -webkit-background-clip: text;
@@ -205,7 +200,6 @@ html {
   background-clip: text;
 }
 
-/* Animated gradient background */
 @keyframes gradient-shift {
   0% {
     background-position: 0% 50%;
@@ -224,7 +218,6 @@ html {
   animation: gradient-shift 3s ease infinite;
 }
 
-/* Smooth transitions */
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow,
     transform, filter, backdrop-filter;
@@ -232,7 +225,6 @@ html {
   transition-duration: 150ms;
 }
 
-/* Page transitions */
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -308,7 +300,6 @@ html {
   }
 }
 
-/* Shimmer effect for loading skeletons */
 @keyframes shimmer {
   0% {
     background-position: -1000px 0;
@@ -334,7 +325,6 @@ html {
   background-size: 1000px 100%;
 }
 
-/* Hover effects */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -344,14 +334,12 @@ html {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Global focus-visible styles for better keyboard navigation */
 *:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring);
   outline-offset: var(--focus-ring-offset);
   border-radius: calc(var(--radius) * 0.5);
 }
 
-/* Skip to main content link for screen readers and keyboard users */
 .skip-to-main {
   position: absolute;
   top: -100%;
@@ -370,7 +358,6 @@ html {
   top: 0;
 }
 
-/* Mobile optimizations */
 @media (max-width: 768px) {
   .neon-glow {
     text-shadow: 0 0 4px var(--color-miami-aqua), 0 0 8px var(--color-miami-aqua);
@@ -380,61 +367,53 @@ html {
     box-shadow: 0 0 4px var(--color-miami-aqua), inset 0 0 4px rgba(2, 216, 233, 0.05);
   }
 
-  /* Enhanced mobile typography for better readability */
   body {
-    font-size: 1rem; /* 16px base for better readability */
+    font-size: 1rem;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1 {
-    font-size: 1.5rem; /* 24px */
+    font-size: 1.5rem;
     line-height: 1.3;
   }
 
   h2 {
-    font-size: 1.25rem; /* 20px */
+    font-size: 1.25rem;
     line-height: 1.4;
   }
 
-  /* Larger touch targets for better mobile UX */
   button,
   a,
   input,
   textarea,
   select {
-    min-height: 44px; /* iOS recommended minimum */
+    min-height: 44px;
   }
 
-  /* Better spacing for mobile */
   .mobile-comfortable-spacing {
-    padding: 1.25rem; /* 20px */
+    padding: 1.25rem;
   }
 
-  /* Reduce animations on mobile for better performance */
   * {
     animation-duration: 0.2s !important;
   }
 
-  /* Better tap highlight */
   * {
     -webkit-tap-highlight-color: rgba(2, 216, 233, 0.1);
   }
 
-  /* Prevent text size adjustment on orientation change */
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
 
-  /* Better scroll behavior on mobile */
   body {
     -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -445,7 +424,6 @@ html {
   }
 }
 
-/* Loading spinner */
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -456,7 +434,6 @@ html {
   animation: spin 1s linear infinite;
 }
 
-/* Pulse animation */
 @keyframes pulse {
   0%,
   100% {
@@ -471,8 +448,6 @@ html {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Added custom prose styles for markdown rendering with Miami theme */
-/* Custom prose styles for markdown */
 .prose-miami {
   color: var(--color-foreground);
   max-width: none;
@@ -600,7 +575,6 @@ html {
   margin: 2rem 0;
 }
 
-/* Emoji support - ensure emojis render properly */
 .prose-miami {
   font-variant-emoji: emoji;
 }

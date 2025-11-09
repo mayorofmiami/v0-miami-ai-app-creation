@@ -59,6 +59,7 @@ export interface ConversationMessage {
   generatedImage?: GeneratedImage
   attachments?: Attachment[]
   isStreaming?: boolean
+  searchId?: string
 }
 
 export interface SearchState {
@@ -105,3 +106,4 @@ export type SearchAction =
   | { type: "SET_MODE"; mode: SearchMode }
   | { type: "SET_CONTENT_TYPE"; contentType: ContentType }
   | { type: "LOAD_FROM_HISTORY"; history: any }
+  | { type: "SET_SEARCH_ID"; searchId: string }

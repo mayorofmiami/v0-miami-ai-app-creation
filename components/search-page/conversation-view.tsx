@@ -80,11 +80,11 @@ export function ConversationView({
                     citations={message.citations || []}
                     isStreaming={message.isStreaming || false}
                     actions={
-                      !message.isStreaming && message.response && index === messages.length - 1 ? (
+                      !message.isStreaming && message.response ? (
                         <ResponseActions
                           query={message.query}
                           response={message.response}
-                          searchId={undefined}
+                          searchId={message.searchId}
                           userId={user?.id}
                           onRegenerate={onRegenerate}
                         />
@@ -103,8 +103,7 @@ export function ConversationView({
                 )}
               </Suspense>
 
-              {/* Related Searches - Only show for last message */}
-              {!message.isStreaming && message.response && !message.generatedImage && index === messages.length - 1 && (
+              {!message.isStreaming && message.response && !message.generatedImage && (
                 <Suspense fallback={<div className="h-20" />}>
                   <RelatedSearches query={message.query} onSearchClick={onRelatedSearchClick} />
                 </Suspense>

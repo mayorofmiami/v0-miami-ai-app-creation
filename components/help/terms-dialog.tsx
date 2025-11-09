@@ -60,8 +60,8 @@ export function TermsDialog({ open, onOpenChange }: TermsDialogProps) {
             <section>
               <h3 className="font-semibold text-base mb-2">5. Rate Limits and Usage</h3>
               <p className="text-muted-foreground leading-relaxed">
-                We implement rate limits to ensure fair usage. Free users are limited to 10 queries per 24 hours.
-                Registered users receive 100 queries per 24 hours. Excessive use may result in temporary suspension.
+                We implement rate limits to ensure fair usage. Free users are limited to 100 queries per 24 hours.
+                Registered users receive 1000 queries per 24 hours. Excessive use may result in temporary suspension.
               </p>
             </section>
 

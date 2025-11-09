@@ -142,6 +142,13 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
           },
         ],
       }
+    case "SET_SEARCH_ID":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 ? { ...msg, searchId: action.searchId } : msg,
+        ),
+      }
     default:
       return state
   }
@@ -164,6 +171,7 @@ export default function Home() {
     showHistory: false,
     isDrawerOpen: false,
     isSidebarCollapsed: true,
+    sidebarLoaded: false,
   })
 
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(() => {
@@ -184,8 +192,11 @@ export default function Home() {
 
   const [recentSearches, setRecentSearches] = useState<string[]>([])
 
+  useEffect(() => {
+    storage.setItem(STORAGE_KEYS.RECENT_SEARCHES, recentSearches)
+  }, [recentSearches])
+
   const handleToggleMode = useCallback(() => {
-    // Placeholder for handleToggleMode logic
     dispatchSearch({ type: "SET_MODE", mode: searchState.mode === "quick" ? "deep" : "quick" })
   }, [searchState.mode])
 
@@ -194,25 +205,18 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    storage.setItem(STORAGE_KEYS.RECENT_SEARCHES, recentSearches)
-  }, [recentSearches])
-
-  useEffect(() => {
     async function loadInitialData() {
       try {
         const res = await fetch("/api/init")
         const data = await res.json()
 
-        // Set user
         setUser(data.user)
 
-        // Set recent searches if user exists
         if (data.user && data.history) {
           const recent = data.history.slice(0, 10).map((h: SearchHistory) => h.query)
           setRecentSearches(recent)
         }
 
-        // Set model preference if exists
         if (data.user && data.modelPreference) {
           if (data.modelPreference.model_preference === "manual" && data.modelPreference.selected_model) {
             setSelectedModel(data.modelPreference.selected_model as ModelId)
@@ -224,14 +228,6 @@ export default function Home() {
       }
     }
     loadInitialData()
-  }, [])
-
-  useEffect(() => {
-    if (window.location.hash === "#history") {
-      setUIState((prev) => ({ ...prev, showHistory: true }))
-      // Clear the hash after opening
-      window.history.replaceState(null, "", window.location.pathname)
-    }
   }, [])
 
   const handleModelChange = async (newModel: ModelId) => {
@@ -292,7 +288,7 @@ export default function Home() {
 
         const newThread = {
           id: effectiveThreadId,
-          title: query.slice(0, 50), // Temporary title
+          title: query.slice(0, 50),
           queries: [],
           lastMessageAt: Date.now(),
           messageCount: 0,
@@ -321,18 +317,15 @@ export default function Home() {
         }
 
         if (searchState.messages.length > 0 && currentThreadId) {
+          const contextLimit = user?.id ? 10 : 5
           body.conversationHistory = searchState.messages
+            .slice(-contextLimit)
             .map((msg) => ({
               role: msg.type === "search" ? "user" : "assistant",
               content: msg.type === "search" ? msg.query : msg.response || "",
             }))
             .filter((msg) => msg.content.trim().length > 0)
         }
-
-        console.log(
-          "[v0] Sending search request with threadId:",
-          user?.id ? currentThreadId || "none" : "client-side only",
-        )
 
         const res = await fetch("/api/search", {
           method: "POST",
@@ -341,7 +334,18 @@ export default function Home() {
           signal: abortControllerRef.current.signal,
         })
 
-        if (res.status === 429 || !res.ok) {
+        if (res.status === 429) {
+          const errorData = await res.json()
+          const errorMessage = handleSearchError({
+            error: errorData,
+            user,
+            status: res.status,
+          })
+          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
+          return
+        }
+
+        if (!res.ok) {
           const errorData = await res.json()
           const errorMessage = handleSearchError({
             error: errorData,
@@ -353,7 +357,7 @@ export default function Home() {
         }
 
         const threadId = res.headers.get("X-Thread-Id")
-        console.log("[v0] Received threadId from server:", threadId || "none")
+        const searchId = res.headers.get("X-Search-Id")
 
         if (!user?.id && effectiveThreadId) {
           const thread = threadStorage.getThread(effectiveThreadId)
@@ -365,7 +369,6 @@ export default function Home() {
             })
           }
 
-          // Generate AI title after first query
           if (thread && thread.messageCount === 0) {
             generateThreadTitle(effectiveThreadId, query)
           }
@@ -430,7 +433,10 @@ export default function Home() {
 
         dispatchSearch({ type: "SEARCH_COMPLETE" })
 
-        // After streaming completes, reset mode back to quick
+        if (searchId) {
+          dispatchSearch({ type: "SET_SEARCH_ID", searchId })
+        }
+
         if (searchMode === "deep") {
           dispatchSearch({ type: "SET_MODE", mode: "quick" })
         }
@@ -510,12 +516,10 @@ export default function Home() {
 
   const handleSelectHistory = (history: SearchHistory) => {
     if (!history.response || history.response.trim() === "") {
-      // If no response (local/unauthenticated history), re-run the search
       handleSearch(history.query, history.mode)
       return
     }
 
-    // Load from history if response exists
     dispatchSearch({ type: "LOAD_FROM_HISTORY", history })
     toast.info("Loaded from history")
   }
@@ -593,7 +597,6 @@ export default function Home() {
     const messages = searchState.messages
     const currentMessageCount = messages.length
 
-    // Clean up refs for messages that no longer exist
     const currentMessageIds = new Set(messages.map((m) => m.id))
     Object.keys(messageRefs.current).forEach((id) => {
       if (!currentMessageIds.has(id)) {
@@ -605,7 +608,6 @@ export default function Home() {
       const latestMessage = messages[currentMessageCount - 1]
       const messageElement = messageRefs.current[latestMessage.id]
 
-      // Only auto-scroll if user hasn't manually scrolled
       if (messageElement) {
         requestAnimationFrame(() => {
           const headerOffset = 100
@@ -635,6 +637,12 @@ export default function Home() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (!uiState.isSidebarCollapsed && !uiState.sidebarLoaded) {
+      setUIState((prev) => ({ ...prev, sidebarLoaded: true }))
+    }
+  }, [uiState.isSidebarCollapsed, uiState.sidebarLoaded])
 
   const generateThreadTitle = async (threadId: string, query: string) => {
     try {
@@ -673,6 +681,7 @@ export default function Home() {
         onLogout={handleLogout}
         isCollapsed={uiState.isSidebarCollapsed}
         setIsCollapsed={(collapsed) => setUIState((prev) => ({ ...prev, isSidebarCollapsed: collapsed }))}
+        shouldLoadThreads={uiState.sidebarLoaded}
       />
 
       <div
@@ -752,7 +761,7 @@ export default function Home() {
               )}
 
               {user && (
-                <div className="flex flex-col items-center min-h-[calc(100vh-12rem)] space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)] space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex justify-center mb-4"></div>
 
                   <div className="text-center space-y-2">

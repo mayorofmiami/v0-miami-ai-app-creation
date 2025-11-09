@@ -29,15 +29,20 @@ export const SearchResponse = memo(function SearchResponse({
 }: SearchResponseProps) {
   const [displayedText, setDisplayedText] = useState("")
   const [isSourcesExpanded, setIsSourcesExpanded] = useState(false)
+  const [showTypingIndicator, setShowTypingIndicator] = useState(false)
 
   const safeCitations = citations || []
 
   useEffect(() => {
     if (isStreaming) {
+      if (response.length === 0) {
+        setShowTypingIndicator(true)
+        setTimeout(() => setShowTypingIndicator(false), 500)
+      }
       setDisplayedText(response)
     } else {
-      // No need for typing animation since we were updating in real-time
       setDisplayedText(response)
+      setShowTypingIndicator(false)
     }
   }, [response, isStreaming])
 
@@ -80,6 +85,17 @@ export const SearchResponse = memo(function SearchResponse({
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
+      {showTypingIndicator && response.length === 0 && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex gap-1">
+            <span className="w-2 h-2 bg-miami-aqua rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+            <span className="w-2 h-2 bg-miami-aqua rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+            <span className="w-2 h-2 bg-miami-aqua rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
+          <span>Thinking...</span>
+        </div>
+      )}
+
       {/* Response Text */}
       <div className="prose prose-invert prose-miami max-w-none" role="article" aria-label="Search response">
         <ReactMarkdown

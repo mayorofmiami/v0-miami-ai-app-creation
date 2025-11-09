@@ -48,6 +48,9 @@ export function SearchFormContainer({
     return null
   }
 
+  const showSearchRateWarning = rateLimitInfo && rateLimitInfo.remaining / rateLimitInfo.limit < 0.2
+  const showImageRateWarning = imageRateLimit && imageRateLimit.remaining / imageRateLimit.limit < 0.2
+
   return (
     <div
       className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
@@ -73,15 +76,15 @@ export function SearchFormContainer({
           </div>
         </div>
 
-        {/* Rate Limit Displays */}
-        {contentType === "image" && imageRateLimit && (
-          <div className="text-center text-sm md:text-xs text-muted-foreground font-medium">
-            {imageRateLimit.remaining} of {imageRateLimit.limit} images remaining today
+        {/* Rate Limit Displays - only show when low */}
+        {contentType === "image" && showImageRateWarning && (
+          <div className="text-center text-sm md:text-xs text-yellow-600 dark:text-yellow-500 font-medium">
+            ⚠️ {imageRateLimit!.remaining} of {imageRateLimit!.limit} images remaining today
           </div>
         )}
-        {contentType === "search" && rateLimitInfo && (
-          <div className="text-center text-sm md:text-xs text-muted-foreground font-medium">
-            {rateLimitInfo.remaining} of {rateLimitInfo.limit} queries remaining today
+        {contentType === "search" && showSearchRateWarning && (
+          <div className="text-center text-sm md:text-xs text-yellow-600 dark:text-yellow-500 font-medium">
+            ⚠️ {rateLimitInfo!.remaining} of {rateLimitInfo!.limit} queries remaining today
           </div>
         )}
       </div>
