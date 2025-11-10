@@ -53,13 +53,17 @@ export function MobileDrawer({
           variant="ghost"
           size="icon"
           data-sheet-trigger="true"
-          className={`md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-300 shadow-lg hover:shadow-miami-aqua/20 ${
+          className={`md:hidden group relative h-14 w-14 md:h-12 md:w-12 rounded-full bg-background/80 backdrop-blur-sm border-2 border-miami-aqua/20 hover:border-miami-aqua hover:bg-miami-aqua/5 transition-all duration-normal shadow-lg hover:shadow-miami-aqua/20 ${
             pointerEventsAuto ? "pointer-events-auto" : ""
           }`}
+          style={{ transition: "all var(--duration-normal) var(--easing-standard)" }}
           aria-label="Open menu"
         >
-          <span className="text-miami-aqua text-2xl group-hover:scale-110 transition-transform duration-200">
-            <Menu size={28} className="text-miami-aqua md:w-6 md:h-6" />
+          <span
+            className="text-miami-aqua text-2xl transition-transform"
+            style={{ transitionDuration: "var(--duration-fast)", transitionTimingFunction: "var(--easing-standard)" }}
+          >
+            <Menu size={28} className="text-miami-aqua md:w-6 md:h-6 group-hover:scale-110" />
           </span>
         </Button>
       </SheetTrigger>

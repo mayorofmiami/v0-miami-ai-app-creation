@@ -132,11 +132,27 @@ export function CollapsibleSidebar({
     }
   }, [user?.id])
 
+  const formatRelativeTime = (timestamp: string) => {
+    const now = new Date()
+    const then = new Date(timestamp)
+    const diffMs = now.getTime() - then.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return then.toLocaleDateString()
+  }
+
   return (
     <div
-      className={`hidden md:flex fixed left-0 top-0 h-screen bg-background border-r border-border flex-col transition-all duration-300 z-50 ${
+      className={`hidden md:flex fixed left-0 top-0 h-screen bg-background border-r border-border flex-col z-50 ${
         isCollapsed ? "w-16" : "w-64"
       }`}
+      style={{ transition: "width var(--duration-normal) var(--easing-standard)" }}
     >
       {/* Header with Logo and Toggle */}
       <div className="flex items-center justify-between p-4 border-b border-border">
@@ -150,6 +166,7 @@ export function CollapsibleSidebar({
           size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="h-9 w-9 rounded-full hover:bg-accent flex-shrink-0"
+          style={{ transition: "all var(--duration-fast) var(--easing-standard)" }}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <Palmtree className="h-5 w-5" />
@@ -162,6 +179,7 @@ export function CollapsibleSidebar({
         <Button
           variant="ghost"
           className={`justify-start h-10 ${isCollapsed ? "px-0 justify-center" : ""}`}
+          style={{ transition: "all var(--duration-fast) var(--easing-standard)" }}
           onClick={onNewChat}
           title="New Chat"
         >
@@ -188,7 +206,8 @@ export function CollapsibleSidebar({
               <>
                 <button
                   onClick={() => setIsBookmarksExpanded(!isBookmarksExpanded)}
-                  className="flex items-center justify-between px-3 mb-2 w-full hover:bg-muted/30 rounded-lg py-1 transition-colors"
+                  className="flex items-center justify-between px-3 mb-2 w-full hover:bg-muted/30 rounded-lg py-1"
+                  style={{ transition: "background-color var(--duration-fast) var(--easing-standard)" }}
                 >
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bookmarks</p>
                   <div className="flex items-center gap-2">
@@ -213,9 +232,11 @@ export function CollapsibleSidebar({
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={`text-muted-foreground transition-transform duration-200 ${
-                        isBookmarksExpanded ? "rotate-180" : ""
-                      }`}
+                      className="text-muted-foreground"
+                      style={{
+                        transition: "transform var(--duration-fast) var(--easing-standard)",
+                        transform: isBookmarksExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      }}
                     >
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
@@ -229,9 +250,10 @@ export function CollapsibleSidebar({
                   <button
                     key={bookmark.id}
                     onClick={() => onSearchSelect(bookmark.query)}
-                    className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
+                    className={`w-full text-left rounded-lg hover:bg-muted/50 group ${
                       isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
                     }`}
+                    style={{ transition: "background-color var(--duration-fast) var(--easing-standard)" }}
                     title={isCollapsed ? bookmark.query : undefined}
                   >
                     {isCollapsed ? (
@@ -240,8 +262,14 @@ export function CollapsibleSidebar({
                       <div className="flex items-center gap-2">
                         <BookmarkIcon className="w-4 h-4 text-miami-aqua fill-current flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                          <p
+                            className="text-sm text-foreground group-hover:text-miami-aqua line-clamp-1"
+                            style={{ transition: "color var(--duration-fast) var(--easing-standard)" }}
+                          >
                             {bookmark.query}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatRelativeTime(bookmark.bookmarked_at || bookmark.created_at)}
                           </p>
                         </div>
                       </div>
@@ -262,7 +290,8 @@ export function CollapsibleSidebar({
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Chats</p>
                     <button
                       onClick={onToggleHistory}
-                      className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                      className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80"
+                      style={{ transition: "color var(--duration-fast) var(--easing-standard)" }}
                     >
                       See All
                     </button>
@@ -279,9 +308,10 @@ export function CollapsibleSidebar({
                           window.location.href = `/?thread=${thread.id}`
                         }
                       }}
-                      className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
+                      className={`w-full text-left rounded-lg hover:bg-muted/50 group relative ${
                         isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
                       }`}
+                      style={{ transition: "background-color var(--duration-fast) var(--easing-standard)" }}
                       title={isCollapsed ? thread.title : undefined}
                     >
                       {isCollapsed ? (
@@ -290,12 +320,33 @@ export function CollapsibleSidebar({
                         <div className="flex items-center gap-2">
                           <ClockIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                            <p
+                              className="text-sm text-foreground group-hover:text-miami-aqua line-clamp-1"
+                              style={{ transition: "color var(--duration-fast) var(--easing-standard)" }}
+                            >
                               {thread.title}
                             </p>
-                            {thread.message_count > 1 && (
-                              <p className="text-xs text-muted-foreground">{thread.message_count} messages</p>
-                            )}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{formatRelativeTime(thread.last_message_at)}</span>
+                              {thread.message_count > 1 && (
+                                <>
+                                  <span>•</span>
+                                  <span>{thread.message_count} messages</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div
+                            className="opacity-0 group-hover:opacity-100 pointer-events-none absolute left-full ml-2 z-50 w-64 p-3 bg-popover border border-border rounded-lg shadow-lg"
+                            style={{
+                              transition: "opacity var(--duration-fast) var(--easing-standard)",
+                            }}
+                          >
+                            <p className="text-sm font-medium mb-1">{thread.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {thread.message_count} message{thread.message_count !== 1 ? "s" : ""} • Last active{" "}
+                              {formatRelativeTime(thread.last_message_at)}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -317,9 +368,10 @@ export function CollapsibleSidebar({
                     <button
                       key={thread.id}
                       onClick={() => onSearchSelect(thread.queries[thread.queries.length - 1])}
-                      className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
+                      className={`w-full text-left rounded-lg hover:bg-muted/50 group ${
                         isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
                       }`}
+                      style={{ transition: "background-color var(--duration-fast) var(--easing-standard)" }}
                       title={isCollapsed ? thread.title : undefined}
                     >
                       {isCollapsed ? (
@@ -328,12 +380,21 @@ export function CollapsibleSidebar({
                         <div className="flex items-center gap-2">
                           <ClockIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                            <p
+                              className="text-sm text-foreground group-hover:text-miami-aqua line-clamp-1"
+                              style={{ transition: "color var(--duration-fast) var(--easing-standard)" }}
+                            >
                               {thread.title}
                             </p>
-                            {thread.messageCount > 1 && (
-                              <p className="text-xs text-muted-foreground">{thread.messageCount} messages</p>
-                            )}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>{formatRelativeTime(thread.timestamp)}</span>
+                              {thread.messageCount > 1 && (
+                                <>
+                                  <span>•</span>
+                                  <span>{thread.messageCount} messages</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}

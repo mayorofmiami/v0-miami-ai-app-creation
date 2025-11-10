@@ -48,14 +48,18 @@ export function SearchFormContainer({
     return null
   }
 
-  const showSearchRateWarning = rateLimitInfo && rateLimitInfo.remaining / rateLimitInfo.limit < 0.2
-  const showImageRateWarning = imageRateLimit && imageRateLimit.remaining / imageRateLimit.limit < 0.2
+  const showSearchRateWarning = rateLimitInfo && rateLimitInfo.remaining / rateLimitInfo.limit < 0.25
+  const showImageRateWarning = imageRateLimit && imageRateLimit.remaining / imageRateLimit.limit < 0.25
+
+  const searchWarningLevel = rateLimitInfo ? rateLimitInfo.remaining / rateLimitInfo.limit : 1
+  const isSearchCritical = searchWarningLevel < 0.1
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+      className={`fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 transition-all duration-normal ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`}
+      style={{ transition: "left var(--duration-normal) var(--easing-standard)" }}
     >
-      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-4 space-y-3">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 py-3 md:py-4 space-y-3">
         <div className="flex items-end gap-3">
           <div className="flex-1">
             <SearchInput
@@ -76,15 +80,64 @@ export function SearchFormContainer({
           </div>
         </div>
 
-        {/* Rate Limit Displays - only show when low */}
         {contentType === "image" && showImageRateWarning && (
-          <div className="text-center text-sm md:text-xs text-yellow-600 dark:text-yellow-500 font-medium">
-            ⚠️ {imageRateLimit!.remaining} of {imageRateLimit!.limit} images remaining today
+          <div
+            className="text-center text-sm md:text-xs font-medium"
+            style={{
+              animation: "fade-in var(--duration-normal) var(--easing-standard)",
+              transform: "translateY(0)",
+            }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <span className="text-yellow-600 dark:text-yellow-500">
+                {imageRateLimit!.remaining} of {imageRateLimit!.limit} images remaining today
+              </span>
+            </div>
           </div>
         )}
         {contentType === "search" && showSearchRateWarning && (
-          <div className="text-center text-sm md:text-xs text-yellow-600 dark:text-yellow-500 font-medium">
-            ⚠️ {rateLimitInfo!.remaining} of {rateLimitInfo!.limit} queries remaining today
+          <div
+            className="text-center text-sm md:text-xs font-medium"
+            style={{
+              animation: "fade-in var(--duration-normal) var(--easing-standard)",
+              transform: "translateY(0)",
+            }}
+          >
+            <div
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
+                isSearchCritical
+                  ? "bg-red-500/10 border border-red-500/30"
+                  : "bg-yellow-500/10 border border-yellow-500/30"
+              }`}
+            >
+              <svg
+                className={`w-4 h-4 ${isSearchCritical ? "text-red-500" : "text-yellow-500"}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <span
+                className={isSearchCritical ? "text-red-600 dark:text-red-500" : "text-yellow-600 dark:text-yellow-500"}
+              >
+                {rateLimitInfo!.remaining} of {rateLimitInfo!.limit} queries remaining today
+                {isSearchCritical && " • Please upgrade to continue"}
+              </span>
+            </div>
           </div>
         )}
       </div>

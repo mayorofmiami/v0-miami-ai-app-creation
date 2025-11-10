@@ -37,7 +37,7 @@ export const SearchResponse = memo(function SearchResponse({
     if (isStreaming) {
       if (response.length === 0) {
         setShowTypingIndicator(true)
-        setTimeout(() => setShowTypingIndicator(false), 500)
+        setTimeout(() => setShowTypingIndicator(false), 800)
       }
       setDisplayedText(response)
     } else {
@@ -84,15 +84,15 @@ export const SearchResponse = memo(function SearchResponse({
   if (!response) return null
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="w-full space-y-6 animate-in fade-in duration-500">
       {showTypingIndicator && response.length === 0 && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <div className="flex gap-1">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground py-2">
+          <div className="flex gap-1.5">
             <span className="w-2 h-2 bg-miami-aqua rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
             <span className="w-2 h-2 bg-miami-aqua rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
             <span className="w-2 h-2 bg-miami-aqua rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
           </div>
-          <span>Thinking...</span>
+          <span className="font-medium">Thinking...</span>
         </div>
       )}
 
@@ -103,19 +103,23 @@ export const SearchResponse = memo(function SearchResponse({
           rehypePlugins={[rehypeRaw]}
           components={{
             h1: ({ children }) => (
-              <h1 className="text-3xl font-bold text-foreground mb-6 mt-8 first:mt-0 text-balance leading-tight">
+              <h1 className="text-3xl font-bold text-foreground mb-6 mt-8 first:mt-0 text-balance leading-tight tracking-tight">
                 {children}
               </h1>
             ),
             h2: ({ children }) => (
-              <h2 className="text-2xl font-semibold text-foreground mb-4 mt-6 first:mt-0 text-balance leading-snug">
+              <h2 className="text-2xl font-semibold text-foreground mb-5 mt-7 first:mt-0 text-balance leading-snug tracking-tight">
                 {children}
               </h2>
             ),
             h3: ({ children }) => (
-              <h3 className="text-xl font-semibold text-foreground mb-3 mt-5 first:mt-0 text-balance">{children}</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-4 mt-6 first:mt-0 text-balance tracking-tight">
+                {children}
+              </h3>
             ),
-            p: ({ children }) => <p className="text-foreground leading-relaxed mb-6 last:mb-0">{children}</p>,
+            p: ({ children }) => (
+              <p className="text-foreground leading-relaxed mb-5 last:mb-0 text-pretty">{children}</p>
+            ),
             ul: ({ children }) => <ul className="list-disc list-inside space-y-3 mb-6 text-foreground">{children}</ul>,
             ol: ({ children }) => (
               <ol className="list-decimal list-inside space-y-3 mb-6 text-foreground">{children}</ol>
@@ -213,12 +217,18 @@ export const SearchResponse = memo(function SearchResponse({
         >
           {processedText}
         </ReactMarkdown>
-        {isStreaming && <span className="inline-block w-2 h-5 bg-miami-aqua animate-pulse ml-1" aria-label="Loading" />}
+        {isStreaming && (
+          <span
+            className="inline-block w-2 h-5 bg-miami-aqua animate-pulse ml-1 rounded-sm"
+            aria-label="Loading"
+            aria-live="polite"
+          />
+        )}
       </div>
 
       {/* Actions and Model Badge Row */}
       {(actions || modelBadge) && (
-        <div className="flex items-center justify-between gap-4 pt-2 flex-wrap">
+        <div className="flex items-center justify-between gap-4 pt-4 flex-wrap border-t border-border/30">
           <div className="flex-1">{actions}</div>
           {modelBadge && <div className="flex-shrink-0">{modelBadge}</div>}
         </div>
@@ -226,10 +236,10 @@ export const SearchResponse = memo(function SearchResponse({
 
       {/* Citations */}
       {safeCitations.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3 pt-2">
           <button
             onClick={() => setIsSourcesExpanded(!isSourcesExpanded)}
-            className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-miami-aqua transition-colors group px-4 py-2 rounded-lg hover:bg-miami-aqua/5"
+            className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-miami-aqua transition-colors group px-4 py-2.5 rounded-lg hover:bg-miami-aqua/5 w-full md:w-auto"
             aria-expanded={isSourcesExpanded}
             aria-controls="sources-list"
           >

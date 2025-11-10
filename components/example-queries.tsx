@@ -52,25 +52,32 @@ export function ExampleQueries({ onQueryClick, variant = "default" }: ExampleQue
     <div className="flex flex-col items-center justify-center w-full">
       <button
         onClick={() => onQueryClick(EXAMPLE_QUERIES[currentIndex])}
-        className="group relative px-4 py-2 transition-all duration-300 ease-out hover:scale-105 active:scale-95"
+        className="group relative px-4 py-2 active:scale-95"
+        style={{
+          transition: "transform var(--duration-fast) var(--easing-spring)",
+        }}
       >
         <div
           className={`
             text-lg md:text-xl font-medium text-center
             bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple 
             bg-clip-text text-transparent
-            transition-all duration-600 ease-in-out
             ${isTransitioning ? "opacity-0 blur-sm scale-95" : "opacity-100 blur-0 scale-100"}
           `}
           style={{
             backgroundSize: "200% auto",
             animation: "gradient-shift 8s ease infinite",
+            transition:
+              "opacity var(--duration-slower) var(--easing-standard), filter var(--duration-slower) var(--easing-standard), transform var(--duration-slower) var(--easing-standard)",
           }}
         >
           {displayText}
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple opacity-0 group-hover:opacity-60 transition-opacity duration-300 rounded-full" />
+        <div
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple opacity-0 group-hover:opacity-60 rounded-full"
+          style={{ transition: "opacity var(--duration-normal) var(--easing-standard)" }}
+        />
       </button>
 
       <div className="mt-4">

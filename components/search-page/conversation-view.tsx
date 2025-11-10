@@ -39,10 +39,10 @@ export function ConversationView({
             }}
             className="w-full max-w-3xl mx-auto scroll-mt-24"
           >
-            <div className="relative bg-gradient-to-r from-miami-aqua/10 via-miami-blue/10 to-miami-purple/10 rounded-2xl p-[2px] shadow-lg">
-              <div className="bg-background rounded-2xl px-4 md:px-5 py-4 flex items-start gap-3">
+            <div className="relative bg-gradient-to-r from-miami-aqua/15 via-miami-blue/15 to-miami-purple/15 rounded-2xl p-[2px] shadow-xl hover:shadow-2xl hover:shadow-miami-aqua/10 transition-all duration-300">
+              <div className="bg-background rounded-2xl px-5 md:px-6 py-5 flex items-start gap-4">
                 <svg
-                  className="w-5 h-5 md:w-5 md:h-5 text-miami-aqua flex-shrink-0 mt-0.5"
+                  className="w-6 h-6 text-miami-aqua flex-shrink-0 mt-1"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -54,7 +54,10 @@ export function ConversationView({
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
-                <p className="text-base md:text-base text-foreground/90 flex-1 leading-relaxed">{message.query}</p>
+                <div className="flex-1">
+                  <span className="sr-only">User query:</span>
+                  <p className="text-base md:text-lg text-foreground leading-relaxed font-medium">{message.query}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -63,7 +66,7 @@ export function ConversationView({
           {message.isStreaming && !message.response && !message.generatedImage ? (
             <SkeletonSearch />
           ) : message.response || message.generatedImage ? (
-            <>
+            <div className="w-full max-w-3xl mx-auto">
               <Suspense fallback={<SkeletonSearch />}>
                 {message.generatedImage ? (
                   <ImageResult
@@ -108,7 +111,7 @@ export function ConversationView({
                   <RelatedSearches query={message.query} onSearchClick={onRelatedSearchClick} />
                 </Suspense>
               )}
-            </>
+            </div>
           ) : null}
         </div>
       ))}
