@@ -1,6 +1,5 @@
 "use client"
 import { Logo } from "@/components/logo"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import UserIcon from "@/components/icons/User"
 import PlusIcon from "@/components/icons/Plus"
@@ -67,10 +66,6 @@ export function CollapsibleSidebar({
   const [isLoadingThreads, setIsLoadingThreads] = useState(false)
   const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false)
   const [isBookmarksExpanded, setIsBookmarksExpanded] = useState(false)
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
-  }
 
   const isAdmin = user?.role === "owner" || user?.role === "admin"
 
@@ -354,17 +349,20 @@ export function CollapsibleSidebar({
             <Button
               variant="ghost"
               size="icon"
-              onClick={toggleTheme}
-              className="w-full h-10"
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="h-10 w-10"
             >
               {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </Button>
           ) : (
-            <div className="flex items-center justify-between px-3 py-3">
-              <span className="text-sm text-muted-foreground">Theme</span>
-              <ThemeToggle />
-            </div>
+            <Button
+              variant="ghost"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="w-full justify-start h-10 px-3"
+            >
+              {theme === "dark" ? <SunIcon className="h-5 w-5 mr-3" /> : <MoonIcon className="h-5 w-5 mr-3" />}
+              <span className="text-sm">Theme</span>
+            </Button>
           )}
         </div>
 
