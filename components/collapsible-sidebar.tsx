@@ -66,6 +66,7 @@ export function CollapsibleSidebar({
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
   const [isLoadingThreads, setIsLoadingThreads] = useState(false)
   const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false)
+  const [isBookmarksExpanded, setIsBookmarksExpanded] = useState(false)
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark")
@@ -189,43 +190,71 @@ export function CollapsibleSidebar({
         {user && bookmarks.length > 0 && (
           <div className={`pt-4 ${isCollapsed ? "" : "border-t border-border"}`}>
             {!isCollapsed && (
-              <div className="flex items-center justify-between px-3 mb-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bookmarks</p>
-                {onToggleBookmarks && (
+              <>
+                <button
+                  onClick={() => setIsBookmarksExpanded(!isBookmarksExpanded)}
+                  className="flex items-center justify-between px-3 mb-2 w-full hover:bg-muted/30 rounded-lg py-1 transition-colors"
+                >
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bookmarks</p>
+                  <div className="flex items-center gap-2">
+                    {onToggleBookmarks && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onToggleBookmarks()
+                        }}
+                        className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                      >
+                        See All
+                      </button>
+                    )}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`text-muted-foreground transition-transform duration-200 ${
+                        isBookmarksExpanded ? "rotate-180" : ""
+                      }`}
+                    >
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </div>
+                </button>
+              </>
+            )}
+            {(isCollapsed || isBookmarksExpanded) && (
+              <div className="space-y-1">
+                {(isCollapsed ? bookmarks.slice(0, 3) : bookmarks.slice(0, 5)).map((bookmark) => (
                   <button
-                    onClick={onToggleBookmarks}
-                    className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                    key={bookmark.id}
+                    onClick={() => onSearchSelect(bookmark.query)}
+                    className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
+                      isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
+                    }`}
+                    title={isCollapsed ? bookmark.query : undefined}
                   >
-                    See All
+                    {isCollapsed ? (
+                      <BookmarkIcon className="w-5 h-5 text-miami-aqua fill-current" />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <BookmarkIcon className="w-4 h-4 text-miami-aqua fill-current flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                            {bookmark.query}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </button>
-                )}
+                ))}
               </div>
             )}
-            <div className="space-y-1">
-              {(isCollapsed ? bookmarks.slice(0, 3) : bookmarks.slice(0, 5)).map((bookmark) => (
-                <button
-                  key={bookmark.id}
-                  onClick={() => onSearchSelect(bookmark.query)}
-                  className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
-                    isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
-                  }`}
-                  title={isCollapsed ? bookmark.query : undefined}
-                >
-                  {isCollapsed ? (
-                    <BookmarkIcon className="w-5 h-5 text-miami-aqua fill-current" />
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <BookmarkIcon className="w-4 h-4 text-miami-aqua fill-current flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                          {bookmark.query}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 

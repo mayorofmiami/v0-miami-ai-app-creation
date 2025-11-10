@@ -7,6 +7,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { HelpMenu } from "@/components/help-menu"
 import BookmarkIcon from "@/components/icons/Bookmark"
+import { useState } from "react"
 
 interface MobileDrawerProps {
   isOpen: boolean
@@ -43,6 +44,8 @@ export function MobileDrawer({
   searchMode,
   pointerEventsAuto = false,
 }: MobileDrawerProps) {
+  const [isBookmarksExpanded, setIsBookmarksExpanded] = useState(false)
+
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetTrigger asChild>
@@ -73,7 +76,7 @@ export function MobileDrawer({
           />
         </div>
 
-        <nav className="flex-1 flex flex-col gap-2" aria-label="Main navigation">
+        <nav className="flex-1 flex flex-col gap-2 overflow-y-auto min-h-0" aria-label="Main navigation">
           <Button
             variant="ghost"
             className="w-full justify-start text-base text-muted-foreground hover:text-foreground h-12 px-4"
@@ -101,39 +104,63 @@ export function MobileDrawer({
 
           {user && bookmarks.length > 0 && (
             <div className="pt-5 border-t border-border mt-2">
-              <div className="flex items-center justify-between px-4 mb-3">
+              <button
+                onClick={() => setIsBookmarksExpanded(!isBookmarksExpanded)}
+                className="flex items-center justify-between px-4 mb-3 w-full hover:bg-muted/30 rounded-lg py-2 transition-colors"
+              >
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Bookmarks</p>
-                {handleToggleBookmarks && (
-                  <button
-                    onClick={() => {
-                      handleToggleBookmarks()
-                      onOpenChange(false)
-                    }}
-                    className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                <div className="flex items-center gap-2">
+                  {handleToggleBookmarks && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleToggleBookmarks()
+                        onOpenChange(false)
+                      }}
+                      className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                    >
+                      See All
+                    </button>
+                  )}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`text-muted-foreground transition-transform duration-200 ${
+                      isBookmarksExpanded ? "rotate-180" : ""
+                    }`}
                   >
-                    See All
-                  </button>
-                )}
-              </div>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {bookmarks.slice(0, 5).map((bookmark) => (
-                  <button
-                    key={bookmark.id}
-                    onClick={() => {
-                      handleSearch(bookmark.query, searchMode)
-                      onOpenChange(false)
-                    }}
-                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <BookmarkIcon className="w-4 h-4 text-miami-aqua fill-current flex-shrink-0" />
-                      <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
-                        {bookmark.query}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
+              </button>
+              {isBookmarksExpanded && (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {bookmarks.slice(0, 5).map((bookmark) => (
+                    <button
+                      key={bookmark.id}
+                      onClick={() => {
+                        handleSearch(bookmark.query, searchMode)
+                        onOpenChange(false)
+                      }}
+                      className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <BookmarkIcon className="w-4 h-4 text-miami-aqua fill-current flex-shrink-0" />
+                        <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                          {bookmark.query}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
