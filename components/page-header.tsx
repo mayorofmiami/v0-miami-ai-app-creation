@@ -12,12 +12,14 @@ interface PageHeaderProps {
   onOpenChange: (open: boolean) => void
   isAdmin: boolean
   recentSearches: string[]
+  bookmarks?: Array<{ id: string; query: string; response: string; created_at: string }>
   user: User | null
   isLoadingUser: boolean
   theme: string | undefined
   setTheme: (theme: string) => void
   handleNewChat: () => void
   handleToggleHistory: () => void
+  handleToggleBookmarks?: () => void
   handleSearch: (query: string, mode: "quick" | "deep") => void
   searchMode: "quick" | "deep"
 }
@@ -30,12 +32,14 @@ export function PageHeader({
   onOpenChange,
   isAdmin,
   recentSearches,
+  bookmarks = [],
   user,
   isLoadingUser,
   theme,
   setTheme,
   handleNewChat,
   handleToggleHistory,
+  handleToggleBookmarks,
   handleSearch,
   searchMode,
 }: PageHeaderProps) {
@@ -62,12 +66,14 @@ export function PageHeader({
               onOpenChange={onOpenChange}
               isAdmin={isAdmin}
               recentSearches={recentSearches}
+              bookmarks={bookmarks}
               user={user}
               isLoadingUser={isLoadingUser}
               theme={theme || "dark"}
               setTheme={setTheme}
               handleNewChat={handleNewChat}
               handleToggleHistory={handleToggleHistory}
+              handleToggleBookmarks={handleToggleBookmarks}
               handleSearch={handleSearch}
               searchMode={searchMode}
             />

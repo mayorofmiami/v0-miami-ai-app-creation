@@ -38,6 +38,8 @@ interface CollapsibleSidebarProps {
   onNewChat: () => void
   onSearchSelect: (search: string) => void
   onToggleHistory: () => void
+  onToggleBookmarks?: () => void
+  onSelectThread?: (threadId: string) => void
   onLogout: () => void
   isCollapsed: boolean
   setIsCollapsed: (collapsed: boolean) => void
@@ -51,6 +53,8 @@ export function CollapsibleSidebar({
   onNewChat,
   onSearchSelect,
   onToggleHistory,
+  onToggleBookmarks,
+  onSelectThread,
   onLogout,
   isCollapsed,
   setIsCollapsed,
@@ -187,6 +191,14 @@ export function CollapsibleSidebar({
             {!isCollapsed && (
               <div className="flex items-center justify-between px-3 mb-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Bookmarks</p>
+                {onToggleBookmarks && (
+                  <button
+                    onClick={onToggleBookmarks}
+                    className="text-xs font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                  >
+                    See All
+                  </button>
+                )}
               </div>
             )}
             <div className="space-y-1">
@@ -237,8 +249,11 @@ export function CollapsibleSidebar({
                     <button
                       key={thread.id}
                       onClick={() => {
-                        // Restore thread conversation
-                        window.location.href = `/?thread=${thread.id}`
+                        if (onSelectThread) {
+                          onSelectThread(thread.id)
+                        } else {
+                          window.location.href = `/?thread=${thread.id}`
+                        }
                       }}
                       className={`w-full text-left rounded-lg hover:bg-muted/50 transition-colors group ${
                         isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"

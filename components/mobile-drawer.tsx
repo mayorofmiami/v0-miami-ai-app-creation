@@ -6,18 +6,21 @@ import { Menu, Plus, Shield, Clock, Sun, Moon, User } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { HelpMenu } from "@/components/help-menu"
+import BookmarkIcon from "@/components/icons/Bookmark"
 
 interface MobileDrawerProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   isAdmin: boolean
   recentSearches: string[]
+  bookmarks?: Array<{ id: string; query: string; response: string; created_at: string }>
   user: { name?: string; email: string } | null
   isLoadingUser: boolean
   theme: string
   setTheme: (theme: string) => void
   handleNewChat: () => void
   handleToggleHistory: () => void
+  handleToggleBookmarks?: () => void
   handleSearch: (query: string, mode: string) => void
   searchMode: string
   pointerEventsAuto?: boolean
@@ -28,12 +31,14 @@ export function MobileDrawer({
   onOpenChange,
   isAdmin,
   recentSearches,
+  bookmarks = [],
   user,
   isLoadingUser,
   theme,
   setTheme,
   handleNewChat,
   handleToggleHistory,
+  handleToggleBookmarks,
   handleSearch,
   searchMode,
   pointerEventsAuto = false,
@@ -94,12 +99,53 @@ export function MobileDrawer({
             </Link>
           )}
 
+          {user && bookmarks.length > 0 && (
+            <div className="pt-5 border-t border-border mt-2">
+              <div className="flex items-center justify-between px-4 mb-3">
+                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Bookmarks</p>
+                {handleToggleBookmarks && (
+                  <button
+                    onClick={() => {
+                      handleToggleBookmarks()
+                      onOpenChange(false)
+                    }}
+                    className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
+                  >
+                    See All
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {bookmarks.slice(0, 5).map((bookmark) => (
+                  <button
+                    key={bookmark.id}
+                    onClick={() => {
+                      handleSearch(bookmark.query, searchMode)
+                      onOpenChange(false)
+                    }}
+                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <BookmarkIcon className="w-4 h-4 text-miami-aqua fill-current flex-shrink-0" />
+                      <span className="text-base text-foreground group-hover:text-miami-aqua transition-colors line-clamp-1">
+                        {bookmark.query}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {recentSearches.length > 0 && (
             <div className="pt-5 border-t border-border mt-2">
               <div className="flex items-center justify-between px-4 mb-3">
                 <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Recent Chats</p>
                 <button
-                  onClick={handleToggleHistory}
+                  onClick={() => {
+                    handleToggleHistory()
+                    onOpenChange(false)
+                  }}
                   className="text-sm font-medium text-miami-aqua hover:text-miami-aqua/80 transition-colors"
                 >
                   See All

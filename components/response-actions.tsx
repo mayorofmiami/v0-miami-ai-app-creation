@@ -106,7 +106,6 @@ export function ResponseActions({
       setIsBookmarking(true)
 
       if (bookmarked) {
-        // Remove bookmark
         const response = await fetch("/api/bookmarks", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -119,9 +118,7 @@ export function ResponseActions({
 
         setBookmarked(false)
         onBookmarkChange?.(false)
-        toast.success("Bookmark removed")
       } else {
-        // Add bookmark
         const response = await fetch("/api/bookmarks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -135,7 +132,6 @@ export function ResponseActions({
 
         setBookmarked(true)
         onBookmarkChange?.(true)
-        toast.success("Response bookmarked")
       }
     } catch (error) {
       toast.error("Failed to update bookmark")

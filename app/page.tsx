@@ -23,6 +23,7 @@ import { storage, STORAGE_KEYS, threadStorage } from "@/lib/local-storage"
 import { logger } from "@/lib/logger"
 import { ConversationView } from "@/components/search-page/conversation-view"
 import { SearchFormContainer } from "@/components/search-page/search-form-container"
+import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -169,6 +170,7 @@ export default function Home() {
 
   const [uiState, setUIState] = useState({
     showHistory: false,
+    showBookmarks: false,
     isDrawerOpen: false,
     isSidebarCollapsed: true,
     sidebarLoaded: false,
@@ -191,6 +193,9 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [recentSearches, setRecentSearches] = useState<string[]>([])
+  const [bookmarks, setBookmarks] = useState<
+    Array<{ id: string; query: string; response: string; created_at: string }>
+  >([])
 
   useEffect(() => {
     storage.setItem(STORAGE_KEYS.RECENT_SEARCHES, recentSearches)
@@ -202,6 +207,86 @@ export default function Home() {
 
   const handleToggleHistory = useCallback(() => {
     setUIState((prev) => ({ ...prev, showHistory: !prev.showHistory }))
+  }, [])
+
+  const handleToggleBookmarks = useCallback(() => {
+    setUIState((prev) => ({ ...prev, showBookmarks: !prev.showBookmarks }))
+  }, [])
+
+  const handleSelectThread = useCallback(async (threadId: string) => {
+    try {
+      const res = await fetch(`/api/threads/${threadId}`)
+      if (!res.ok) {
+        toast.error("Failed to load conversation")
+        return
+      }
+
+      const data = await res.json()
+      const messages = data.messages // API returns { messages: SearchHistory[] }
+
+      if (!messages || messages.length === 0) {
+        toast.info("This conversation has no messages")
+        return
+      }
+
+      // Clear current search state and load thread messages
+      dispatchSearch({ type: "CLEAR_SEARCH" })
+      setCurrentThreadId(threadId)
+
+      // Load each message from the thread into the conversation
+      for (const message of messages) {
+        // Start the search with the query
+        dispatchSearch({
+          type: "START_SEARCH",
+          query: message.query,
+          mode: message.mode || "quick",
+        })
+
+        // Set the response
+        if (message.response) {
+          dispatchSearch({
+            type: "UPDATE_CURRENT_RESPONSE",
+            response: message.response,
+          })
+        }
+
+        // Set citations if available
+        if (message.citations && Array.isArray(message.citations)) {
+          dispatchSearch({
+            type: "SET_CURRENT_CITATIONS",
+            citations: message.citations,
+          })
+        }
+
+        // Set model info if available
+        if (message.model_used) {
+          dispatchSearch({
+            type: "SET_CURRENT_MODEL_INFO",
+            modelInfo: {
+              model: message.model_used,
+              reason: message.selection_reason || "",
+              autoSelected: message.auto_selected ?? true,
+            },
+          })
+        }
+
+        // Mark message as complete
+        dispatchSearch({ type: "SEARCH_COMPLETE" })
+      }
+
+      // Close sidebars after loading thread
+      setUIState((prev) => ({
+        ...prev,
+        showHistory: false,
+        showBookmarks: false,
+        isDrawerOpen: false,
+      }))
+
+      toast.success("Conversation loaded")
+    } catch (error) {
+      console.error("Failed to load thread:", error)
+      toast.error("Failed to load conversation")
+    }
   }, [])
 
   useEffect(() => {
@@ -220,6 +305,16 @@ export default function Home() {
         if (data.user && data.modelPreference) {
           if (data.modelPreference.model_preference === "manual" && data.modelPreference.selected_model) {
             setSelectedModel(data.modelPreference.selected_model as ModelId)
+          }
+        }
+
+        if (data.user) {
+          try {
+            const bookmarksRes = await fetch("/api/bookmarks")
+            const bookmarksData = await bookmarksRes.json()
+            setBookmarks(bookmarksData.bookmarks || [])
+          } catch (error) {
+            console.error("Failed to fetch bookmarks:", error)
           }
         }
       } catch (error) {
@@ -548,7 +643,7 @@ export default function Home() {
     setUIState((prev) => ({ ...prev, isDrawerOpen: false }))
     setTimeout(() => {
       searchInputRef.current?.focus()
-    }, 100)
+    }, 300)
   }, [user])
 
   const isAdmin = useMemo(() => user?.role === "owner" || user?.role === "admin", [user?.role])
@@ -669,6 +764,7 @@ export default function Home() {
         onToggleMode={handleToggleMode}
         onToggleHistory={handleToggleHistory}
         onNewChat={handleNewChat}
+        onToggleBookmarks={handleToggleBookmarks}
       />
 
       <CollapsibleSidebar
@@ -678,6 +774,8 @@ export default function Home() {
         onNewChat={handleNewChat}
         onSearchSelect={(search) => handleSearch(search, searchState.mode)}
         onToggleHistory={handleToggleHistory}
+        onToggleBookmarks={handleToggleBookmarks}
+        onSelectThread={handleSelectThread}
         onLogout={handleLogout}
         isCollapsed={uiState.isSidebarCollapsed}
         setIsCollapsed={(collapsed) => setUIState((prev) => ({ ...prev, isSidebarCollapsed: collapsed }))}
@@ -699,12 +797,14 @@ export default function Home() {
           onOpenChange={(open) => setUIState((prev) => ({ ...prev, isDrawerOpen: open }))}
           isAdmin={isAdmin}
           recentSearches={recentSearches}
+          bookmarks={bookmarks}
           user={user}
           isLoadingUser={isLoadingUser}
           theme={theme || "dark"}
           setTheme={setTheme}
           handleNewChat={handleNewChat}
           handleToggleHistory={handleToggleHistory}
+          handleToggleBookmarks={handleToggleBookmarks}
           handleSearch={handleSearchOrGenerate}
           searchMode={searchState.mode}
         />
@@ -798,9 +898,20 @@ export default function Home() {
             <HistorySidebar
               userId={user?.id}
               onClose={() => setUIState((prev) => ({ ...prev, showHistory: false }))}
-              onSelectHistory={handleSelectHistory}
-              localSearches={recentSearches}
+              onSelectThread={handleSelectThread}
+              localThreads={recentSearches}
               isOpen={uiState.showHistory}
+            />
+          </Suspense>
+        )}
+
+        {uiState.showBookmarks && user && (
+          <Suspense fallback={<div className="fixed inset-y-0 right-0 w-80 bg-background border-l border-border" />}>
+            <BookmarksSidebar
+              userId={user.id}
+              onClose={() => setUIState((prev) => ({ ...prev, showBookmarks: false }))}
+              onSelectBookmark={(query) => handleSearch(query, searchState.mode)}
+              isOpen={uiState.showBookmarks}
             />
           </Suspense>
         )}
