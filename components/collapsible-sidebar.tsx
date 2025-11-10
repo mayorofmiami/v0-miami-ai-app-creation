@@ -371,10 +371,10 @@ export function CollapsibleSidebar({
                 </div>
                 {!isCollapsed && (
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold truncate group-hover:text-miami-aqua transition-colors">
+                    <p className="text-base font-semibold truncate group-hover:text-miami-aqua transition-colors">
                       {user.name || "User"}
                     </p>
-                    <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                   </div>
                 )}
               </div>
