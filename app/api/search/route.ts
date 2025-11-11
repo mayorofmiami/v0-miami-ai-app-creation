@@ -84,9 +84,16 @@ export async function POST(request: Request) {
     const sessionUserId = session?.userId || null
 
     const body = await request.json()
+
+    console.log("[v0] Received request body:", JSON.stringify(body, null, 2))
+    console.log("[v0] selectedModel from body:", body.selectedModel)
+
     const validation = validateRequest(searchRequestSchema, body)
 
     if (!validation.success) {
+      console.error("[v0] Validation failed:", validation.error)
+      console.error("[v0] Failed body:", JSON.stringify(body, null, 2))
+
       return new Response(
         JSON.stringify({
           error: validation.error,
@@ -477,7 +484,13 @@ Provide accurate, concise answers that are both informative and visually appeali
       }
 
       let savedSearchId: string | null = null
-      if (userId && typeof userId === "string" && userId.length > 0) {
+      if (
+        userId &&
+        typeof userId === "string" &&
+        userId.length > 0 &&
+        finalThreadId &&
+        !finalThreadId.startsWith("local-thread-")
+      ) {
         try {
           const positionInThread = conversationHistory ? Math.floor(conversationHistory.length / 2) + 1 : 1
           const sources = webSearchResults ? webSearchResults.map((r: any) => ({ title: r.title, url: r.url })) : []
@@ -492,17 +505,19 @@ Provide accurate, concise answers that are both informative and visually appeali
             modelSelection.model,
             modelSelection.autoSelected,
             modelSelection.reason,
-            finalThreadId || null,
+            finalThreadId,
             positionInThread,
           )
 
           savedSearchId = savedSearch.id
           console.log(
-            `[v0] Created search record with id: ${savedSearchId}, threadId: ${finalThreadId || "none"}, position: ${positionInThread}`,
+            `[v0] Created search record with id: ${savedSearchId}, threadId: ${finalThreadId}, position: ${positionInThread}`,
           )
         } catch (error) {
           console.error("Failed to create initial search record:", error)
         }
+      } else if (finalThreadId?.startsWith("local-thread-")) {
+        console.log(`[v0] Skipping search history save - local thread ID: ${finalThreadId}`)
       }
 
       const result = streamText({

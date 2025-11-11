@@ -326,11 +326,13 @@ export default function Home() {
   }, [])
 
   const handleModelChange = async (newModel: ModelId) => {
+    console.log("[v0] Model change requested:", { from: selectedModel, to: newModel })
     setSelectedModel(newModel)
 
     if (user?.id) {
       try {
-        await fetch("/api/user/preferences", {
+        console.log("[v0] Saving model preference to backend")
+        const response = await fetch("/api/user/preferences", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -339,8 +341,17 @@ export default function Home() {
             selectedModel: newModel === "auto" ? null : newModel,
           }),
         })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error("[v0] Failed to save model preference:", errorData)
+          throw new Error("Failed to save preference")
+        }
+
+        console.log("[v0] Model preference saved successfully")
       } catch (error) {
         logger.error("Failed to update model preference", { error })
+        console.error("[v0] Error saving model preference:", error)
         toast.error("Failed to save preference", "Your model preference couldn't be saved. It will reset on refresh.")
       }
     }
@@ -368,6 +379,8 @@ export default function Home() {
       if (searchState.isLoading) {
         return
       }
+
+      console.log("[v0] Starting search with model:", { selectedModel, query: query.slice(0, 50) })
 
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
@@ -428,6 +441,8 @@ export default function Home() {
           body: JSON.stringify(body),
           signal: abortControllerRef.current.signal,
         })
+
+        console.log("[v0] Fetch completed, status:", res.status, "ok:", res.ok)
 
         if (res.status === 429) {
           const errorData = await res.json()

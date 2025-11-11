@@ -9,14 +9,13 @@ export const contentTypeSchema = z.enum(["search", "image"])
 // Model ID validation
 export const modelIdSchema = z.enum([
   "auto",
-  "gpt-4o",
-  "gpt-4o-mini",
-  "claude-3.5-sonnet",
-  "claude-3.5-haiku",
-  "gemini-2.0-flash",
-  "grok-2-fast",
-  "grok-2-turbo",
-  "deepseek-r1",
+  "openai/gpt-4o",
+  "openai/gpt-4o-mini",
+  "anthropic/claude-3.5-sonnet",
+  "anthropic/claude-3.5-haiku",
+  "google/gemini-2.0-flash",
+  "groq/llama-3.1-8b",
+  "groq/llama-3.3-70b",
 ])
 
 // Attachment validation
@@ -45,7 +44,7 @@ export const searchRequestSchema = z.object({
   selectedModel: modelIdSchema.optional(),
   attachments: z.array(attachmentSchema).max(5).optional(),
   conversationHistory: z.array(conversationMessageSchema).max(20).optional(),
-  threadId: z.string().uuid().optional(), // Added threadId to track conversations
+  threadId: z.string().optional(), // Changed from z.string().uuid() to z.string() to accept local thread IDs
 })
 
 // Image generation request validation
