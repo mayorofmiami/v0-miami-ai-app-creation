@@ -1,4 +1,5 @@
-import { getThreadMessages } from "@/lib/db"
+import { getThreadMessages, deleteThread } from "@/lib/db"
+import { getCurrentUser } from "@/lib/auth"
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -21,5 +22,32 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   } catch (error) {
     console.error("[v0] Thread API error:", error)
     return Response.json({ error: "Failed to fetch thread" }, { status: 500 })
+  }
+}
+
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  try {
+    const user = await getCurrentUser()
+
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const threadId = params.id
+
+    if (!threadId) {
+      return Response.json({ error: "Thread ID required" }, { status: 400 })
+    }
+
+    const result = await deleteThread(threadId, user.id)
+
+    if (!result.success) {
+      return Response.json({ error: result.error }, { status: 500 })
+    }
+
+    return Response.json({ success: true })
+  } catch (error) {
+    console.error("[v0] Delete thread API error:", error)
+    return Response.json({ error: "Failed to delete thread" }, { status: 500 })
   }
 }

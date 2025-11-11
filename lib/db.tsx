@@ -124,7 +124,7 @@ export async function getUserThreads(userId: string, limit = 20) {
     const result = await sql`
       SELECT t.*, 
              (SELECT COUNT(*) FROM search_history WHERE thread_id = t.id) as message_count,
-             (SELECT created_at FROM search_history WHERE thread_id = t.id ORDER BY created_at DESC LIMIT 1) as last_message_at
+             t.updated_at as last_message_at
       FROM threads t
       WHERE t.user_id = ${userId}
       ORDER BY t.updated_at DESC
@@ -522,5 +522,45 @@ export async function incrementRateLimit(userId: string | null, ipAddress: strin
     if (!error?.message?.includes('relation "rate_limits" does not exist')) {
       console.error("[v0] Rate limit increment error:", error?.message || error)
     }
+  }
+}
+
+// Thread Management Functions
+export async function deleteThread(threadId: string, userId: string) {
+  try {
+    // First verify the thread belongs to the user
+    const thread = await sql`
+      SELECT id FROM threads
+      WHERE id = ${threadId} AND user_id = ${userId}
+    `
+
+    if (thread.length === 0) {
+      return { success: false, error: "Thread not found or unauthorized" }
+    }
+
+    // Delete associated bookmarks first (they reference search_history which references threads)
+    await sql`
+      DELETE FROM bookmarks
+      WHERE search_id IN (
+        SELECT id FROM search_history WHERE thread_id = ${threadId}
+      )
+    `
+
+    // Delete associated search history records
+    await sql`
+      DELETE FROM search_history
+      WHERE thread_id = ${threadId}
+    `
+
+    // Delete the thread itself
+    await sql`
+      DELETE FROM threads
+      WHERE id = ${threadId} AND user_id = ${userId}
+    `
+
+    return { success: true }
+  } catch (error: any) {
+    console.error("[v0] Delete thread error:", error?.message || error)
+    return { success: false, error: "Failed to delete thread" }
   }
 }

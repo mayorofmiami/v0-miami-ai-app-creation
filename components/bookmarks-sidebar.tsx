@@ -1,11 +1,14 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState, useCallback } from "react"
 import X from "@/components/icons/X"
 import BookmarkIcon from "@/components/icons/Bookmark"
 import SearchIcon from "@/components/icons/SearchIcon"
 import ChevronLeft from "@/components/icons/ChevronLeft"
 import ChevronRight from "@/components/icons/ChevronRight"
+import Trash2 from "@/components/icons/Trash2"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -30,6 +33,7 @@ export function BookmarksSidebar({ userId, onClose, onSelectBookmark, isOpen }: 
   const [isLoading, setIsLoading] = useState(true)
   const [searchFilter, setSearchFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -94,6 +98,38 @@ export function BookmarksSidebar({ userId, onClose, onSelectBookmark, isOpen }: 
     setCurrentPage((p) => Math.min(totalPages, p + 1))
   }, [filteredBookmarks.length, itemsPerPage])
 
+  const handleDelete = useCallback(async (e: React.MouseEvent, searchId: string) => {
+    e.stopPropagation() // Prevent bookmark selection when clicking delete
+
+    if (!confirm("Are you sure you want to remove this bookmark?")) {
+      return
+    }
+
+    setDeletingId(searchId)
+
+    try {
+      const res = await fetch("/api/bookmarks", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ searchId }),
+      })
+
+      if (res.ok) {
+        // Remove from local state
+        setBookmarks((prev) => prev.filter((b) => b.id !== searchId))
+        setFilteredBookmarks((prev) => prev.filter((b) => b.id !== searchId))
+      } else {
+        const data = await res.json()
+        alert(data.error || "Failed to remove bookmark")
+      }
+    } catch (error) {
+      console.error("Failed to remove bookmark:", error)
+      alert("Failed to remove bookmark")
+    } finally {
+      setDeletingId(null)
+    }
+  }, [])
+
   const totalPages = Math.ceil(filteredBookmarks.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
@@ -139,13 +175,21 @@ export function BookmarksSidebar({ userId, onClose, onSelectBookmark, isOpen }: 
               <button
                 key={bookmark.id}
                 onClick={() => handleSelectBookmark(bookmark.query)}
-                className="w-full text-left p-3 rounded-lg bg-muted/50 hover:bg-muted border border-border hover:border-miami-aqua/50 transition-all group"
+                className="w-full text-left p-3 rounded-lg bg-muted/50 hover:bg-muted border border-border hover:border-miami-aqua/50 transition-all group relative"
               >
                 <div className="flex items-start gap-2 mb-2">
                   <SearchIcon className="w-4 h-4 text-miami-aqua flex-shrink-0 mt-0.5" />
-                  <p className="font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2 text-pretty">
+                  <p className="font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2 text-pretty flex-1">
                     {bookmark.query}
                   </p>
+                  <button
+                    onClick={(e) => handleDelete(e, bookmark.id)}
+                    disabled={deletingId === bookmark.id}
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 transition-opacity disabled:opacity-50"
+                    title="Remove bookmark"
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </button>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{formatDate(bookmark.bookmarked_at || bookmark.created_at)}</span>

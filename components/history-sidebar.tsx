@@ -1,19 +1,22 @@
 "use client"
 
+import type React from "react"
+
+// Version: 2.0 - Simplified UI without dates or message counts
+
 import { useEffect, useState, useCallback } from "react"
 import X from "@/components/icons/X"
 import Clock from "@/components/icons/Clock"
 import SearchIcon from "@/components/icons/SearchIcon"
 import ChevronLeft from "@/components/icons/ChevronLeft"
 import ChevronRight from "@/components/icons/ChevronRight"
+import Trash2 from "@/components/icons/Trash2"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 interface Thread {
   id: string
   title: string
-  message_count: number
-  updated_at: string
 }
 
 interface HistorySidebarProps {
@@ -30,6 +33,7 @@ export function HistorySidebar({ userId, onClose, onSelectThread, localThreads =
   const [isLoading, setIsLoading] = useState(true)
   const [searchFilter, setSearchFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const itemsPerPage = 10
 
   useEffect(() => {
@@ -67,21 +71,6 @@ export function HistorySidebar({ userId, onClose, onSelectThread, localThreads =
     }
   }, [searchFilter, threads])
 
-  const formatDate = useCallback((dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-
-    if (diffMins < 1) return "Just now"
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString()
-  }, [])
-
   const handleSelectThread = useCallback(
     (threadId: string) => {
       onSelectThread(threadId)
@@ -96,6 +85,36 @@ export function HistorySidebar({ userId, onClose, onSelectThread, localThreads =
 
   const handleNextPage = useCallback(() => {
     setCurrentPage((p) => Math.min(totalPages, p + 1))
+  }, [])
+
+  const handleDelete = useCallback(async (e: React.MouseEvent, threadId: string) => {
+    e.stopPropagation() // Prevent thread selection when clicking delete
+
+    if (!confirm("Are you sure you want to delete this conversation? This cannot be undone.")) {
+      return
+    }
+
+    setDeletingId(threadId)
+
+    try {
+      const res = await fetch(`/api/threads/${threadId}`, {
+        method: "DELETE",
+      })
+
+      if (res.ok) {
+        // Remove from local state
+        setThreads((prev) => prev.filter((t) => t.id !== threadId))
+        setFilteredThreads((prev) => prev.filter((t) => t.id !== threadId))
+      } else {
+        const data = await res.json()
+        alert(data.error || "Failed to delete conversation")
+      }
+    } catch (error) {
+      console.error("Failed to delete thread:", error)
+      alert("Failed to delete conversation")
+    } finally {
+      setDeletingId(null)
+    }
   }, [])
 
   const totalPages = Math.ceil(filteredThreads.length / itemsPerPage)
@@ -143,19 +162,23 @@ export function HistorySidebar({ userId, onClose, onSelectThread, localThreads =
               <button
                 key={thread.id}
                 onClick={() => handleSelectThread(thread.id)}
-                className="w-full text-left p-3 rounded-lg bg-muted/50 hover:bg-muted border border-border hover:border-miami-aqua/50 transition-all group"
+                className="w-full text-left p-3 rounded-lg bg-muted/50 hover:bg-muted border border-border hover:border-miami-aqua/50 transition-all group relative"
               >
-                <div className="flex items-start gap-2 mb-2">
+                <div className="flex items-start gap-2">
                   <SearchIcon className="w-4 h-4 text-miami-aqua flex-shrink-0 mt-0.5" />
-                  <p className="font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2 text-pretty">
+                  <p className="font-medium text-foreground group-hover:text-miami-aqua transition-colors line-clamp-2 text-pretty flex-1">
                     {thread.title}
                   </p>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{formatDate(thread.updated_at)}</span>
-                  <span>
-                    {thread.message_count} message{thread.message_count !== 1 ? "s" : ""}
-                  </span>
+                  {userId && (
+                    <button
+                      onClick={(e) => handleDelete(e, thread.id)}
+                      disabled={deletingId === thread.id}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 transition-opacity disabled:opacity-50"
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </button>
+                  )}
                 </div>
               </button>
             ))
