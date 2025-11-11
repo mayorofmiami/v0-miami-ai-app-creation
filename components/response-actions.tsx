@@ -148,7 +148,7 @@ export function ResponseActions({
 
   return (
     <>
-      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Copy Button */}
         <Button
           variant="ghost"

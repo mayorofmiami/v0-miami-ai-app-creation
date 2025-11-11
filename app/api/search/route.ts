@@ -558,6 +558,19 @@ Provide accurate, concise answers that are both informative and visually appeali
               throw new Error("Model selection is undefined")
             }
 
+            if (webSearchResults && webSearchResults.length > 0) {
+              const citationsData = JSON.stringify({
+                type: "citations",
+                content: webSearchResults.map((r: any) => ({
+                  title: r.title,
+                  url: r.url,
+                  snippet: r.content,
+                })),
+              })
+              controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`))
+              console.log(`[v0] Sent ${webSearchResults.length} citations to client`)
+            }
+
             const modelData = JSON.stringify({
               type: "model",
               content: {
