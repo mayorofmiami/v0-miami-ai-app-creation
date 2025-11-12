@@ -86,8 +86,7 @@ export const threadStorage = {
   addThread: (thread: LocalThread): void => {
     const threads = threadStorage.getThreads()
     threads.unshift(thread)
-    // Keep only last 20 threads
-    storage.setItem(STORAGE_KEYS.THREADS, threads.slice(0, 20))
+    storage.setItem(STORAGE_KEYS.THREADS, threads.slice(0, 5))
   },
 
   updateThread: (threadId: string, updates: Partial<LocalThread>): void => {

@@ -346,7 +346,7 @@ export function CollapsibleSidebar({
                   {(isCollapsed ? localThreads.slice(0, 3) : localThreads.slice(0, 5)).map((thread) => (
                     <button
                       key={thread.id}
-                      onClick={() => onSearchSelect(thread.queries[thread.queries.length - 1])}
+                      onClick={() => onSearchSelect(thread.queries[0] || thread.title)}
                       className={`w-full text-left rounded-lg hover:bg-muted/50 group ${
                         isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
                       }`}

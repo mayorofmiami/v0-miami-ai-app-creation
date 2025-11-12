@@ -360,7 +360,7 @@ export default function Home() {
       }
     }
     loadInitialData()
-  }, [])
+  }, []) // Empty dependency array ensures this only runs once on mount
 
   const handleModelChange = async (newModel: ModelId) => {
     setSelectedModel(newModel)

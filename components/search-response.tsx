@@ -65,26 +65,33 @@ export const SearchResponse = memo(function SearchResponse({
   }
 
   const processTextWithCitations = (text: string) => {
-    // First, remove URLs from citation patterns like [Source 1](https://example.com)
-    let processedText = text.replace(
-      /\[(?:Source\s*)?\d+(?:\s*,\s*\d+)*\]\s*[(]https?:\/\/[^)]+[)][ .,]*/g,
+    let emojiCitationCounter = 0
+    let processedText = text.replace(/\[🔗\s*Source\]/gi, () => {
+      emojiCitationCounter++
+      return `[Source ${emojiCitationCounter}]`
+    })
+
+    processedText = processedText.replace(
+      /\[(?:Source\s*)?\d+(?:\s*,\s*(?:Source\s*)?\d+)*\]\s*[(]https?:\/\/[^)]+[)]/g,
       (match) => {
-        // Extract just the citation part, remove the URL in parentheses and trailing punctuation
-        return match.replace(/\s*[(]https?:\/\/[^)]+[)][ .,]*/, "")
+        return match.replace(/\s*[(]https?:\/\/[^)]+[)]/, "")
       },
     )
 
-    // Remove any remaining standalone URLs in parentheses with trailing punctuation
-    processedText = processedText.replace(/\s*[(]https?:\/\/[^)]+[)][ .,]*/g, "")
+    processedText = processedText.replace(/\s*[(]https?:\/\/[^)]+[)]/g, "")
 
-    // Clean up any empty parentheses that might be left
     processedText = processedText.replace(/[(]\s*[)]/g, "")
 
-    // Then process citation patterns normally
-    const citationPattern = /\[(?:Source\s*)?(\d+(?:\s*,\s*\d+)*)\]/g
+    processedText = processedText.replace(/(\[(?:Source\s*)?\d+(?:\s*,\s*(?:Source\s*)?\d+)*\])[.,;:!?]+/g, "$1")
+
+    const citationPattern = /\[(?:Source\s*)?(\d+(?:\s*,\s*(?:Source\s*)?\d+)*)\]/g
     return processedText.replace(citationPattern, (match, citationNums) => {
-      // Split by comma to handle multiple citations
-      const numbers = citationNums.split(/\s*,\s*/).map((n: string) => Number.parseInt(n.trim()))
+      // Split by comma and extract just the numbers
+      const numbers = citationNums.split(/\s*,\s*/).map((n: string) => {
+        // Handle both "1" and "Source 1" formats
+        const num = n.replace(/Source\s*/i, "").trim()
+        return Number.parseInt(num)
+      })
 
       // Create a cite element for each citation number
       return numbers
@@ -217,6 +224,7 @@ export const SearchResponse = memo(function SearchResponse({
               const citationNumber = node?.properties?.dataNum
               const sourceName = node?.properties?.dataName
               const citationUrl = node?.properties?.dataUrl
+
               const citation = safeCitations[citationNumber - 1]
 
               if (!citation) return null
