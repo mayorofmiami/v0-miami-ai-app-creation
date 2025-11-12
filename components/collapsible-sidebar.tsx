@@ -326,27 +326,6 @@ export function CollapsibleSidebar({
                             >
                               {thread.title}
                             </p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{formatRelativeTime(thread.last_message_at)}</span>
-                              {thread.message_count > 1 && (
-                                <>
-                                  <span>•</span>
-                                  <span>{thread.message_count} messages</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <div
-                            className="opacity-0 group-hover:opacity-100 pointer-events-none absolute left-full ml-2 z-50 w-64 p-3 bg-popover border border-border rounded-lg shadow-lg"
-                            style={{
-                              transition: "opacity var(--duration-fast) var(--easing-standard)",
-                            }}
-                          >
-                            <p className="text-sm font-medium mb-1">{thread.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {thread.message_count} message{thread.message_count !== 1 ? "s" : ""} • Last active{" "}
-                              {formatRelativeTime(thread.last_message_at)}
-                            </p>
                           </div>
                         </div>
                       )}
@@ -386,15 +365,6 @@ export function CollapsibleSidebar({
                             >
                               {thread.title}
                             </p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{formatRelativeTime(thread.timestamp)}</span>
-                              {thread.messageCount > 1 && (
-                                <>
-                                  <span>•</span>
-                                  <span>{thread.messageCount} messages</span>
-                                </>
-                              )}
-                            </div>
                           </div>
                         </div>
                       )}

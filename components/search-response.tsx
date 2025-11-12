@@ -208,12 +208,11 @@ export const SearchResponse = memo(function SearchResponse({
                   href={citationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center align-baseline text-[0.75em] font-medium px-1.5 py-0.5 mx-0.5 rounded-md bg-miami-aqua/10 text-miami-aqua border border-miami-aqua/30 hover:bg-miami-aqua/20 hover:border-miami-aqua/50 hover:scale-105 transition-all duration-200 cursor-pointer no-underline"
+                  className="inline-flex items-center mx-0.5 px-1 py-[1px] text-[9px] font-medium rounded-full bg-miami-aqua/10 text-miami-aqua/90 hover:bg-miami-aqua/20 hover:text-miami-aqua transition-colors cursor-pointer no-underline align-middle whitespace-nowrap"
                   aria-label={`Open source: ${sourceName}`}
                   title={citation.title}
                 >
                   {sourceName}
-                  <span className="ml-1 text-[0.6em]">↗</span>
                 </a>
               )
             },
