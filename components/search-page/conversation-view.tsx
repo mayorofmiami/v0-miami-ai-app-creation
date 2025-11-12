@@ -31,13 +31,20 @@ export function ConversationView({
   const [expandedRelatedId, setExpandedRelatedId] = useState<string | null>(null)
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ contain: "layout" }}>
       {messages.map((message, index) => {
         const isRelatedExpanded = expandedRelatedId === message.id
         const showButtons = !message.isStreaming && message.response
 
         return (
-          <div key={message.id} className="space-y-6">
+          <div
+            key={message.id}
+            className="space-y-6"
+            style={{
+              contain: "layout style",
+              willChange: message.isStreaming ? "contents" : "auto",
+            }}
+          >
             {/* Query Display - Modern minimal style */}
             <div
               ref={(el) => {

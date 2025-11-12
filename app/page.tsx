@@ -394,6 +394,26 @@ export default function Home() {
     dispatchSearch({ type: "CLEAR_SEARCH" })
   }
 
+  const [streamBuffer, setStreamBuffer] = useState("")
+  const streamBufferRef = useRef("")
+  const updateTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const flushStreamBuffer = useCallback(() => {
+    if (streamBufferRef.current) {
+      dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: streamBufferRef.current })
+      streamBufferRef.current = ""
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current)
+        updateTimerRef.current = null
+      }
+    }
+  }, [])
+
   const handleSearch = useCallback(
     async (query: string, searchMode: SearchMode, attachments?: Attachment[]) => {
       if (searchState.isLoading) {
@@ -425,6 +445,12 @@ export default function Home() {
       }
 
       dispatchSearch({ type: "START_SEARCH", query, mode: searchMode })
+
+      streamBufferRef.current = ""
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current)
+        updateTimerRef.current = null
+      }
 
       try {
         const body: any = { query, mode: searchMode }
@@ -523,6 +549,8 @@ export default function Home() {
         }
 
         let accumulatedResponse = ""
+        let lastUpdateTime = Date.now()
+        const UPDATE_INTERVAL = 100 // Update every 100ms instead of every chunk
 
         while (true) {
           const { done, value } = await reader.read()
@@ -541,7 +569,22 @@ export default function Home() {
 
                 if (parsed.type === "text") {
                   accumulatedResponse += parsed.content
-                  dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: accumulatedResponse })
+                  streamBufferRef.current = accumulatedResponse
+
+                  const now = Date.now()
+                  if (now - lastUpdateTime >= UPDATE_INTERVAL) {
+                    dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: accumulatedResponse })
+                    lastUpdateTime = now
+                  } else if (!updateTimerRef.current) {
+                    // Schedule an update if one isn't already scheduled
+                    updateTimerRef.current = setTimeout(
+                      () => {
+                        dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: streamBufferRef.current })
+                        updateTimerRef.current = null
+                      },
+                      UPDATE_INTERVAL - (now - lastUpdateTime),
+                    )
+                  }
                 } else if (parsed.type === "citations") {
                   dispatchSearch({ type: "SET_CURRENT_CITATIONS", citations: parsed.content || parsed.citations || [] })
                 } else if (parsed.type === "model") {
@@ -560,6 +603,12 @@ export default function Home() {
             }
           }
         }
+
+        if (updateTimerRef.current) {
+          clearTimeout(updateTimerRef.current)
+          updateTimerRef.current = null
+        }
+        dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: accumulatedResponse })
 
         dispatchSearch({ type: "SEARCH_COMPLETE" })
 
@@ -583,6 +632,11 @@ export default function Home() {
         dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, something went wrong. Please try again." })
       } finally {
         abortControllerRef.current = null
+        streamBufferRef.current = ""
+        if (updateTimerRef.current) {
+          clearTimeout(updateTimerRef.current)
+          updateTimerRef.current = null
+        }
       }
     },
     [user, selectedModel, searchState.isLoading, currentThreadId, searchState.messages],
@@ -723,6 +777,9 @@ export default function Home() {
     }
   }, [])
 
+  const lastScrolledMessageId = useRef<string | null>(null)
+  const isAutoScrolling = useRef(false)
+
   useEffect(() => {
     const messages = searchState.messages
     const currentMessageCount = messages.length
@@ -736,19 +793,32 @@ export default function Home() {
 
     if (currentMessageCount > 0) {
       const latestMessage = messages[currentMessageCount - 1]
-      const messageElement = messageRefs.current[latestMessage.id]
 
-      if (messageElement) {
-        requestAnimationFrame(() => {
-          const headerOffset = 100
-          const elementPosition = messageElement.getBoundingClientRect().top
-          const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+      const shouldScroll =
+        lastScrolledMessageId.current !== latestMessage.id || (latestMessage.isStreaming && !isAutoScrolling.current)
 
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: "smooth",
+      if (shouldScroll) {
+        const messageElement = messageRefs.current[latestMessage.id]
+
+        if (messageElement && !isAutoScrolling.current) {
+          isAutoScrolling.current = true
+          lastScrolledMessageId.current = latestMessage.id
+
+          requestAnimationFrame(() => {
+            const headerOffset = 100
+            const elementPosition = messageElement.getBoundingClientRect().top
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: "smooth",
+            })
+
+            setTimeout(() => {
+              isAutoScrolling.current = false
+            }, 500)
           })
-        })
+        }
       }
     }
   }, [searchState.messages])

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, memo } from "react"
+import { useEffect, useState, memo, useMemo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import rehypeRaw from "rehype-raw"
@@ -99,12 +99,12 @@ export const SearchResponse = memo(function SearchResponse({
     })
   }
 
-  const processedText = processTextWithCitations(displayedText)
+  const processedText = useMemo(() => processTextWithCitations(displayedText), [displayedText, safeCitations.length])
 
   if (!response) return null
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full space-y-6 animate-in fade-in duration-500" style={{ willChange: "contents" }}>
       {showTypingIndicator && response.length === 0 && (
         <div className="flex items-center gap-3 text-sm text-muted-foreground py-2">
           <div className="flex gap-1.5">
@@ -117,7 +117,15 @@ export const SearchResponse = memo(function SearchResponse({
       )}
 
       {/* Response Text */}
-      <div className="prose prose-invert prose-miami max-w-none" role="article" aria-label="Search response">
+      <div
+        className="prose prose-invert prose-miami max-w-none"
+        role="article"
+        aria-label="Search response"
+        style={{
+          contain: "layout style paint",
+          willChange: isStreaming ? "contents" : "auto",
+        }}
+      >
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeRaw]}
