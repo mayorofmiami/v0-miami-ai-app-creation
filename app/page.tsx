@@ -229,49 +229,69 @@ export default function Home() {
         return
       }
 
-      // Clear current search state and load thread messages
+      // Clear current search state
       dispatchSearch({ type: "CLEAR_SEARCH" })
       setCurrentThreadId(threadId)
 
-      // Load each message from the thread into the conversation
-      for (const message of messages) {
-        // Start the search with the query
-        dispatchSearch({
-          type: "START_SEARCH",
-          query: message.query,
-          mode: message.mode || "quick",
-        })
-
-        // Set the response
-        if (message.response) {
-          dispatchSearch({
-            type: "UPDATE_CURRENT_RESPONSE",
-            response: message.response,
-          })
-        }
-
-        // Set citations if available
-        if (message.citations && Array.isArray(message.citations)) {
-          dispatchSearch({
-            type: "SET_CURRENT_CITATIONS",
-            citations: message.citations,
-          })
-        }
-
-        // Set model info if available
-        if (message.model_used) {
-          dispatchSearch({
-            type: "SET_CURRENT_MODEL_INFO",
-            modelInfo: {
+      // Convert thread messages to conversation messages format
+      const conversationMessages = messages.map((message: SearchHistory) => ({
+        id: message.id || Date.now().toString(),
+        type: message.generated_image ? "image" : "search",
+        query: message.query,
+        response: message.response,
+        citations: message.citations || [],
+        modelInfo: message.model_used
+          ? {
               model: message.model_used,
               reason: message.selection_reason || "",
               autoSelected: message.auto_selected ?? true,
-            },
-          })
-        }
+            }
+          : undefined,
+        generatedImage: message.generated_image || undefined,
+        isStreaming: false,
+      }))
 
-        // Mark message as complete
-        dispatchSearch({ type: "SEARCH_COMPLETE" })
+      // Load the first message using LOAD_FROM_HISTORY, then set the rest directly
+      if (conversationMessages.length > 0) {
+        dispatchSearch({ type: "LOAD_FROM_HISTORY", history: messages[0] })
+
+        // For additional messages, we need to add them to state
+        // Since we don't have a direct action for this, we'll dispatch START_SEARCH and complete for each
+        for (let i = 1; i < messages.length; i++) {
+          const msg = messages[i]
+          dispatchSearch({
+            type: "START_SEARCH",
+            query: msg.query,
+            mode: msg.mode || "quick",
+          })
+
+          if (msg.response) {
+            dispatchSearch({
+              type: "UPDATE_CURRENT_RESPONSE",
+              response: msg.response,
+            })
+          }
+
+          if (msg.citations) {
+            dispatchSearch({
+              type: "SET_CURRENT_CITATIONS",
+              citations: msg.citations,
+            })
+          }
+
+          if (msg.model_used) {
+            dispatchSearch({
+              type: "SET_CURRENT_MODEL_INFO",
+              modelInfo: {
+                model: msg.model_used,
+                reason: msg.selection_reason || "",
+                autoSelected: msg.auto_selected ?? true,
+              },
+            })
+          }
+
+          dispatchSearch({ type: "SEARCH_COMPLETE" })
+        }
       }
 
       // Close sidebars after loading thread

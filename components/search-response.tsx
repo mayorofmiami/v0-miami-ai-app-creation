@@ -65,15 +65,20 @@ export const SearchResponse = memo(function SearchResponse({
   }
 
   const processTextWithCitations = (text: string) => {
-    let processedText = text.replace(/\[(?:Source\s*)?\d+(?:\s*,\s*\d+)*\]\s*$$https?:\/\/[^)]+$$/g, (match) => {
-      // Extract just the citation part, remove the URL in parentheses
-      return match.replace(/\s*$$https?:\/\/[^)]+$$/, "")
-    })
+    // First, remove URLs from citation patterns like [Source 1](https://example.com)
+    let processedText = text.replace(
+      /\[(?:Source\s*)?\d+(?:\s*,\s*\d+)*\]\s*[(]https?:\/\/[^)]+[)][ .,]*/g,
+      (match) => {
+        // Extract just the citation part, remove the URL in parentheses and trailing punctuation
+        return match.replace(/\s*[(]https?:\/\/[^)]+[)][ .,]*/, "")
+      },
+    )
 
-    processedText = processedText.replace(/\s*$$https?:\/\/[^)]+$$/g, "")
+    // Remove any remaining standalone URLs in parentheses with trailing punctuation
+    processedText = processedText.replace(/\s*[(]https?:\/\/[^)]+[)][ .,]*/g, "")
 
     // Clean up any empty parentheses that might be left
-    processedText = processedText.replace(/$$\s*$$/g, "")
+    processedText = processedText.replace(/[(]\s*[)]/g, "")
 
     // Then process citation patterns normally
     const citationPattern = /\[(?:Source\s*)?(\d+(?:\s*,\s*\d+)*)\]/g
