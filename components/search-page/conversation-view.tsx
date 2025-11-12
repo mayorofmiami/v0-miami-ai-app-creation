@@ -7,6 +7,7 @@ import { RelatedSearches } from "@/components/related-searches"
 import { SkeletonSearch } from "@/components/skeleton-search"
 import { ResponseActions } from "@/components/response-actions"
 import { ModelBadge } from "@/components/model-badge"
+import Palmtree from "@/components/icons/Palmtree"
 import type { ConversationMessage, User, SearchMode } from "@/types"
 
 interface ConversationViewProps {
@@ -43,26 +44,11 @@ export function ConversationView({
               ref={(el) => {
                 messageRefs.current[message.id] = el
               }}
-              className="w-full max-w-3xl mx-auto scroll-mt-24"
+              className="w-full max-w-3xl mx-auto scroll-mt-24 px-4 md:px-0"
             >
-              <div className="flex items-start gap-3 md:gap-4 px-4 md:px-0">
-                {/* Avatar/Icon circle */}
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-miami-aqua to-miami-blue flex items-center justify-center mt-0.5">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2.5}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </div>
-
-                {/* Query text */}
-                <div className="flex-1 pt-1">
-                  <span className="sr-only">You asked:</span>
-                  <p className="text-base md:text-lg text-foreground leading-relaxed">{message.query}</p>
-                </div>
+              <div className="bg-muted/50 border border-border rounded-xl px-4 py-3 md:px-5 md:py-4 flex items-center gap-3">
+                <Palmtree className="w-5 h-5 text-miami-blue dark:text-miami-aqua flex-shrink-0" />
+                <p className="text-base md:text-lg text-foreground leading-relaxed flex-1">{message.query}</p>
               </div>
             </div>
 

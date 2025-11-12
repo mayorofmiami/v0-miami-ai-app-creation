@@ -18,12 +18,13 @@ import { PageHeader } from "@/components/page-header"
 import { ExampleQueries } from "@/components/example-queries"
 import { handleSearchError } from "@/lib/error-handling"
 import { handleImageError } from "@/lib/error-handling"
-import { throttle } from "@/lib/throttle"
 import { storage, STORAGE_KEYS, threadStorage } from "@/lib/local-storage"
 import { logger } from "@/lib/logger"
 import { ConversationView } from "@/components/search-page/conversation-view"
 import { SearchFormContainer } from "@/components/search-page/search-form-container"
 import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
+
+const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -185,7 +186,9 @@ export default function Home() {
 
   const [user, setUser] = useState<User | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
-  const [selectedModel, setSelectedModel] = useState<ModelId>("auto")
+
+  const [selectedModel, setSelectedModel] = useState<ModelId>(NON_AUTH_DEFAULT_MODEL)
+
   const abortControllerRef = useRef<AbortController | null>(null)
   const searchInputRef = useRef<SearchInputRef>(null)
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
@@ -323,8 +326,21 @@ export default function Home() {
         }
 
         if (data.user && data.modelPreference) {
+          // Authenticated user: load ONLY from database, never from localStorage
           if (data.modelPreference.model_preference === "manual" && data.modelPreference.selected_model) {
             setSelectedModel(data.modelPreference.selected_model as ModelId)
+          } else {
+            setSelectedModel("auto")
+          }
+        } else if (!data.user) {
+          // Non-authenticated user: load from localStorage OR use hardcoded default
+          if (typeof window !== "undefined") {
+            const storedModel = storage.getItem(STORAGE_KEYS.MODEL_PREFERENCE, null)
+            // Only use stored model if it exists, otherwise keep the hardcoded default
+            if (storedModel) {
+              setSelectedModel(storedModel as ModelId)
+            }
+            // If no stored model, selectedModel already has NON_AUTH_DEFAULT_MODEL from useState
           }
         }
 
@@ -338,6 +354,7 @@ export default function Home() {
           }
         }
       } catch (error) {
+        console.error("Failed to load initial data:", error)
       } finally {
         setIsLoadingUser(false)
       }
@@ -346,34 +363,32 @@ export default function Home() {
   }, [])
 
   const handleModelChange = async (newModel: ModelId) => {
-    console.log("[v0] Model change requested:", { from: selectedModel, to: newModel })
     setSelectedModel(newModel)
 
-    if (user?.id) {
-      try {
-        console.log("[v0] Saving model preference to backend")
-        const response = await fetch("/api/user/preferences", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            modelPreference: newModel === "auto" ? "auto" : "manual",
-            selectedModel: newModel === "auto" ? null : newModel,
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          console.error("[v0] Failed to save model preference:", errorData)
-          throw new Error("Failed to save preference")
-        }
-
-        console.log("[v0] Model preference saved successfully")
-      } catch (error) {
-        logger.error("Failed to update model preference", { error })
-        console.error("[v0] Error saving model preference:", error)
-        toast.error("Failed to save preference", "Your model preference couldn't be saved. It will reset on refresh.")
+    if (!user?.id) {
+      if (typeof window !== "undefined") {
+        storage.setItem(STORAGE_KEYS.MODEL_PREFERENCE, newModel)
       }
+      return
+    }
+
+    try {
+      const response = await fetch("/api/user/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          modelPreference: newModel === "auto" ? "auto" : "manual",
+          selectedModel: newModel === "auto" ? null : newModel,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to save preference")
+      }
+    } catch (error) {
+      logger.error("Failed to update model preference", { error })
+      toast.error("Failed to save preference", "Your model preference couldn't be saved. It will reset on refresh.")
     }
   }
 
@@ -712,18 +727,6 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    const handleScroll = throttle(() => {
-      // Placeholder for handleScroll logic
-    }, 100)
-
-    window.addEventListener("scroll", handleScroll, { passive: true })
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll)
-    }
-  }, [])
-
-  useEffect(() => {
     const messages = searchState.messages
     const currentMessageCount = messages.length
 
@@ -739,13 +742,14 @@ export default function Home() {
       const messageElement = messageRefs.current[latestMessage.id]
 
       if (messageElement) {
-        requestAnimationFrame(() => {
-          const scrollThreshold = 150 // pixels from bottom
-          const isNearBottom =
-            window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - scrollThreshold
+        // Check if user is near bottom before auto-scrolling
+        const scrollThreshold = 150
+        const isNearBottom =
+          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - scrollThreshold
 
-          // Only scroll if user is at the bottom
-          if (isNearBottom) {
+        // Only auto-scroll if already at bottom
+        if (isNearBottom) {
+          requestAnimationFrame(() => {
             const headerOffset = 100
             const elementPosition = messageElement.getBoundingClientRect().top
             const offsetPosition = elementPosition + window.pageYOffset - headerOffset
@@ -754,8 +758,8 @@ export default function Home() {
               top: offsetPosition,
               behavior: "smooth",
             })
-          }
-        })
+          })
+        }
       }
     }
   }, [searchState.messages])
