@@ -65,8 +65,19 @@ export const SearchResponse = memo(function SearchResponse({
   }
 
   const processTextWithCitations = (text: string) => {
+    let processedText = text.replace(/\[(?:Source\s*)?\d+(?:\s*,\s*\d+)*\]\s*$$https?:\/\/[^)]+$$/g, (match) => {
+      // Extract just the citation part, remove the URL in parentheses
+      return match.replace(/\s*$$https?:\/\/[^)]+$$/, "")
+    })
+
+    processedText = processedText.replace(/\s*$$https?:\/\/[^)]+$$/g, "")
+
+    // Clean up any empty parentheses that might be left
+    processedText = processedText.replace(/$$\s*$$/g, "")
+
+    // Then process citation patterns normally
     const citationPattern = /\[(?:Source\s*)?(\d+(?:\s*,\s*\d+)*)\]/g
-    return text.replace(citationPattern, (match, citationNums) => {
+    return processedText.replace(citationPattern, (match, citationNums) => {
       // Split by comma to handle multiple citations
       const numbers = citationNums.split(/\s*,\s*/).map((n: string) => Number.parseInt(n.trim()))
 
@@ -168,16 +179,18 @@ export const SearchResponse = memo(function SearchResponse({
                 {children}
               </blockquote>
             ),
-            a: ({ href, children }) => (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-miami-aqua hover:text-miami-aqua/80 underline decoration-miami-aqua/30 hover:decoration-miami-aqua/60 transition-colors"
-              >
-                {children}
-              </a>
-            ),
+            a: ({ href, children }) => {
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-miami-aqua hover:text-miami-aqua/80 underline decoration-miami-aqua/30 hover:decoration-miami-aqua/60 transition-colors"
+                >
+                  {children}
+                </a>
+              )
+            },
             img: ({ src, alt }) => (
               <div className="my-4 rounded-lg overflow-hidden border border-miami-aqua/30">
                 <img
@@ -208,7 +221,15 @@ export const SearchResponse = memo(function SearchResponse({
                   href={citationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center mx-0.5 px-1 py-[1px] text-[9px] font-medium rounded-full bg-miami-aqua/10 text-miami-aqua/90 hover:bg-miami-aqua/20 hover:text-miami-aqua transition-colors cursor-pointer no-underline align-middle whitespace-nowrap"
+                  className="inline-block mx-0.5 px-1.5 text-[9px] font-medium rounded-full bg-miami-aqua/10 text-miami-aqua/90 hover:bg-miami-aqua/20 hover:text-miami-aqua transition-colors cursor-pointer no-underline whitespace-nowrap align-middle"
+                  style={{
+                    height: "16px",
+                    lineHeight: "16px",
+                    minHeight: "16px",
+                    maxHeight: "16px",
+                    verticalAlign: "middle",
+                    display: "inline-block",
+                  }}
                   aria-label={`Open source: ${sourceName}`}
                   title={citation.title}
                 >
