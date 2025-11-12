@@ -137,7 +137,7 @@ export const RelatedSearches = memo(function RelatedSearches({
     if (searches.length === 0) return null
 
     return (
-      <div className="grid gap-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="grid gap-2.5 animate-in fade-in slide-in-from-top-2 duration-300 w-full max-w-full">
         {searches.map((search, index) => (
           <Button
             key={index}
@@ -150,7 +150,8 @@ export const RelatedSearches = memo(function RelatedSearches({
                      hover:bg-muted/50 hover:border-miami-aqua/50
                      transition-all duration-200
                      text-foreground/80 hover:text-foreground
-                     w-full"
+                     w-full max-w-full
+                     whitespace-normal break-words"
           >
             {search}
           </Button>
@@ -276,7 +277,8 @@ export const RelatedSearchesInline = memo(function RelatedSearchesInline({
                          hover:bg-muted/50 hover:border-miami-aqua/50
                          transition-all duration-200
                          text-foreground/80 hover:text-foreground
-                         w-full"
+                         w-full max-w-full
+                         whitespace-normal break-words"
               >
                 {search}
               </Button>
