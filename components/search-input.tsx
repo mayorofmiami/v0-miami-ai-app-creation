@@ -8,7 +8,6 @@ import ImageIcon from "@/components/icons/Image"
 import Settings from "@/components/icons/Settings"
 import Paperclip from "@/components/icons/Paperclip"
 import type { ModelId } from "@/components/model-selector"
-import { AttachmentList } from "@/components/search-input/attachment-list"
 import { SearchSuggestions } from "@/components/search-input/search-suggestions"
 import { SearchInputMenu } from "@/components/search-input/search-input-menu"
 import type { Attachment, User } from "@/types"
@@ -296,42 +295,157 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   )
 
   return (
-    <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
-      <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} />
-
-      {/* Search Form */}
+    <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative group">
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative">
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder={contentType === "image" ? "Describe the image you want to generate..." : "Ask anything..."}
-            disabled={isLoading}
-            className={`w-full px-6 py-5 pr-32 text-foreground rounded-xl border-2 ${
-              contentType === "image"
-                ? "border-miami-pink"
-                : mode === "quick"
-                  ? "border-miami-aqua"
-                  : "border-miami-pink"
-            } transition-all focus:outline-none focus:ring-0 text-lg bg-background/50 backdrop-blur-sm relative z-10 ${
-              isLoading ? "opacity-50 cursor-not-allowed" : ""
-            } placeholder:text-muted-foreground/60`}
-          />
+        {/* Floating glow effect on focus */}
+        <div
+          className={`absolute -inset-0.5 bg-gradient-to-r from-miami-aqua/20 via-miami-blue/20 to-miami-pink/20 rounded-[14px] blur-lg transition-opacity duration-500 ${
+            isFocused ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        {/* Main input container with glass effect */}
+        <div
+          className={`relative bg-background/30 backdrop-blur-xl rounded-xl border shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 ${
+            isFocused ? "border-border/40 shadow-[0_8px_40px_rgb(0,0,0,0.16)]" : "border-border/20"
+          }`}
+        >
+          {attachments.length > 0 && (
+            <div className="px-3 md:px-4 pt-2.5 md:pt-3 pb-1.5 md:pb-2">
+              <div className="flex flex-wrap gap-1.5">
+                {attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="relative group/chip flex items-center gap-1.5 px-2 py-1 bg-muted/60 backdrop-blur-sm rounded-md border border-border/30 hover:border-miami-aqua/50 transition-all"
+                  >
+                    {attachment.preview ? (
+                      <img
+                        src={attachment.preview || "/placeholder.svg"}
+                        alt={attachment.name}
+                        className="w-6 h-6 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 bg-muted-foreground/10 rounded flex items-center justify-center">
+                        <Paperclip className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    )}
+                    <span className="text-xs font-medium truncate max-w-[80px]">{attachment.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(attachment.id)}
+                      className="opacity-0 group-hover/chip:opacity-100 transition-opacity p-0.5 hover:bg-red-500/20 rounded"
+                      aria-label={`Remove ${attachment.name}`}
+                    >
+                      <XIcon className="w-3 h-3 text-red-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Input with embedded buttons */}
+          <div className="relative flex items-center">
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              placeholder={contentType === "image" ? "Describe the image you want to generate..." : "Ask anything..."}
+              disabled={isLoading}
+              className={`flex-1 px-4 md:px-5 py-3 md:py-3.5 text-base bg-transparent focus:outline-none placeholder:text-muted-foreground/60 transition-all ${
+                isLoading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            />
+
+            {/* Buttons embedded inside with better hierarchy */}
+            <div className="flex items-center gap-1 pr-1.5 md:pr-2">
+              {/* Desktop: Show all buttons */}
+              <div className="hidden md:flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handleMenuToggle}
+                  className="p-2 rounded-lg hover:bg-muted/50 transition-all hover:scale-105 active:scale-95"
+                  title="Options"
+                  aria-label="Open options menu"
+                >
+                  <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+                </button>
+
+                {contentType === "search" && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={user ? "image/*,.pdf,.txt,.csv" : "image/*"}
+                      multiple={!!user}
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      aria-label="Upload files"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading || isLoading}
+                      className="p-2 rounded-lg hover:bg-muted/50 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={user ? "Attach files (images, PDFs, documents)" : "Attach image"}
+                      aria-label="Attach files"
+                    >
+                      {isUploading ? (
+                        <div className="w-4 h-4 border-2 border-miami-aqua border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Paperclip className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Submit button - hero action with gradient */}
+              {isLoading && onCancel ? (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="p-2.5 md:p-3 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all hover:scale-105 active:scale-95"
+                  title="Cancel"
+                  aria-label="Cancel search"
+                >
+                  <XIcon className="w-5 h-5" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isLoading || !query.trim()}
+                  className={`p-2.5 md:p-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg ${
+                    contentType === "image"
+                      ? "bg-gradient-to-r from-miami-pink to-miami-purple text-white"
+                      : mode === "quick"
+                        ? "bg-gradient-to-r from-miami-aqua to-miami-blue text-miami-dark"
+                        : "bg-gradient-to-r from-miami-pink to-miami-purple text-white"
+                  }`}
+                  aria-label={contentType === "image" ? "Generate image" : "Search"}
+                >
+                  {contentType === "image" ? <ImageIcon className="w-5 h-5" /> : <SearchIcon className="w-5 h-5" />}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-20">
-          {/* Settings Menu Button */}
+      </form>
+
+      <div className="md:hidden flex items-center justify-between mt-2 px-1">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleMenuToggle}
-            className="p-3 rounded-lg bg-background/80 hover:bg-muted transition-all border border-border/50 hover:border-miami-aqua/50"
-            title="Options"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-muted/50 transition-all text-xs text-muted-foreground"
+            aria-label="Open options menu"
           >
-            <Settings className="w-5 h-5 text-muted-foreground hover:text-miami-aqua transition-colors" />
+            <Settings className="w-3.5 h-3.5" />
+            <span>Options</span>
           </button>
 
           {contentType === "search" && (
@@ -343,50 +457,26 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                 multiple={!!user}
                 onChange={handleFileSelect}
                 className="hidden"
+                aria-label="Upload files"
               />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading || isLoading}
-                className="p-3 rounded-lg bg-background/80 hover:bg-muted transition-all border border-border/50 hover:border-miami-aqua/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={user ? "Attach files (images, PDFs, documents)" : "Attach image"}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-muted/50 transition-all text-xs text-muted-foreground disabled:opacity-50"
+                aria-label="Attach files"
               >
                 {isUploading ? (
-                  <div className="w-5 h-5 border-2 border-miami-aqua border-t-transparent rounded-full animate-spin" />
+                  <div className="w-3.5 h-3.5 border-2 border-miami-aqua border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  <Paperclip className="w-5 h-5 text-muted-foreground hover:text-miami-aqua transition-colors" />
+                  <Paperclip className="w-3.5 h-3.5" />
                 )}
+                <span>Attach</span>
               </button>
             </>
           )}
-
-          {/* Submit Button */}
-          {isLoading && onCancel ? (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="p-3.5 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all"
-              title="Cancel"
-            >
-              <XIcon className="w-5 h-5" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={isLoading || !query.trim()}
-              className={`p-3.5 rounded-lg transition-all ${
-                contentType === "image"
-                  ? "bg-miami-pink hover:bg-miami-pink/80"
-                  : mode === "quick"
-                    ? "bg-miami-aqua hover:bg-miami-aqua/80"
-                    : "bg-miami-pink hover:bg-miami-pink/80"
-              } text-miami-dark disabled:opacity-50 disabled:cursor-not-allowed shadow-lg`}
-            >
-              {contentType === "image" ? <ImageIcon className="w-5 h-5" /> : <SearchIcon className="w-5 h-5" />}
-            </button>
-          )}
         </div>
-      </form>
+      </div>
 
       {isMenuOpen && (
         <SearchInputMenu
