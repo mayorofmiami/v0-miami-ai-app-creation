@@ -656,3 +656,30 @@ html {
 .prose-miami {
   font-variant-emoji: emoji;
 }
+
+/* Added gradient animation utilities for search bar */
+.bg-size-200 {
+  background-size: 200% 200%;
+}
+
+.bg-pos-0 {
+  background-position: 0% 50%;
+}
+
+.bg-pos-100 {
+  background-position: 100% 50%;
+}
+
+/* Enhanced gradient animation for buttons */
+@keyframes gradient-slide {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.hover\:bg-pos-100:hover {
+  animation: gradient-slide 0.3s ease forwards;
+}

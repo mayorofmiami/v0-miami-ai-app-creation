@@ -295,48 +295,42 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   )
 
   return (
-    <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative group">
+    <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
       <form onSubmit={handleSubmit} className="relative">
-        {/* Floating glow effect on focus */}
         <div
-          className={`absolute -inset-0.5 bg-gradient-to-r from-miami-aqua/20 via-miami-blue/20 to-miami-pink/20 rounded-[14px] blur-lg transition-opacity duration-500 ${
-            isFocused ? "opacity-100" : "opacity-0"
-          }`}
-        />
-
-        {/* Main input container with glass effect */}
-        <div
-          className={`relative bg-background/30 backdrop-blur-xl rounded-xl border shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 ${
-            isFocused ? "border-border/40 shadow-[0_8px_40px_rgb(0,0,0,0.16)]" : "border-border/20"
+          className={`relative bg-background/95 backdrop-blur-md rounded-full transition-all duration-200 ${
+            isFocused
+              ? "shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-border"
+              : "shadow-[0_1px_3px_rgba(0,0,0,0.06)] border border-border/50"
           }`}
         >
           {attachments.length > 0 && (
-            <div className="px-3 md:px-4 pt-2.5 md:pt-3 pb-1.5 md:pb-2">
-              <div className="flex flex-wrap gap-1.5">
+            <div className="absolute -top-12 left-0 right-0 px-2 pb-2">
+              <div className="flex flex-wrap gap-2">
                 {attachments.map((attachment) => (
                   <div
                     key={attachment.id}
-                    className="relative group/chip flex items-center gap-1.5 px-2 py-1 bg-muted/60 backdrop-blur-sm rounded-md border border-border/30 hover:border-miami-aqua/50 transition-all"
+                    className="group/chip flex items-center gap-1.5 pl-2 pr-1 py-1 bg-muted/80 backdrop-blur-sm rounded-full border border-border/40 hover:border-foreground/20 transition-all"
                   >
                     {attachment.preview ? (
                       <img
                         src={attachment.preview || "/placeholder.svg"}
                         alt={attachment.name}
-                        className="w-6 h-6 object-cover rounded"
+                        className="w-5 h-5 object-cover rounded-full"
                       />
                     ) : (
-                      <div className="w-6 h-6 bg-muted-foreground/10 rounded flex items-center justify-center">
-                        <Paperclip className="w-3 h-3 text-muted-foreground" />
+                      <div className="w-5 h-5 bg-muted-foreground/10 rounded-full flex items-center justify-center">
+                        <Paperclip className="w-3 h-3 text-muted-foreground/60" />
                       </div>
                     )}
-                    <span className="text-xs font-medium truncate max-w-[80px]">{attachment.name}</span>
+                    <span className="text-xs text-foreground/70 truncate max-w-[100px]">{attachment.name}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoveAttachment(attachment.id)}
-                      className="opacity-0 group-hover/chip:opacity-100 transition-opacity p-0.5 hover:bg-red-500/20 rounded"
+                      className="opacity-0 group-hover/chip:opacity-100 transition-opacity p-0.5 hover:bg-background rounded-full"
                       aria-label={`Remove ${attachment.name}`}
                     >
-                      <XIcon className="w-3 h-3 text-red-500" />
+                      <XIcon className="w-3 h-3 text-muted-foreground" />
                     </button>
                   </div>
                 ))}
@@ -344,8 +338,15 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             </div>
           )}
 
-          {/* Input with embedded buttons */}
-          <div className="relative flex items-center">
+          <div className="flex items-center gap-2 pl-4 pr-2 py-3 md:py-3.5">
+            <div className="flex-shrink-0">
+              {contentType === "image" ? (
+                <ImageIcon className="w-5 h-5 text-muted-foreground/60" />
+              ) : (
+                <SearchIcon className="w-5 h-5 text-muted-foreground/60" />
+              )}
+            </div>
+
             <input
               ref={inputRef}
               type="text"
@@ -354,62 +355,55 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
               onFocus={handleFocus}
               onBlur={handleBlur}
               onKeyDown={handleKeyDown}
-              placeholder={contentType === "image" ? "Describe the image you want to generate..." : "Ask anything..."}
+              placeholder={contentType === "image" ? "Describe an image..." : "Ask anything..."}
               disabled={isLoading}
-              className={`flex-1 px-4 md:px-5 py-3 md:py-3.5 text-base bg-transparent focus:outline-none placeholder:text-muted-foreground/60 transition-all ${
-                isLoading ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className="flex-1 text-base bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
             />
 
-            {/* Buttons embedded inside with better hierarchy */}
-            <div className="flex items-center gap-1 pr-1.5 md:pr-2">
-              {/* Desktop: Show all buttons */}
-              <div className="hidden md:flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={handleMenuToggle}
-                  className="p-2 rounded-lg hover:bg-muted/50 transition-all hover:scale-105 active:scale-95"
-                  title="Options"
-                  aria-label="Open options menu"
-                >
-                  <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
-                </button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleMenuToggle}
+                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+                title="Options"
+                aria-label="Open options menu"
+              >
+                <Settings className="w-[18px] h-[18px]" />
+              </button>
 
-                {contentType === "search" && (
-                  <>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept={user ? "image/*,.pdf,.txt,.csv" : "image/*"}
-                      multiple={!!user}
-                      onChange={handleFileSelect}
-                      className="hidden"
-                      aria-label="Upload files"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading || isLoading}
-                      className="p-2 rounded-lg hover:bg-muted/50 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={user ? "Attach files (images, PDFs, documents)" : "Attach image"}
-                      aria-label="Attach files"
-                    >
-                      {isUploading ? (
-                        <div className="w-4 h-4 border-2 border-miami-aqua border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Paperclip className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
-                      )}
-                    </button>
-                  </>
-                )}
-              </div>
+              {contentType === "search" && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={user ? "image/*,.pdf,.txt,.csv" : "image/*"}
+                    multiple={!!user}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    aria-label="Upload files"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || isLoading}
+                    className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all disabled:opacity-40"
+                    title={user ? "Attach files" : "Attach image"}
+                    aria-label="Attach files"
+                  >
+                    {isUploading ? (
+                      <div className="w-[18px] h-[18px] border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Paperclip className="w-[18px] h-[18px]" />
+                    )}
+                  </button>
+                </>
+              )}
 
-              {/* Submit button - hero action with gradient */}
               {isLoading && onCancel ? (
                 <button
                   type="button"
                   onClick={onCancel}
-                  className="p-2.5 md:p-3 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all hover:scale-105 active:scale-95"
+                  className="p-2 rounded-full bg-muted/80 text-foreground hover:bg-muted transition-all active:scale-95"
                   title="Cancel"
                   aria-label="Cancel search"
                 >
@@ -419,16 +413,18 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                 <button
                   type="submit"
                   disabled={isLoading || !query.trim()}
-                  className={`p-2.5 md:p-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg ${
-                    contentType === "image"
-                      ? "bg-gradient-to-r from-miami-pink to-miami-purple text-white"
-                      : mode === "quick"
-                        ? "bg-gradient-to-r from-miami-aqua to-miami-blue text-miami-dark"
-                        : "bg-gradient-to-r from-miami-pink to-miami-purple text-white"
+                  className={`p-2 rounded-full transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${
+                    query.trim()
+                      ? contentType === "image"
+                        ? "bg-gradient-to-br from-miami-pink to-miami-purple text-white shadow-sm"
+                        : mode === "quick"
+                          ? "bg-gradient-to-br from-miami-aqua to-miami-blue text-miami-dark shadow-sm"
+                          : "bg-gradient-to-br from-miami-pink to-miami-purple text-white shadow-sm"
+                      : "bg-muted/50 text-muted-foreground"
                   }`}
                   aria-label={contentType === "image" ? "Generate image" : "Search"}
                 >
-                  {contentType === "image" ? <ImageIcon className="w-5 h-5" /> : <SearchIcon className="w-5 h-5" />}
+                  <SearchIcon className="w-5 h-5" />
                 </button>
               )}
             </div>
@@ -436,48 +432,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         </div>
       </form>
 
-      <div className="md:hidden flex items-center justify-between mt-2 px-1">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleMenuToggle}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-muted/50 transition-all text-xs text-muted-foreground"
-            aria-label="Open options menu"
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Options</span>
-          </button>
-
-          {contentType === "search" && (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={user ? "image/*,.pdf,.txt,.csv" : "image/*"}
-                multiple={!!user}
-                onChange={handleFileSelect}
-                className="hidden"
-                aria-label="Upload files"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || isLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-muted/50 transition-all text-xs text-muted-foreground disabled:opacity-50"
-                aria-label="Attach files"
-              >
-                {isUploading ? (
-                  <div className="w-3.5 h-3.5 border-2 border-miami-aqua border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Paperclip className="w-3.5 h-3.5" />
-                )}
-                <span>Attach</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
+      {/* Dropdowns */}
       {isMenuOpen && (
         <SearchInputMenu
           contentType={contentType}
@@ -496,17 +451,16 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         <SearchSuggestions suggestions={suggestions} selectedIndex={selectedIndex} onSelect={handleSuggestionClick} />
       )}
 
-      {/* Rate limit messages */}
       {contentType === "image" && !isLoading && (
-        <p className="text-sm text-muted-foreground text-center mt-3">
-          {user ? "50 images per day" : "3 free images per day • Sign up for 50/day"}
+        <p className="text-xs text-muted-foreground/60 text-center mt-2.5">
+          {user ? "50 images per day" : "3 free images · Sign up for 50/day"}
         </p>
       )}
       {contentType === "search" && attachments.length > 0 && !isLoading && (
-        <p className="text-sm text-muted-foreground text-center mt-3">
+        <p className="text-xs text-muted-foreground/60 text-center mt-2.5">
           {user
-            ? `${attachments.length} of 5 attachments • 50 per day`
-            : `${attachments.length} of 1 attachment • 5 per day • Sign up for more`}
+            ? `${attachments.length}/5 attachments · 50 per day`
+            : `${attachments.length}/1 attachment · 5 per day · Sign up for more`}
         </p>
       )}
     </div>
