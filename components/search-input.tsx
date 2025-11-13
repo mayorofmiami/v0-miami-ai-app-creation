@@ -2,11 +2,10 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback, useMemo } from "react"
-import SearchIcon from "@/components/icons/Search"
 import XIcon from "@/components/icons/X"
-import ImageIcon from "@/components/icons/Image"
 import Settings from "@/components/icons/Settings"
 import Paperclip from "@/components/icons/Paperclip"
+import { ArrowRight, Sparkles, Zap } from "lucide-react"
 import type { ModelId } from "@/components/model-selector"
 import { SearchSuggestions } from "@/components/search-input/search-suggestions"
 import { SearchInputMenu } from "@/components/search-input/search-input-menu"
@@ -295,144 +294,228 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   )
 
   return (
-    <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
-      <form onSubmit={handleSubmit} className="relative">
-        <div
-          className={`relative bg-background/95 backdrop-blur-md rounded-full transition-all duration-200 ${
-            isFocused
-              ? "shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-border"
-              : "shadow-[0_1px_3px_rgba(0,0,0,0.06)] border border-border/50"
-          }`}
-        >
-          {attachments.length > 0 && (
-            <div className="absolute -top-12 left-0 right-0 px-2 pb-2">
-              <div className="flex flex-wrap gap-2">
-                {attachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className="group/chip flex items-center gap-1.5 pl-2 pr-1 py-1 bg-muted/80 backdrop-blur-sm rounded-full border border-border/40 hover:border-foreground/20 transition-all"
-                  >
-                    {attachment.preview ? (
-                      <img
-                        src={attachment.preview || "/placeholder.svg"}
-                        alt={attachment.name}
-                        className="w-5 h-5 object-cover rounded-full"
-                      />
-                    ) : (
-                      <div className="w-5 h-5 bg-muted-foreground/10 rounded-full flex items-center justify-center">
-                        <Paperclip className="w-3 h-3 text-muted-foreground/60" />
-                      </div>
-                    )}
-                    <span className="text-xs text-foreground/70 truncate max-w-[100px]">{attachment.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAttachment(attachment.id)}
-                      className="opacity-0 group-hover/chip:opacity-100 transition-opacity p-0.5 hover:bg-background rounded-full"
-                      aria-label={`Remove ${attachment.name}`}
-                    >
-                      <XIcon className="w-3 h-3 text-muted-foreground" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 pl-4 pr-2 py-3 md:py-3.5">
-            <div className="flex-shrink-0">
-              {contentType === "image" ? (
-                <ImageIcon className="w-5 h-5 text-muted-foreground/60" />
-              ) : (
-                <SearchIcon className="w-5 h-5 text-muted-foreground/60" />
-              )}
-            </div>
-
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              onKeyDown={handleKeyDown}
-              placeholder={contentType === "image" ? "Describe an image..." : "Ask anything..."}
-              disabled={isLoading}
-              className="flex-1 text-base bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/50 disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <button
-                type="button"
-                onClick={handleMenuToggle}
-                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-                title="Options"
-                aria-label="Open options menu"
+    <div ref={wrapperRef} className="w-full max-w-4xl mx-auto relative px-4 md:px-0">
+      <div
+        className={`relative transition-all duration-500 ease-out ${
+          isFocused
+            ? "transform scale-[1.02]"
+            : query.trim()
+              ? "transform scale-100"
+              : "transform scale-[0.98] opacity-90"
+        }`}
+      >
+        {attachments.length > 0 && (
+          <div className="absolute -top-12 left-0 right-0 flex items-center justify-center gap-2 animate-in slide-in-from-bottom-2 duration-300">
+            {attachments.map((attachment, idx) => (
+              <div
+                key={attachment.id}
+                style={{ animationDelay: `${idx * 50}ms` }}
+                className="group flex items-center gap-1.5 px-2.5 py-1 bg-background/80 backdrop-blur-xl border border-border/40 rounded-full hover:border-miami-aqua/60 transition-all duration-200 shadow-sm animate-in zoom-in-95"
               >
-                <Settings className="w-[18px] h-[18px]" />
-              </button>
-
-              {contentType === "search" && (
-                <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept={user ? "image/*,.pdf,.txt,.csv" : "image/*"}
-                    multiple={!!user}
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    aria-label="Upload files"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading || isLoading}
-                    className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all disabled:opacity-40"
-                    title={user ? "Attach files" : "Attach image"}
-                    aria-label="Attach files"
-                  >
-                    {isUploading ? (
-                      <div className="w-[18px] h-[18px] border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Paperclip className="w-[18px] h-[18px]" />
-                    )}
-                  </button>
-                </>
-              )}
-
-              {isLoading && onCancel ? (
+                {attachment.preview ? (
+                  <div className="w-4 h-4 rounded-full overflow-hidden">
+                    <img src={attachment.preview || "/placeholder.svg"} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <Paperclip className="w-3 h-3 text-foreground/60" />
+                )}
+                <span className="text-xs text-foreground/80 max-w-[80px] truncate">{attachment.name}</span>
                 <button
                   type="button"
-                  onClick={onCancel}
-                  className="p-2 rounded-full bg-muted/80 text-foreground hover:bg-muted transition-all active:scale-95"
-                  title="Cancel"
-                  aria-label="Cancel search"
+                  onClick={() => handleRemoveAttachment(attachment.id)}
+                  className="p-0.5 hover:bg-muted/60 rounded-full transition-colors"
                 >
-                  <XIcon className="w-5 h-5" />
+                  <XIcon className="w-2.5 h-2.5" />
                 </button>
-              ) : (
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="relative">
+          <div
+            className={`absolute -inset-[1px] rounded-3xl transition-all duration-700 ${
+              isFocused && query.trim()
+                ? contentType === "image"
+                  ? "bg-gradient-to-r from-miami-pink/20 via-miami-purple/20 to-miami-pink/20 animate-gradient blur-xl opacity-60"
+                  : mode === "quick"
+                    ? "bg-gradient-to-r from-miami-aqua/20 via-miami-blue/20 to-miami-aqua/20 animate-gradient blur-xl opacity-60"
+                    : "bg-gradient-to-r from-miami-purple/20 via-miami-pink/20 to-miami-purple/20 animate-gradient blur-xl opacity-60"
+                : "opacity-0"
+            }`}
+          />
+
+          <div
+            className={`relative bg-background/95 backdrop-blur-2xl border rounded-3xl transition-all duration-300 overflow-hidden ${
+              isFocused ? "border-border/60 shadow-2xl shadow-black/5" : "border-border/20 shadow-lg"
+            }`}
+          >
+            <div
+              className={`absolute top-0 left-0 right-0 h-px transition-all duration-500 ${
+                isFocused
+                  ? contentType === "image"
+                    ? "bg-gradient-to-r from-transparent via-miami-pink/40 to-transparent"
+                    : mode === "quick"
+                      ? "bg-gradient-to-r from-transparent via-miami-aqua/40 to-transparent"
+                      : "bg-gradient-to-r from-transparent via-miami-purple/40 to-transparent"
+                  : "opacity-0"
+              }`}
+            />
+
+            <div className="flex items-center gap-3 px-6 py-4">
+              <div className="flex-shrink-0">
+                {contentType === "image" ? (
+                  <Sparkles
+                    className={`w-5 h-5 transition-all duration-300 ${
+                      isFocused ? "text-miami-pink" : "text-muted-foreground/40"
+                    }`}
+                  />
+                ) : mode === "quick" ? (
+                  <Zap
+                    className={`w-5 h-5 transition-all duration-300 ${
+                      isFocused ? "text-miami-aqua" : "text-muted-foreground/40"
+                    }`}
+                  />
+                ) : (
+                  <Sparkles
+                    className={`w-5 h-5 transition-all duration-300 ${
+                      isFocused ? "text-miami-purple" : "text-muted-foreground/40"
+                    }`}
+                  />
+                )}
+              </div>
+
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  contentType === "image"
+                    ? "Imagine something beautiful..."
+                    : mode === "quick"
+                      ? "Ask me anything..."
+                      : "Let's explore in depth..."
+                }
+                disabled={isLoading}
+                className="flex-1 text-base md:text-lg bg-transparent border-none outline-none placeholder:text-muted-foreground/30 disabled:opacity-50 text-foreground font-light"
+              />
+
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {contentType === "search" && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={user ? "image/*,.pdf,.txt,.csv" : "image/*"}
+                      multiple={!!user}
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading || isLoading}
+                      className={`p-2.5 rounded-xl transition-all duration-200 ${
+                        isUploading
+                          ? "bg-muted/50"
+                          : isFocused
+                            ? "hover:bg-muted/60 text-foreground/60"
+                            : "text-muted-foreground/30 hover:text-foreground/50"
+                      }`}
+                    >
+                      {isUploading ? (
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Paperclip className="w-4 h-4" />
+                      )}
+                    </button>
+                  </>
+                )}
+
                 <button
-                  type="submit"
-                  disabled={isLoading || !query.trim()}
-                  className={`p-2 rounded-full transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${
-                    query.trim()
-                      ? contentType === "image"
-                        ? "bg-gradient-to-br from-miami-pink to-miami-purple text-white shadow-sm"
-                        : mode === "quick"
-                          ? "bg-gradient-to-br from-miami-aqua to-miami-blue text-miami-dark shadow-sm"
-                          : "bg-gradient-to-br from-miami-pink to-miami-purple text-white shadow-sm"
-                      : "bg-muted/50 text-muted-foreground"
+                  type="button"
+                  onClick={handleMenuToggle}
+                  className={`p-2.5 rounded-xl transition-all duration-200 ${
+                    isMenuOpen
+                      ? "bg-muted text-foreground"
+                      : isFocused
+                        ? "hover:bg-muted/60 text-foreground/60"
+                        : "text-muted-foreground/30 hover:text-foreground/50"
                   }`}
-                  aria-label={contentType === "image" ? "Generate image" : "Search"}
                 >
-                  <SearchIcon className="w-5 h-5" />
+                  <Settings className="w-4 h-4" />
                 </button>
-              )}
+
+                {isLoading && onCancel ? (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="px-4 py-2.5 rounded-xl bg-muted/80 hover:bg-muted text-foreground transition-all duration-200 font-medium text-sm"
+                  >
+                    Stop
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isLoading || !query.trim()}
+                    className={`group flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all duration-300 font-medium text-sm ${
+                      query.trim()
+                        ? contentType === "image"
+                          ? "bg-gradient-to-r from-miami-pink to-miami-purple hover:shadow-lg hover:shadow-miami-pink/20 text-white hover:scale-105 active:scale-95"
+                          : mode === "quick"
+                            ? "bg-gradient-to-r from-miami-aqua to-miami-blue hover:shadow-lg hover:shadow-miami-aqua/20 text-miami-dark hover:scale-105 active:scale-95"
+                            : "bg-gradient-to-r from-miami-purple to-miami-pink hover:shadow-lg hover:shadow-miami-purple/20 text-white hover:scale-105 active:scale-95"
+                        : "bg-muted/30 text-muted-foreground/30 cursor-not-allowed"
+                    }`}
+                  >
+                    <span>{contentType === "image" ? "Create" : "Go"}</span>
+                    <ArrowRight
+                      className={`w-4 h-4 transition-transform duration-300 ${query.trim() ? "group-hover:translate-x-0.5" : ""}`}
+                    />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
 
-      {/* Dropdowns */}
+        {!isLoading && (mode || contentType === "image") && (
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 animate-in fade-in slide-in-from-top-1 duration-500">
+            <div
+              className={`flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-xl border text-xs font-medium ${
+                contentType === "image"
+                  ? "bg-miami-pink/5 border-miami-pink/20 text-miami-pink"
+                  : mode === "quick"
+                    ? "bg-miami-aqua/5 border-miami-aqua/20 text-miami-aqua"
+                    : "bg-miami-purple/5 border-miami-purple/20 text-miami-purple"
+              }`}
+            >
+              {contentType === "image" ? (
+                <>
+                  <Sparkles className="w-3 h-3" />
+                  <span>{user ? "50 daily generations" : "3 free trials"}</span>
+                </>
+              ) : mode === "quick" ? (
+                <>
+                  <Zap className="w-3 h-3" />
+                  <span>Quick mode · Instant answers</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3 h-3" />
+                  <span>Deep mode · Comprehensive</span>
+                </>
+              )}
+              {attachments.length > 0 && <span>· {attachments.length} attached</span>}
+            </div>
+          </div>
+        )}
+      </div>
+
       {isMenuOpen && (
         <SearchInputMenu
           contentType={contentType}
@@ -449,19 +532,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
       {showSuggestions && query.length >= 2 && (
         <SearchSuggestions suggestions={suggestions} selectedIndex={selectedIndex} onSelect={handleSuggestionClick} />
-      )}
-
-      {contentType === "image" && !isLoading && (
-        <p className="text-xs text-muted-foreground/60 text-center mt-2.5">
-          {user ? "50 images per day" : "3 free images · Sign up for 50/day"}
-        </p>
-      )}
-      {contentType === "search" && attachments.length > 0 && !isLoading && (
-        <p className="text-xs text-muted-foreground/60 text-center mt-2.5">
-          {user
-            ? `${attachments.length}/5 attachments · 50 per day`
-            : `${attachments.length}/1 attachment · 5 per day · Sign up for more`}
-        </p>
       )}
     </div>
   )
