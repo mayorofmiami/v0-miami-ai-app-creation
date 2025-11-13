@@ -267,13 +267,20 @@ export const SearchResponse = memo(function SearchResponse({
 
       {(actions || modelBadge || safeCitations.length > 0 || relatedButton) && (
         <div className="space-y-4">
-          <div className="border-t border-border/30 pt-4">
+          <div className="pt-4">
+            {modelBadge ? (
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex-1 h-px bg-border/30" />
+                {modelBadge}
+                <div className="flex-1 h-px bg-border/30" />
+              </div>
+            ) : (
+              <div className="border-t border-border/30 mb-4" />
+            )}
+
             <div className="flex items-center justify-between gap-4">
               {/* Left: Action buttons */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {actions}
-                {modelBadge}
-              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>
 
               {/* Right: Sources button + Related button */}
               <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
