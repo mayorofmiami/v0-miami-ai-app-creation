@@ -34,6 +34,8 @@ export const SearchResponse = memo(function SearchResponse({
   const [displayedText, setDisplayedText] = useState("")
   const [isSourcesExpanded, setIsSourcesExpanded] = useState(false)
   const [showTypingIndicator, setShowTypingIndicator] = useState(false)
+  const [showModelBadge, setShowModelBadge] = useState(false)
+  const [showModelInfo, setShowModelInfo] = useState(false)
 
   const safeCitations = citations || []
 
@@ -265,18 +267,13 @@ export const SearchResponse = memo(function SearchResponse({
 
       {(actions || modelBadge || safeCitations.length > 0 || relatedButton) && (
         <div className="space-y-4">
-          {modelBadge && (
-            <div className="flex items-center gap-4 px-4">
-              <div className="flex-1 h-px bg-border/30" />
-              <div className="text-xs text-muted-foreground/70 font-medium">{modelBadge}</div>
-              <div className="flex-1 h-px bg-border/30" />
-            </div>
-          )}
-
           <div className="border-t border-border/30 pt-4">
             <div className="flex items-center justify-between gap-4">
               {/* Left: Action buttons */}
-              <div className="flex-shrink-0">{actions}</div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {actions}
+                {modelBadge}
+              </div>
 
               {/* Right: Sources button + Related button */}
               <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
@@ -292,7 +289,7 @@ export const SearchResponse = memo(function SearchResponse({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                       />
                     </svg>
                     <span>Sources</span>
