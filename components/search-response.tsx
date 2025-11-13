@@ -144,7 +144,7 @@ export const SearchResponse = memo(function SearchResponse({
               </h3>
             ),
             p: ({ children }) => (
-              <p className="text-sm md:text-base text-foreground leading-relaxed mb-3 md:mb-5 last:mb-0 text-pretty">
+              <p className="text-base font-medium text-foreground leading-relaxed mb-3 md:mb-5 last:mb-0 text-pretty">
                 {children}
               </p>
             ),
@@ -156,7 +156,7 @@ export const SearchResponse = memo(function SearchResponse({
                 {children}
               </ol>
             ),
-            li: ({ children }) => <li className="text-sm md:text-base text-foreground leading-relaxed">{children}</li>,
+            li: ({ children }) => <li className="text-base font-medium text-foreground leading-relaxed">{children}</li>,
             table: ({ children }) => (
               <div className="overflow-x-auto mb-4">
                 <table className="min-w-full border-collapse border border-miami-aqua/30 rounded-lg overflow-hidden">
