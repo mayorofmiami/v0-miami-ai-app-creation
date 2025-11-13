@@ -742,12 +742,10 @@ export default function Home() {
       const messageElement = messageRefs.current[latestMessage.id]
 
       if (messageElement) {
-        // Check if user is near bottom before auto-scrolling
         const scrollThreshold = 150
         const isNearBottom =
           window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - scrollThreshold
 
-        // Only auto-scroll if already at bottom
         if (isNearBottom) {
           requestAnimationFrame(() => {
             const headerOffset = 100

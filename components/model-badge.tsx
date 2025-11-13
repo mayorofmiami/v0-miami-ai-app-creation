@@ -20,5 +20,5 @@ function getModelName(model: string) {
 export function ModelBadge({ model, className }: ModelBadgeProps) {
   const displayName = getModelName(model)
 
-  return <span className={`text-xs text-muted-foreground/70 ${className || ""}`}>{displayName}</span>
+  return <span className={`text-[10px] md:text-xs text-muted-foreground/70 ${className || ""}`}>{displayName}</span>
 }
