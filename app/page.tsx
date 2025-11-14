@@ -23,6 +23,8 @@ import { logger } from "@/lib/logger"
 import { ConversationView } from "@/components/search-page/conversation-view"
 import { SearchFormContainer } from "@/components/search-page/search-form-container"
 import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
+import Link from "next/link"
+import { Logo } from "@/components/logo"
 
 const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
@@ -811,95 +813,90 @@ export default function Home() {
         onToggleBookmarks={handleToggleBookmarks}
       />
 
-      <CollapsibleSidebar
-        user={user}
-        isLoadingUser={isLoadingUser}
-        recentSearches={recentSearches}
-        onNewChat={handleNewChat}
-        onSearchSelect={(search) => handleSearch(search, searchState.mode)}
-        onToggleHistory={handleToggleHistory}
-        onToggleBookmarks={handleToggleBookmarks}
-        onSelectThread={handleSelectThread}
-        onLogout={handleLogout}
-        isCollapsed={uiState.isSidebarCollapsed}
-        setIsCollapsed={(collapsed) => setUIState((prev) => ({ ...prev, isSidebarCollapsed: collapsed }))}
-        shouldLoadThreads={uiState.sidebarLoaded}
-      />
-
-      <div
-        className={`min-h-screen flex flex-col transition-all duration-300 ${uiState.isSidebarCollapsed ? "md:ml-16" : "md:ml-64"}`}
-      >
-        {searchState.hasSearched && (
-          <div className="fixed inset-x-0 top-0 h-26 md:h-32 bg-gradient-to-b from-background via-background to-transparent pointer-events-none z-40" />
-        )}
-
-        <PageHeader
-          hasSearched={searchState.hasSearched}
-          isAuthenticated={!!user}
-          isSidebarCollapsed={uiState.isSidebarCollapsed}
-          isDrawerOpen={uiState.isDrawerOpen}
-          onOpenChange={(open) => setUIState((prev) => ({ ...prev, isDrawerOpen: open }))}
-          isAdmin={isAdmin}
-          recentSearches={recentSearches}
-          bookmarks={bookmarks}
+      {user && (
+        <CollapsibleSidebar
           user={user}
           isLoadingUser={isLoadingUser}
-          theme={theme || "dark"}
-          setTheme={setTheme}
-          handleNewChat={handleNewChat}
-          handleToggleHistory={handleToggleHistory}
-          handleToggleBookmarks={handleToggleBookmarks}
-          handleSearch={handleSearchOrGenerate}
-          searchMode={searchState.mode}
+          recentSearches={recentSearches}
+          onNewChat={handleNewChat}
+          onSearchSelect={(search) => handleSearch(search, searchState.mode)}
+          onToggleHistory={handleToggleHistory}
+          onToggleBookmarks={handleToggleBookmarks}
+          onSelectThread={handleSelectThread}
+          onLogout={handleLogout}
+          isCollapsed={uiState.isSidebarCollapsed}
+          setIsCollapsed={(collapsed) => setUIState((prev) => ({ ...prev, isSidebarCollapsed: collapsed }))}
+          shouldLoadThreads={uiState.sidebarLoaded}
         />
+      )}
+
+      <div
+        className={`min-h-screen flex flex-col transition-all duration-300 ${user && !searchState.hasSearched ? (uiState.isSidebarCollapsed ? "md:ml-16" : "md:ml-64") : ""}`}
+      >
+        {(user || searchState.hasSearched) && (
+          <>
+            {searchState.hasSearched && (
+              <div className="fixed inset-x-0 top-0 h-26 md:h-32 bg-gradient-to-b from-background via-background to-transparent pointer-events-none z-40" />
+            )}
+
+            <PageHeader
+              hasSearched={searchState.hasSearched}
+              isAuthenticated={!!user}
+              isSidebarCollapsed={uiState.isSidebarCollapsed}
+              isDrawerOpen={uiState.isDrawerOpen}
+              onOpenChange={(open) => setUIState((prev) => ({ ...prev, isDrawerOpen: open }))}
+              isAdmin={isAdmin}
+              recentSearches={recentSearches}
+              bookmarks={bookmarks}
+              user={user}
+              isLoadingUser={isLoadingUser}
+              theme={theme || "dark"}
+              setTheme={setTheme}
+              handleNewChat={handleNewChat}
+              handleToggleHistory={handleToggleHistory}
+              handleToggleBookmarks={handleToggleBookmarks}
+              handleSearch={handleSearchOrGenerate}
+              searchMode={searchState.mode}
+            />
+          </>
+        )}
 
         <main
           id="main-content"
-          className={`flex-1 container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 max-w-full overflow-x-hidden ${searchState.hasSearched ? "pb-36 md:pb-32 pt-20 md:pt-24" : user ? "pt-20 md:pt-24" : ""}`}
+          className={`flex-1 ${user || searchState.hasSearched ? "container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 max-w-full overflow-x-hidden" : ""} ${searchState.hasSearched && user ? "pb-36 md:pb-32 pt-20 md:pt-24" : user && !searchState.hasSearched ? "pt-20 md:pt-24" : ""}`}
         >
           {!searchState.hasSearched ? (
             <>
               {!user && (
-                <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] space-y-8 md:space-y-8 animate-in fade-in duration-700 justify-center px-2">
-                  <div className="text-center">
-                    <div className="flex justify-center">
-                      <Image
-                        src="/miami-ai-logo.png"
-                        alt="MIAMI.AI"
-                        width={320}
-                        height={64}
-                        className="neon-glow max-w-full h-auto w-72 md:w-6/12"
-                        sizes="(max-width: 768px) 288px, 384px"
-                        priority
-                      />
-                    </div>
+                <div className="flex flex-col items-center justify-center min-h-screen px-4">
+                  <div className="absolute top-12">
+                    <Logo className="w-48" />
                   </div>
 
-                  <div className="w-full max-w-3xl px-2 md:px-4 space-y-6 md:space-y-6">
-                    <div className="flex items-end gap-3">
-                      <div className="flex-1">
-                        <SearchInput
-                          ref={searchInputRef}
-                          onSearch={handleSearchOrGenerate}
-                          isLoading={searchState.isLoading}
-                          mode={searchState.mode}
-                          onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-                          onCancel={handleCancelSearch}
-                          recentSearches={recentSearches}
-                          user={user}
-                          selectedModel={selectedModel}
-                          onModelChange={handleModelChange}
-                          onHistoryClick={handleToggleHistory}
-                          contentType={searchState.contentType}
-                          onContentTypeChange={handleContentTypeChange}
-                        />
-                      </div>
-                    </div>
-
-                    <ExampleQueries
-                      onQueryClick={(query) => handleSearchOrGenerate(query, searchState.mode)}
-                      variant="default"
+                  <div className="w-full max-w-2xl">
+                    <SearchInput
+                      ref={searchInputRef}
+                      onSearch={handleSearchOrGenerate}
+                      isLoading={searchState.isLoading}
+                      mode={searchState.mode}
+                      onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+                      onCancel={handleCancelSearch}
+                      recentSearches={recentSearches}
+                      user={user}
+                      selectedModel={selectedModel}
+                      onModelChange={handleModelChange}
+                      onHistoryClick={handleToggleHistory}
+                      contentType={searchState.contentType}
+                      onContentTypeChange={handleContentTypeChange}
                     />
+                  </div>
+
+                  <div className="absolute bottom-12">
+                    <Link href="/login">
+                      <button className="px-8 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-100 transition-all text-lg">
+                        LOGIN / SIGN UP
+                      </button>
+                    </Link>
                   </div>
                 </div>
               )}
@@ -925,19 +922,31 @@ export default function Home() {
               )}
             </>
           ) : (
-            <ConversationView
-              messages={searchState.messages}
-              messageRefs={messageRefs}
-              user={user}
-              searchMode={searchState.mode}
-              onRegenerate={handleRegenerate}
-              onRelatedSearchClick={(search) => handleSearch(search, searchState.mode)}
-              onImageRegenerate={handleImageGeneration}
-            />
+            <>
+              <ConversationView
+                messages={searchState.messages}
+                messageRefs={messageRefs}
+                user={user}
+                searchMode={searchState.mode}
+                onRegenerate={handleRegenerate}
+                onRelatedSearchClick={(search) => handleSearch(search, searchState.mode)}
+                onImageRegenerate={handleImageGeneration}
+              />
+
+              {!user && (
+                <div className="mt-12 mb-24 flex justify-center">
+                  <Link href="/login">
+                    <button className="px-8 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-100 transition-all text-lg shadow-lg">
+                      LOGIN / SIGN UP
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </main>
 
-        {uiState.showHistory && (
+        {user && uiState.showHistory && (
           <Suspense fallback={<div className="fixed inset-y-0 right-0 w-80 bg-background border-l border-border" />}>
             <HistorySidebar
               userId={user?.id}
@@ -949,7 +958,7 @@ export default function Home() {
           </Suspense>
         )}
 
-        {uiState.showBookmarks && user && (
+        {user && uiState.showBookmarks && (
           <Suspense fallback={<div className="fixed inset-y-0 right-0 w-80 bg-background border-l border-border" />}>
             <BookmarksSidebar
               userId={user.id}
@@ -960,25 +969,27 @@ export default function Home() {
           </Suspense>
         )}
 
-        <SearchFormContainer
-          searchInputRef={searchInputRef}
-          onSearch={handleSearchOrGenerate}
-          isLoading={searchState.isLoading}
-          mode={searchState.mode}
-          onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-          onCancel={handleCancelSearch}
-          recentSearches={recentSearches}
-          user={user}
-          selectedModel={selectedModel}
-          onModelChange={handleModelChange}
-          onHistoryClick={handleToggleHistory}
-          contentType={searchState.contentType}
-          onContentTypeChange={handleContentTypeChange}
-          rateLimitInfo={searchState.rateLimitInfo}
-          imageRateLimit={searchState.imageRateLimit}
-          isSidebarCollapsed={uiState.isSidebarCollapsed}
-          hasSearched={searchState.hasSearched}
-        />
+        {(user || searchState.hasSearched) && (
+          <SearchFormContainer
+            searchInputRef={searchInputRef}
+            onSearch={handleSearchOrGenerate}
+            isLoading={searchState.isLoading}
+            mode={searchState.mode}
+            onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+            onCancel={handleCancelSearch}
+            recentSearches={recentSearches}
+            user={user}
+            selectedModel={selectedModel}
+            onModelChange={handleModelChange}
+            onHistoryClick={handleToggleHistory}
+            contentType={searchState.contentType}
+            onContentTypeChange={handleContentTypeChange}
+            rateLimitInfo={searchState.rateLimitInfo}
+            imageRateLimit={searchState.imageRateLimit}
+            isSidebarCollapsed={uiState.isSidebarCollapsed}
+            hasSearched={searchState.hasSearched}
+          />
+        )}
       </div>
     </ErrorBoundary>
   )
