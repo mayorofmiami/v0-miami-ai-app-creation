@@ -869,7 +869,6 @@ export default function Home() {
             <>
               {!user && (
                 <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
-                  {/* Animated video background */}
                   <video
                     autoPlay
                     loop
@@ -877,12 +876,9 @@ export default function Home() {
                     playsInline
                     className="absolute inset-0 w-full h-full object-cover -z-10"
                   >
-                    <source src="/videos/miami-bg.webm" type="video/webm" />
-                    <source src="/videos/miami-bg.mp4" type="video/mp4" />
+                    <source src="/videos/background.mp4" type="video/mp4" />
                   </video>
-
-                  {/* Overlay for better text readability */}
-                  <div className="absolute inset-0 bg-black/10 -z-10" />
+                  {/* </CHANGE> */}
 
                   <div className="absolute top-12 z-10">
                     <Logo className="w-48" />
