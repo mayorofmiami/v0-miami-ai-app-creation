@@ -868,12 +868,27 @@ export default function Home() {
           {!searchState.hasSearched ? (
             <>
               {!user && (
-                <div className="flex flex-col items-center justify-center min-h-screen px-4">
-                  <div className="absolute top-12">
+                <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
+                  {/* Animated video background */}
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover -z-10"
+                  >
+                    <source src="/videos/miami-bg.webm" type="video/webm" />
+                    <source src="/videos/miami-bg.mp4" type="video/mp4" />
+                  </video>
+
+                  {/* Overlay for better text readability */}
+                  <div className="absolute inset-0 bg-black/10 -z-10" />
+
+                  <div className="absolute top-12 z-10">
                     <Logo className="w-48" />
                   </div>
 
-                  <div className="w-full max-w-2xl">
+                  <div className="w-full max-w-2xl z-10">
                     <SearchInput
                       ref={searchInputRef}
                       onSearch={handleSearchOrGenerate}
@@ -891,9 +906,9 @@ export default function Home() {
                     />
                   </div>
 
-                  <div className="absolute bottom-12">
+                  <div className="absolute bottom-12 z-10">
                     <Link href="/login">
-                      <button className="px-8 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-100 transition-all text-lg">
+                      <button className="px-8 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-100 transition-all text-lg shadow-lg">
                         LOGIN / SIGN UP
                       </button>
                     </Link>
