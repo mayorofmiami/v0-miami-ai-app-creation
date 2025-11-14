@@ -161,6 +161,8 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
 export default function Home() {
   const { theme, setTheme } = useTheme()
 
+  const [videoLoaded, setVideoLoaded] = useState(false)
+
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
     mode: "quick",
     contentType: "search",
@@ -874,10 +876,17 @@ export default function Home() {
                     loop
                     muted
                     playsInline
-                    className="absolute inset-0 w-full h-full object-cover -z-10"
+                    preload="metadata"
+                    poster="/images/video-poster.jpg"
+                    onLoadedData={() => setVideoLoaded(true)}
+                    className={`absolute inset-0 w-full h-full object-cover -z-10 transition-opacity duration-700 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
                   >
                     <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-9eemqdOpUMDJ06B1JYIVIHxQ3LRtPX.mp4" type="video/mp4" />
                   </video>
+                  
+                  {!videoLoaded && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#f5ebe0] via-[#ebe2d5] to-[#e8dcc8] -z-10" />
+                  )}
                   
                   <div className="absolute top-12 z-10">
                     <Logo className="w-48" />
