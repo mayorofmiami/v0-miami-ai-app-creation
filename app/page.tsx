@@ -869,17 +869,9 @@ export default function Home() {
             <>
               {!user && (
                 <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover -z-10"
-                  >
-                    <source src="/videos/background.mp4" type="video/mp4" />
-                  </video>
-                  {/* </CHANGE> */}
-
+                  {/* Animated gradient background */}
+                  <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#f5e6d3] via-[#e8d4bf] to-[#d4c4b0] animate-gradient" />
+                  
                   <div className="absolute top-12 z-10">
                     <Logo className="w-48" />
                   </div>
