@@ -25,7 +25,6 @@ import { SearchFormContainer } from "@/components/search-page/search-form-contai
 import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
-import BackgroundMiamiVideo from "@/components/BackgroundMiamiVideo"
 
 const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
@@ -161,6 +160,8 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
 
 export default function Home() {
   const { theme, setTheme } = useTheme()
+
+  const [videoLoaded, setVideoLoaded] = useState(false)
 
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
     mode: "quick",
@@ -870,20 +871,42 @@ export default function Home() {
             <>
               {!user && (
                 <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
-                  <BackgroundMiamiVideo
-                    poster="/media/miami_poster_540p.jpg"
-                    desktop={{
-                      webm: '/media/miami_540p15_vp9.webm',
-                      mp4:  '/media/miami_540p15_h264.mp4',
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
+                    poster="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4"
+                    onLoadedData={() => {
+                      console.log("[v0] Video loaded successfully")
+                      setVideoLoaded(true)
                     }}
-                    mobile={{
-                      webm: '/media/miami_360p20_vp9.webm',
-                      mp4:  '/media/miami_360p20_h264.mp4',
+                    onError={(e) => {
+                      console.error("[v0] Video failed to load:", e)
                     }}
-                    opacity={0.6}
-                    className=""
-                  />
+                    className="absolute inset-0 w-full h-full object-cover -z-10 transition-opacity duration-1000"
+                    style={{ opacity: videoLoaded ? 1 : 0 }}
+                  >
+                    {/* Desktop: 720p WebM (best compression) */}
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/webm" media="(min-width: 768px)" />
+                    {/* Desktop: 720p MP4 (fallback) */}
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" media="(min-width: 768px)" />
+                    {/* Mobile: 360p WebM (smaller file) */}
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/webm" />
+                    {/* Mobile: 360p MP4 (fallback) */}
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
+                  </video>
                   
+                  <div 
+                    className="absolute inset-0 bg-gradient-to-br from-[#f5ebe0] via-[#ebe2d5] to-[#e8dcc8] -z-20"
+                    style={{
+                      backgroundImage: `url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4')`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+
                   <div className="absolute top-12 z-10">
                     <Logo className="w-48" />
                   </div>
