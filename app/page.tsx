@@ -162,6 +162,7 @@ export default function Home() {
   const { theme, setTheme } = useTheme()
 
   const [videoLoaded, setVideoLoaded] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
     mode: "quick",
@@ -804,6 +805,15 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   return (
     <ErrorBoundary>
       <KeyboardShortcuts
@@ -888,14 +898,19 @@ export default function Home() {
                     className="absolute inset-0 w-full h-full object-cover -z-10 transition-opacity duration-1000"
                     style={{ opacity: videoLoaded ? 1 : 0 }}
                   >
-                    {/* Desktop: 720p WebM (best compression) */}
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/webm" media="(min-width: 768px)" />
-                    {/* Desktop: 720p MP4 (fallback) */}
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" media="(min-width: 768px)" />
-                    {/* Mobile: 360p WebM (smaller file) */}
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/webm" />
-                    {/* Mobile: 360p MP4 (fallback) */}
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
+                    {isMobile ? (
+                      <>
+                        {/* Mobile: Only load 360p videos */}
+                        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/webm" />
+                        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
+                      </>
+                    ) : (
+                      <>
+                        {/* Desktop: Only load 720p videos */}
+                        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/webm" />
+                        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
+                      </>
+                    )}
                   </video>
                   
                   <div 
