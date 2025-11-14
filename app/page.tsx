@@ -25,6 +25,7 @@ import { SearchFormContainer } from "@/components/search-page/search-form-contai
 import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
+import BackgroundMiamiVideo from "@/components/BackgroundMiamiVideo"
 
 const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
@@ -160,8 +161,6 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
 
 export default function Home() {
   const { theme, setTheme } = useTheme()
-
-  const [videoLoaded, setVideoLoaded] = useState(false)
 
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
     mode: "quick",
@@ -871,20 +870,18 @@ export default function Home() {
             <>
               {!user && (
                 <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                    onLoadedData={() => setVideoLoaded(true)}
-                    className="absolute inset-0 w-full h-full object-cover -z-10"
-                  >
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Wall%20%281%29-RxeKWhRRurMUMZEwYACpnzbzgYIC7W.mp4" type="video/mp4" />
-                  </video>
-                  
-                  <div 
-                    className={`absolute inset-0 bg-gradient-to-br from-[#f5ebe0] via-[#ebe2d5] to-[#e8dcc8] -z-20 transition-opacity duration-1000 ${videoLoaded ? 'opacity-0' : 'opacity-100'}`} 
+                  <BackgroundMiamiVideo
+                    poster="/media/miami_poster_540p.jpg"
+                    desktop={{
+                      webm: '/media/miami_540p15_vp9.webm',
+                      mp4:  '/media/miami_540p15_h264.mp4',
+                    }}
+                    mobile={{
+                      webm: '/media/miami_360p20_vp9.webm',
+                      mp4:  '/media/miami_360p20_h264.mp4',
+                    }}
+                    opacity={0.6}
+                    className=""
                   />
                   
                   <div className="absolute top-12 z-10">

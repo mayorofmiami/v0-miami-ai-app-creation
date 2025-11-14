@@ -1,10 +1,9 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
+import { Inter } from 'next/font/google'
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "next-themes"
-import { OnboardingModal } from "@/components/onboarding-modal"
 import { PrefetchProvider } from "@/components/prefetch-provider"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -90,7 +89,6 @@ export default function RootLayout({
         </a>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <PrefetchProvider />
-          <OnboardingModal />
           {children}
           <Toaster
             position="top-center"
