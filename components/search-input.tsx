@@ -312,15 +312,12 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             onKeyDown={handleKeyDown}
             placeholder={contentType === "image" ? "Describe the image you want to generate..." : "Ask anything..."}
             disabled={isLoading}
-            className={`w-full px-6 py-5 pr-32 text-foreground rounded-xl border-2 ${
-              contentType === "image"
-                ? "border-miami-pink"
-                : mode === "quick"
-                  ? "border-miami-aqua"
-                  : "border-miami-pink"
-            } transition-all focus:outline-none focus:ring-0 text-lg bg-background/50 backdrop-blur-sm relative z-10 ${
+            className={`w-full px-6 py-4 pr-32 text-foreground rounded-2xl border border-border/40 
+              transition-colors outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base bg-background/80 backdrop-blur-md
+              relative z-10 shadow-sm focus:rounded-2xl ${
               isLoading ? "opacity-50 cursor-not-allowed" : ""
-            } placeholder:text-muted-foreground/60`}
+            } placeholder:text-muted-foreground/50`}
+            style={{ outline: "none", boxShadow: "none", borderRadius: "1rem" }}
           />
         </div>
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-20">
@@ -328,10 +325,10 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
           <button
             type="button"
             onClick={handleMenuToggle}
-            className="p-3 rounded-lg bg-background/80 hover:bg-muted transition-all border border-border/50 hover:border-miami-aqua/50"
+            className="p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-all"
             title="Options"
           >
-            <Settings className="w-5 h-5 text-muted-foreground hover:text-miami-aqua transition-colors" />
+            <Settings className="w-4 h-4 text-muted-foreground" />
           </button>
 
           {contentType === "search" && (
@@ -348,13 +345,13 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading || isLoading}
-                className="p-3 rounded-lg bg-background/80 hover:bg-muted transition-all border border-border/50 hover:border-miami-aqua/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 title={user ? "Attach files (images, PDFs, documents)" : "Attach image"}
               >
                 {isUploading ? (
-                  <div className="w-5 h-5 border-2 border-miami-aqua border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
                 ) : (
-                  <Paperclip className="w-5 h-5 text-muted-foreground hover:text-miami-aqua transition-colors" />
+                  <Paperclip className="w-4 h-4 text-muted-foreground" />
                 )}
               </button>
             </>
@@ -365,24 +362,18 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             <button
               type="button"
               onClick={onCancel}
-              className="p-3.5 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all"
+              className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all"
               title="Cancel"
             >
-              <XIcon className="w-5 h-5" />
+              <XIcon className="w-4 h-4" />
             </button>
           ) : (
             <button
               type="submit"
               disabled={isLoading || !query.trim()}
-              className={`p-3.5 rounded-lg transition-all ${
-                contentType === "image"
-                  ? "bg-miami-pink hover:bg-miami-pink/80"
-                  : mode === "quick"
-                    ? "bg-miami-aqua hover:bg-miami-aqua/80"
-                    : "bg-miami-pink hover:bg-miami-pink/80"
-              } text-miami-dark disabled:opacity-50 disabled:cursor-not-allowed shadow-lg`}
+              className="p-2.5 rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              {contentType === "image" ? <ImageIcon className="w-5 h-5" /> : <SearchIcon className="w-5 h-5" />}
+              {contentType === "image" ? <ImageIcon className="w-4 h-4" /> : <SearchIcon className="w-4 h-4" />}
             </button>
           )}
         </div>

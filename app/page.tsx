@@ -876,7 +876,7 @@ export default function Home() {
                     playsInline
                     className="absolute inset-0 w-full h-full object-cover -z-10"
                   >
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Wall-Kc4NQvomgyFZ2VY6Lr9bU58Ga2e0sI.mp4" type="video/mp4" />
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-9eemqdOpUMDJ06B1JYIVIHxQ3LRtPX.mp4" type="video/mp4" />
                   </video>
                   
                   <div className="absolute top-12 z-10">
