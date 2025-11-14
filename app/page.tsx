@@ -876,17 +876,16 @@ export default function Home() {
                     loop
                     muted
                     playsInline
-                    preload="metadata"
-                    poster="/images/video-poster.jpg"
+                    preload="auto"
                     onLoadedData={() => setVideoLoaded(true)}
-                    className={`absolute inset-0 w-full h-full object-cover -z-10 transition-opacity duration-700 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    className="absolute inset-0 w-full h-full object-cover -z-10"
                   >
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-9eemqdOpUMDJ06B1JYIVIHxQ3LRtPX.mp4" type="video/mp4" />
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Wall%20%281%29-RxeKWhRRurMUMZEwYACpnzbzgYIC7W.mp4" type="video/mp4" />
                   </video>
                   
-                  {!videoLoaded && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#f5ebe0] via-[#ebe2d5] to-[#e8dcc8] -z-10" />
-                  )}
+                  <div 
+                    className={`absolute inset-0 bg-gradient-to-br from-[#f5ebe0] via-[#ebe2d5] to-[#e8dcc8] -z-20 transition-opacity duration-1000 ${videoLoaded ? 'opacity-0' : 'opacity-100'}`} 
+                  />
                   
                   <div className="absolute top-12 z-10">
                     <Logo className="w-48" />
