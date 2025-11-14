@@ -869,8 +869,15 @@ export default function Home() {
             <>
               {!user && (
                 <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
-                  {/* Animated gradient background */}
-                  <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#f5e6d3] via-[#e8d4bf] to-[#d4c4b0] animate-gradient" />
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover -z-10"
+                  >
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Wall-Kc4NQvomgyFZ2VY6Lr9bU58Ga2e0sI.mp4" type="video/mp4" />
+                  </video>
                   
                   <div className="absolute top-12 z-10">
                     <Logo className="w-48" />
