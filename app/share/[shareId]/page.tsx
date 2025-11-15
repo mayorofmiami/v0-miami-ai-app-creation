@@ -11,9 +11,9 @@ interface PageProps {
 
 export default async function SharedSearchPage({ params }: PageProps) {
   const { shareId } = await params
-  const sharedSearch = await getSharedSearch(shareId)
+  const result = await getSharedSearch(shareId)
 
-  if (!sharedSearch) {
+  if (!result.success || !result.data) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <Logo />
@@ -25,6 +25,8 @@ export default async function SharedSearchPage({ params }: PageProps) {
     )
   }
 
+  const sharedSearch = result.data
+
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-8">
       <header className="mb-8">
@@ -33,7 +35,7 @@ export default async function SharedSearchPage({ params }: PageProps) {
 
       <main className="flex-1 container mx-auto max-w-4xl">
         <div className="mb-4 text-sm text-muted-foreground">
-          {sharedSearch.view_count || sharedSearch.viewCount || 0} view(s)
+          {sharedSearch.views || 0} view(s)
         </div>
 
         <div className="mb-8">

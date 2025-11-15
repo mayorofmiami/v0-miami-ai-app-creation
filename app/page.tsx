@@ -25,6 +25,7 @@ import { SearchFormContainer } from "@/components/search-page/search-form-contai
 import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
+import { FancyGlowingButton } from "@/components/fancy-glowing-button"
 
 const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
@@ -938,10 +939,9 @@ export default function Home() {
 
                   <div className="absolute bottom-12 z-10">
                     <Link href="/login">
-                      <button className="group relative px-10 py-4 bg-gradient-to-r from-white to-gray-50 text-black font-semibold rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-300 text-base border border-white/20 backdrop-blur-sm">
-                        <span className="relative z-10">LOGIN / SIGN UP</span>
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-miami-aqua/0 via-miami-blue/0 to-miami-purple/0 group-hover:from-miami-aqua/10 group-hover:via-miami-blue/10 group-hover:to-miami-purple/10 transition-all duration-300" />
-                      </button>
+                      <FancyGlowingButton>
+                        LOGIN / SIGN UP
+                      </FancyGlowingButton>
                     </Link>
                   </div>
                 </div>
@@ -979,13 +979,12 @@ export default function Home() {
                 onImageRegenerate={handleImageGeneration}
               />
 
-              {!user && (
+              {!user && lastMessage && !lastMessage.isStreaming && (
                 <div className="mt-12 mb-24 flex justify-center">
                   <Link href="/login">
-                    <button className="group relative px-10 py-4 bg-gradient-to-r from-white to-gray-50 text-black font-semibold rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-300 text-base border border-white/20 backdrop-blur-sm">
-                      <span className="relative z-10">LOGIN / SIGN UP</span>
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-miami-aqua/0 via-miami-blue/0 to-miami-purple/0 group-hover:from-miami-aqua/10 group-hover:via-miami-blue/10 group-hover:to-miami-purple/10 transition-all duration-300" />
-                    </button>
+                    <FancyGlowingButton>
+                      LOGIN / SIGN UP
+                    </FancyGlowingButton>
                   </Link>
                 </div>
               )}

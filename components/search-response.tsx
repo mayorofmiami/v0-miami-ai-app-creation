@@ -112,13 +112,16 @@ export const SearchResponse = memo(function SearchResponse({
   return (
     <div className="w-full space-y-4 md:space-y-6 animate-in fade-in duration-500">
       {showTypingIndicator && response.length === 0 && (
-        <div className="flex items-center gap-3 text-sm text-muted-foreground py-2">
-          <div className="flex gap-1.5">
-            <span className="w-2 h-2 bg-miami-aqua rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
-            <span className="w-2 h-2 bg-miami-aqua rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
-            <span className="w-2 h-2 bg-miami-aqua rounded-full animate-pulse" style={{ animationDelay: "300ms" }} />
+        <div className="w-full py-6">
+          <div className="relative h-1 bg-muted/30 rounded-full overflow-hidden">
+            <div 
+              className="absolute inset-0 bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple animate-shimmer"
+              style={{
+                backgroundSize: '200% 100%',
+              }}
+            />
           </div>
-          <span className="font-medium">Thinking...</span>
+          <p className="text-center text-sm text-muted-foreground mt-3 font-medium">Searching...</p>
         </div>
       )}
 

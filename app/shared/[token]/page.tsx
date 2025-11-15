@@ -3,14 +3,16 @@ import { SearchResponse } from "@/components/search-response"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
-import { notFound } from "next/navigation"
+import { notFound } from 'next/navigation'
 
 export default async function SharedSearchPage({ params }: { params: { token: string } }) {
-  const search = await getSharedSearch(params.token)
+  const result = await getSharedSearch(params.token)
 
-  if (!search) {
+  if (!result.success || !result.data) {
     notFound()
   }
+
+  const search = result.data
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,7 +38,7 @@ export default async function SharedSearchPage({ params }: { params: { token: st
             <span className="text-sm text-muted-foreground capitalize">{search.mode} search</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Shared on {new Date(search.created_at).toLocaleDateString()} • {search.view_count} views
+            Shared on {new Date(search.created_at).toLocaleDateString()} • {search.views || 0} views
           </p>
         </div>
 

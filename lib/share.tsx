@@ -5,17 +5,19 @@ import { getSearchById } from "@/lib/db"
 export interface ShareData {
   query: string
   response: string
+  citations?: Array<{ title: string; url: string; snippet: string }>
   userId?: string
   createdAt: number
   views: number
 }
 
-export async function createDirectShareLink(query: string, response: string, userId?: string) {
+export async function createDirectShareLink(query: string, response: string, citations?: Array<{ title: string; url: string; snippet: string }>, userId?: string) {
   try {
     const shareId = nanoid(10)
     const shareData: ShareData = {
       query,
       response,
+      citations,
       userId,
       createdAt: Date.now(),
       views: 0,
@@ -31,7 +33,6 @@ export async function createDirectShareLink(query: string, response: string, use
     return { success: false, error: "Failed to create share link" }
   }
 }
-// </CHANGE>
 
 export async function getSharedSearch(shareId: string) {
   try {
@@ -57,6 +58,7 @@ export async function getSharedSearch(shareId: string) {
         data: {
           query: dbSearch.query,
           response: dbSearch.response,
+          citations: dbSearch.citations,
           createdAt: new Date(dbSearch.timestamp).getTime(),
           views: 0,
         },
@@ -69,7 +71,6 @@ export async function getSharedSearch(shareId: string) {
     return { success: false, error: "Failed to retrieve share" }
   }
 }
-// </CHANGE>
 
 export async function createShareLink(searchId: string) {
   try {
@@ -83,6 +84,7 @@ export async function createShareLink(searchId: string) {
     const shareData: ShareData = {
       query: search.query,
       response: search.response,
+      citations: search.citations,
       createdAt: new Date(search.timestamp).getTime(),
       views: 0,
     }
@@ -96,4 +98,3 @@ export async function createShareLink(searchId: string) {
     return { success: false, error: "Failed to create share link" }
   }
 }
-// </CHANGE>
