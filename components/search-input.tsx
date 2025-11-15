@@ -91,9 +91,9 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   useEffect(() => {
     const textarea = inputRef.current
     if (textarea) {
-      textarea.style.height = '56px' // Reset to base height
+      textarea.style.height = 'auto' // Reset height
       const scrollHeight = textarea.scrollHeight
-      const maxHeight = 200 // Max height in pixels (about 8 lines)
+      const maxHeight = 160 // Max height in pixels (about 6 lines)
       textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`
     }
   }, [query])
@@ -324,11 +324,11 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
       {/* Search Form */}
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative flex items-start gap-2">
+        <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-border/40 bg-background/80 backdrop-blur-md shadow-sm transition-all">
           <button
             type="button"
             onClick={handleMenuToggle}
-            className="mt-3 p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-all flex-shrink-0"
+            className="p-1.5 rounded-lg hover:bg-muted/50 transition-all flex-shrink-0"
             title="Options"
             aria-label="Open options menu"
           >
@@ -349,41 +349,53 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             onFocus={handleFocus}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            placeholder={contentType === "image" ? "Describe the image you want to generate..." : "Ask anything..."}
+            placeholder={contentType === "image" ? "Describe Your Image" : "Ask anything..."}
             disabled={isLoading}
             rows={1}
-            className={`flex-1 px-6 py-4 text-foreground rounded-2xl border border-border/40 
-              transition-all outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base bg-background/80 backdrop-blur-md
-              relative z-10 shadow-sm focus:rounded-2xl resize-none overflow-y-auto ${
+            className={`flex-1 px-2 py-1 text-foreground bg-transparent
+              transition-all outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base
+              relative z-10 resize-none overflow-y-auto border-0 ${
               isLoading ? "opacity-50 cursor-not-allowed" : ""
             } placeholder:text-muted-foreground/50`}
             style={{ 
               outline: "none", 
               boxShadow: "none", 
-              borderRadius: "1rem",
-              minHeight: "56px",
-              maxHeight: "200px"
+              border: "none",
+              minHeight: "28px",
+              maxHeight: "160px",
+              lineHeight: "1.5"
             }}
           />
 
-          <div className="mt-3 flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             {isLoading && onCancel ? (
               <button
                 type="button"
                 onClick={onCancel}
-                className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all"
+                className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all"
                 title="Cancel"
               >
                 <XIcon className="w-4 h-4" />
               </button>
             ) : (
-              <button
-                type="submit"
-                disabled={isLoading || !query.trim()}
-                className="p-2.5 rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                {contentType === "image" ? <ImageIcon className="w-4 h-4" /> : <SearchIcon className="w-4 h-4" />}
-              </button>
+              query.trim() && (
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="p-1 rounded-full bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-50"
+                  title="Send"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                  </svg>
+                </button>
+              )
             )}
           </div>
         </div>

@@ -323,8 +323,6 @@ export default function Home() {
         const res = await fetch("/api/init")
         const data = await res.json()
 
-        console.log('[v0] Init API response:', { hasUser: !!data.user, userId: data.user?.id })
-
         setUser(data.user)
 
         if (data.user && data.history) {
@@ -376,12 +374,11 @@ export default function Home() {
         fetch("/api/init")
           .then(res => res.json())
           .then(data => {
-            console.log('[v0] Refreshing user state on visibility change:', { hasUser: !!data.user })
             if (data.user) {
               setUser(data.user)
             }
           })
-          .catch(err => console.error('[v0] Failed to refresh user state:', err))
+          .catch(err => console.error('Failed to refresh user state:', err))
       }
     }
 
@@ -442,8 +439,6 @@ export default function Home() {
         return
       }
 
-      console.log("[v0] Starting search with model:", { selectedModel, query: query.slice(0, 50) })
-
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
@@ -503,8 +498,6 @@ export default function Home() {
           body: JSON.stringify(body),
           signal: abortControllerRef.current.signal,
         })
-
-        console.log("[v0] Fetch completed, status:", res.status, "ok:", res.ok)
 
         if (res.status === 429) {
           const errorData = await res.json()
@@ -836,10 +829,6 @@ export default function Home() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  useEffect(() => {
-    console.log('[v0] Video setup - Device type:', isMobile ? 'mobile' : 'desktop', 'Width:', window.innerWidth)
-  }, [isMobile])
-
   return (
     <ErrorBoundary>
       <KeyboardShortcuts
@@ -915,9 +904,6 @@ export default function Home() {
                     playsInline
                     preload="auto"
                     className="absolute inset-0 w-full h-full object-cover -z-10"
-                    onLoadStart={() => console.log('[v0] Video load started:', isMobile ? 'mobile (480x270, 350kbps, 12fps)' : 'desktop (1280x720, 1200kbps, 15fps)')}
-                    onLoadedData={() => console.log('[v0] Video loaded successfully')}
-                    onError={(e) => console.error('[v0] Video error:', e)}
                   >
                     {isMobile ? (
                       <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
