@@ -814,6 +814,10 @@ export default function Home() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  useEffect(() => {
+    console.log('[v0] Video setup - Device type:', isMobile ? 'mobile' : 'desktop', 'Width:', window.innerWidth)
+  }, [isMobile])
+
   return (
     <ErrorBoundary>
       <KeyboardShortcuts
@@ -889,6 +893,9 @@ export default function Home() {
                     playsInline
                     preload="auto"
                     className="absolute inset-0 w-full h-full object-cover -z-10"
+                    onLoadStart={() => console.log('[v0] Video load started:', isMobile ? 'mobile (480x270, 350kbps, 12fps)' : 'desktop (1280x720, 1200kbps, 15fps)')}
+                    onLoadedData={() => console.log('[v0] Video loaded successfully')}
+                    onError={(e) => console.error('[v0] Video error:', e)}
                   >
                     {isMobile ? (
                       <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
