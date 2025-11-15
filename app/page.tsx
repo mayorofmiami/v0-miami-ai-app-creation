@@ -887,40 +887,12 @@ export default function Home() {
                     muted
                     playsInline
                     preload="auto"
-                    poster="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4"
-                    onLoadedData={() => {
-                      console.log("[v0] Video loaded successfully")
-                      setVideoLoaded(true)
-                    }}
-                    onError={(e) => {
-                      console.error("[v0] Video failed to load:", e)
-                    }}
-                    className="absolute inset-0 w-full h-full object-cover -z-10 transition-opacity duration-1000"
-                    style={{ opacity: videoLoaded ? 1 : 0 }}
+                    className="absolute inset-0 w-full h-full object-cover -z-10"
                   >
-                    {isMobile ? (
-                      <>
-                        {/* Mobile: Only load 360p videos */}
-                        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/webm" />
-                        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
-                      </>
-                    ) : (
-                      <>
-                        {/* Desktop: Only load 720p videos */}
-                        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/webm" />
-                        <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
-                      </>
-                    )}
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-9eemqdOpUMDJ06B1JYIVIHxQ3LRtPX.mp4" type="video/mp4" />
                   </video>
                   
-                  <div 
-                    className="absolute inset-0 bg-gradient-to-br from-[#f5ebe0] via-[#ebe2d5] to-[#e8dcc8] -z-20"
-                    style={{
-                      backgroundImage: `url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4')`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-900/30 via-gray-800/20 to-black/40 -z-20" />
 
                   <div className="absolute top-12 z-10">
                     <Logo className="w-48" />
