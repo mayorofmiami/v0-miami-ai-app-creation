@@ -882,6 +882,7 @@ export default function Home() {
               {!user && (
                 <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
                   <video
+                    key={isMobile ? 'mobile' : 'desktop'}
                     autoPlay
                     loop
                     muted
@@ -889,7 +890,11 @@ export default function Home() {
                     preload="auto"
                     className="absolute inset-0 w-full h-full object-cover -z-10"
                   >
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-9eemqdOpUMDJ06B1JYIVIHxQ3LRtPX.mp4" type="video/mp4" />
+                    {isMobile ? (
+                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
+                    ) : (
+                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
+                    )}
                   </video>
                   
                   <div className="absolute inset-0 bg-gradient-to-br from-gray-900/30 via-gray-800/20 to-black/40 -z-20" />
