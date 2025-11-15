@@ -323,6 +323,8 @@ export default function Home() {
         const res = await fetch("/api/init")
         const data = await res.json()
 
+        console.log('[v0] Init API response:', { hasUser: !!data.user, userId: data.user?.id })
+
         setUser(data.user)
 
         if (data.user && data.history) {
@@ -366,6 +368,26 @@ export default function Home() {
     }
     loadInitialData()
   }, []) // Empty dependency array ensures this only runs once on mount
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, refresh user state
+        fetch("/api/init")
+          .then(res => res.json())
+          .then(data => {
+            console.log('[v0] Refreshing user state on visibility change:', { hasUser: !!data.user })
+            if (data.user) {
+              setUser(data.user)
+            }
+          })
+          .catch(err => console.error('[v0] Failed to refresh user state:', err))
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
 
   const handleModelChange = async (newModel: ModelId) => {
     setSelectedModel(newModel)
