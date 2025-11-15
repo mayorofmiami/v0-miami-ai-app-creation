@@ -70,7 +70,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   const [isFocused, setIsFocused] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null) // Changed from HTMLInputElement to HTMLTextAreaElement
   const menuRef = useRef<HTMLDivElement>(null)
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -87,6 +87,16 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
       setAttachments([])
     },
   }))
+
+  useEffect(() => {
+    const textarea = inputRef.current
+    if (textarea) {
+      textarea.style.height = '56px' // Reset to base height
+      const scrollHeight = textarea.scrollHeight
+      const maxHeight = 200 // Max height in pixels (about 8 lines)
+      textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`
+    }
+  }, [query])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -163,6 +173,14 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault()
+        if (query.trim() && !isLoading) {
+          handleSubmit(e as any)
+        }
+        return
+      }
+
       if (!showSuggestions || suggestions.length === 0) return
 
       if (e.key === "ArrowDown") {
@@ -183,7 +201,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
         setSelectedIndex(-1)
       }
     },
-    [showSuggestions, suggestions, selectedIndex, onSearch, mode],
+    [showSuggestions, suggestions, selectedIndex, query, isLoading, handleSubmit],
   )
 
   const handleMenuToggle = useCallback((e: React.MouseEvent) => {
@@ -295,16 +313,37 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     [onSearch, mode],
   )
 
+  const handleFileUploadClick = useCallback(() => {
+    fileInputRef.current?.click()
+    setIsMenuOpen(false)
+  }, [])
+
   return (
     <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
       <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} />
 
       {/* Search Form */}
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative">
-          <input
+        <div className="relative flex items-start gap-2">
+          <button
+            type="button"
+            onClick={handleMenuToggle}
+            className="mt-3 p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-all flex-shrink-0"
+            title="Options"
+            aria-label="Open options menu"
+          >
+            <svg
+              className="w-5 h-5 text-muted-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+
+          <textarea
             ref={inputRef}
-            type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={handleFocus}
@@ -312,85 +351,60 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             onKeyDown={handleKeyDown}
             placeholder={contentType === "image" ? "Describe the image you want to generate..." : "Ask anything..."}
             disabled={isLoading}
-            className={`w-full px-6 py-4 pr-32 text-foreground rounded-2xl border border-border/40 
-              transition-colors outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base bg-background/80 backdrop-blur-md
-              relative z-10 shadow-sm focus:rounded-2xl ${
+            rows={1}
+            className={`flex-1 px-6 py-4 text-foreground rounded-2xl border border-border/40 
+              transition-all outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base bg-background/80 backdrop-blur-md
+              relative z-10 shadow-sm focus:rounded-2xl resize-none overflow-y-auto ${
               isLoading ? "opacity-50 cursor-not-allowed" : ""
             } placeholder:text-muted-foreground/50`}
-            style={{ outline: "none", boxShadow: "none", borderRadius: "1rem" }}
+            style={{ 
+              outline: "none", 
+              boxShadow: "none", 
+              borderRadius: "1rem",
+              minHeight: "56px",
+              maxHeight: "200px"
+            }}
           />
-        </div>
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-20">
-          {/* Settings Menu Button */}
-          <button
-            type="button"
-            onClick={handleMenuToggle}
-            className="p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-all"
-            title="Options"
-          >
-            <Settings className="w-4 h-4 text-muted-foreground" />
-          </button>
 
-          {contentType === "search" && (
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={user ? "image/*,.pdf,.txt,.csv" : "image/*"}
-                multiple={!!user}
-                onChange={handleFileSelect}
-                className="hidden"
-              />
+          <div className="mt-3 flex items-center gap-1.5 flex-shrink-0">
+            {isLoading && onCancel ? (
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || isLoading}
-                className="p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                title={user ? "Attach files (images, PDFs, documents)" : "Attach image"}
+                onClick={onCancel}
+                className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all"
+                title="Cancel"
               >
-                {isUploading ? (
-                  <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
-                ) : (
-                  <Paperclip className="w-4 h-4 text-muted-foreground" />
-                )}
+                <XIcon className="w-4 h-4" />
               </button>
-            </>
-          )}
-
-          {/* Submit Button */}
-          {isLoading && onCancel ? (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="p-2.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all"
-              title="Cancel"
-            >
-              <XIcon className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={isLoading || !query.trim()}
-              className="p-2.5 rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {contentType === "image" ? <ImageIcon className="w-4 h-4" /> : <SearchIcon className="w-4 h-4" />}
-            </button>
-          )}
+            ) : (
+              <button
+                type="submit"
+                disabled={isLoading || !query.trim()}
+                className="p-2.5 rounded-xl bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {contentType === "image" ? <ImageIcon className="w-4 h-4" /> : <SearchIcon className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
         </div>
       </form>
 
       {isMenuOpen && (
-        <SearchInputMenu
-          contentType={contentType}
-          mode={mode}
-          selectedModel={selectedModel}
-          hasHistory={hasHistory}
-          showModelSelection={!!onModelChange && !!user}
-          onContentTypeChange={handleContentTypeChange}
-          onModeChange={handleModeChangeCallback}
-          onModelChange={handleModelChangeCallback}
-          onHistoryClick={handleHistoryClickCallback}
-        />
+        <div className="absolute bottom-full left-0 mb-2 z-50">
+          <SearchInputMenu
+            contentType={contentType}
+            mode={mode}
+            selectedModel={selectedModel}
+            hasHistory={hasHistory}
+            showModelSelection={!!onModelChange && !!user}
+            onContentTypeChange={handleContentTypeChange}
+            onModeChange={handleModeChangeCallback}
+            onModelChange={handleModelChangeCallback}
+            onHistoryClick={handleHistoryClickCallback}
+            onFileUploadClick={handleFileUploadClick}
+            isAuthenticated={!!user}
+          />
+        </div>
       )}
 
       {showSuggestions && query.length >= 2 && (
@@ -410,6 +424,15 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             : `${attachments.length} of 1 attachment • 5 per day • Sign up for more`}
         </p>
       )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileSelect}
+        className="hidden"
+        accept="image/*,.pdf,.doc,.docx,.txt"
+        multiple={!!user}
+      />
     </div>
   )
 })

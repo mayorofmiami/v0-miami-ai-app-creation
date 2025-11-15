@@ -60,24 +60,26 @@ export function PageHeader({
     >
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between h-14 md:h-12 relative">
-          <div className="pointer-events-auto">
-            <MobileDrawer
-              isOpen={isDrawerOpen}
-              onOpenChange={onOpenChange}
-              isAdmin={isAdmin}
-              recentSearches={recentSearches}
-              bookmarks={bookmarks}
-              user={user}
-              isLoadingUser={isLoadingUser}
-              theme={theme || "dark"}
-              setTheme={setTheme}
-              handleNewChat={handleNewChat}
-              handleToggleHistory={handleToggleHistory}
-              handleToggleBookmarks={handleToggleBookmarks}
-              handleSearch={handleSearch}
-              searchMode={searchMode}
-            />
-          </div>
+          {isAuthenticated && (
+            <div className="pointer-events-auto">
+              <MobileDrawer
+                isOpen={isDrawerOpen}
+                onOpenChange={onOpenChange}
+                isAdmin={isAdmin}
+                recentSearches={recentSearches}
+                bookmarks={bookmarks}
+                user={user}
+                isLoadingUser={isLoadingUser}
+                theme={theme || "dark"}
+                setTheme={setTheme}
+                handleNewChat={handleNewChat}
+                handleToggleHistory={handleToggleHistory}
+                handleToggleBookmarks={handleToggleBookmarks}
+                handleSearch={handleSearch}
+                searchMode={searchMode}
+              />
+            </div>
+          )}
 
           {showLogo && (
             <div className={logoPositionClass}>

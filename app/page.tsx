@@ -879,7 +879,7 @@ export default function Home() {
 
         <main
           id="main-content"
-          className={`flex-1 ${user || searchState.hasSearched ? "container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 max-w-full overflow-x-hidden" : ""} ${searchState.hasSearched && user ? "pb-36 md:pb-32 pt-20 md:pt-24" : user && !searchState.hasSearched ? "pt-20 md:pt-24" : ""}`}
+          className={`flex-1 ${user || searchState.hasSearched ? "container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 max-w-full overflow-x-hidden" : ""} ${searchState.hasSearched && user ? "pb-36 md:pb-32 pt-20 md:pt-24" : searchState.hasSearched && !user ? "pb-36 md:pb-32 pt-20 md:pt-24" : user && !searchState.hasSearched ? "pt-20 md:pt-24" : ""}`}
         >
           {!searchState.hasSearched ? (
             <>
@@ -930,8 +930,9 @@ export default function Home() {
 
                   <div className="absolute bottom-12 z-10">
                     <Link href="/login">
-                      <button className="px-8 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-100 transition-all text-lg shadow-lg">
-                        LOGIN / SIGN UP
+                      <button className="group relative px-10 py-4 bg-gradient-to-r from-white to-gray-50 text-black font-semibold rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-300 text-base border border-white/20 backdrop-blur-sm">
+                        <span className="relative z-10">LOGIN / SIGN UP</span>
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-miami-aqua/0 via-miami-blue/0 to-miami-purple/0 group-hover:from-miami-aqua/10 group-hover:via-miami-blue/10 group-hover:to-miami-purple/10 transition-all duration-300" />
                       </button>
                     </Link>
                   </div>
@@ -973,8 +974,9 @@ export default function Home() {
               {!user && (
                 <div className="mt-12 mb-24 flex justify-center">
                   <Link href="/login">
-                    <button className="px-8 py-3 bg-white text-black font-medium rounded-full hover:bg-gray-100 transition-all text-lg shadow-lg">
-                      LOGIN / SIGN UP
+                    <button className="group relative px-10 py-4 bg-gradient-to-r from-white to-gray-50 text-black font-semibold rounded-full hover:shadow-2xl hover:scale-105 transition-all duration-300 text-base border border-white/20 backdrop-blur-sm">
+                      <span className="relative z-10">LOGIN / SIGN UP</span>
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-miami-aqua/0 via-miami-blue/0 to-miami-purple/0 group-hover:from-miami-aqua/10 group-hover:via-miami-blue/10 group-hover:to-miami-purple/10 transition-all duration-300" />
                     </button>
                   </Link>
                 </div>

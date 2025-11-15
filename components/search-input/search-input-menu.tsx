@@ -4,6 +4,7 @@ import SearchIcon from "@/components/icons/Search"
 import ImageIcon from "@/components/icons/Image"
 import Sparkles from "@/components/icons/Sparkles"
 import History from "@/components/icons/History"
+import Paperclip from "@/components/icons/Paperclip"
 import type { ModelId } from "@/components/model-selector"
 
 const MODEL_OPTIONS = [
@@ -27,6 +28,8 @@ interface SearchInputMenuProps {
   onModeChange: (mode: "quick" | "deep") => void
   onModelChange: (model: ModelId) => void
   onHistoryClick?: () => void
+  onFileUploadClick?: () => void
+  isAuthenticated?: boolean
 }
 
 export function SearchInputMenu({
@@ -39,54 +42,50 @@ export function SearchInputMenu({
   onModeChange,
   onModelChange,
   onHistoryClick,
+  onFileUploadClick,
+  isAuthenticated = false,
 }: SearchInputMenuProps) {
   return (
-    <div className="absolute right-0 bottom-full mb-2 w-48 bg-card/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-      {/* Content Type Selection */}
-      <div className="p-1.5">
-        <div className="flex gap-1">
-          <button
-            onClick={() => onContentTypeChange("search")}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
-              contentType === "search" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted/50 text-muted-foreground"
-            }`}
-          >
-            <SearchIcon className="w-3.5 h-3.5" />
-            Search
-          </button>
-          <button
-            onClick={() => onContentTypeChange("image")}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all text-xs font-medium ${
-              contentType === "image" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-foreground"
-            }`}
-          >
-            <ImageIcon className="w-3.5 h-3.5" />
-            Image
-          </button>
-        </div>
+    <div className="w-56 bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+      <div className="p-2">
+        <button
+          onClick={() => onContentTypeChange(contentType === "search" ? "image" : "search")}
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-sm font-medium hover:bg-muted text-foreground"
+        >
+          {contentType === "search" ? (
+            <>
+              <ImageIcon className="w-4 h-4" />
+              Create Image
+            </>
+          ) : (
+            <>
+              <SearchIcon className="w-4 h-4" />
+              Search
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Search Mode (only show for search content type) */}
-      {contentType === "search" && (
+      {contentType === "search" && isAuthenticated && (
         <>
-          <div className="h-px bg-border/30 mx-1.5" />
-          <div className="p-1.5">
-            <div className="flex gap-1">
+          <div className="h-px bg-border/50 mx-2" />
+          <div className="p-2">
+            <div className="flex gap-1.5">
               <button
                 onClick={() => onModeChange("quick")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
-                  mode === "quick" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted/50 text-foreground"
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all text-sm font-medium ${
+                  mode === "quick" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted text-foreground"
                 }`}
               >
                 Quick
               </button>
               <button
                 onClick={() => onModeChange("deep")}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
-                  mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted/50 text-foreground"
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all text-sm font-medium ${
+                  mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted text-foreground"
                 }`}
               >
-                <Sparkles className="w-3 h-3" />
+                <Sparkles className="w-3.5 h-3.5" />
                 Deep
               </button>
             </div>
@@ -94,37 +93,50 @@ export function SearchInputMenu({
         </>
       )}
 
-      {/* Model Selection (only show for search content type and authenticated users) */}
-      {contentType === "search" && showModelSelection && (
+      {contentType === "search" && showModelSelection && isAuthenticated && (
         <>
-          <div className="h-px bg-border/30 mx-1.5" />
-          <div className="p-1.5 max-h-48 overflow-y-auto">
+          <div className="h-px bg-border/50 mx-2" />
+          <div className="p-2 max-h-56 overflow-y-auto">
             {MODEL_OPTIONS.map((model) => (
               <button
                 key={model.id}
                 onClick={() => onModelChange(model.id)}
-                className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-all mb-0.5 last:mb-0 ${
-                  selectedModel === model.id ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted/50 text-foreground"
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all mb-1 last:mb-0 text-sm font-medium ${
+                  selectedModel === model.id ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted text-foreground"
                 }`}
               >
-                <span className="text-xs font-medium">{model.name}</span>
-                {selectedModel === model.id && <div className="w-1.5 h-1.5 rounded-full bg-miami-aqua" />}
+                <span>{model.name}</span>
+                {selectedModel === model.id && <div className="w-2 h-2 rounded-full bg-miami-aqua" />}
               </button>
             ))}
           </div>
         </>
       )}
 
-      {/* History Button */}
+      {onFileUploadClick && (
+        <>
+          <div className="h-px bg-border/50 mx-2" />
+          <div className="p-2">
+            <button
+              onClick={onFileUploadClick}
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-sm font-medium hover:bg-muted text-foreground"
+            >
+              <Paperclip className="w-4 h-4" />
+              Attach File
+            </button>
+          </div>
+        </>
+      )}
+
       {hasHistory && onHistoryClick && (
         <>
-          <div className="h-px bg-border/30 mx-1.5" />
-          <div className="p-1.5">
+          <div className="h-px bg-border/50 mx-2" />
+          <div className="p-2">
             <button
               onClick={onHistoryClick}
-              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-all text-xs font-medium text-muted-foreground"
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-muted transition-all text-sm font-medium text-muted-foreground"
             >
-              <History className="w-3.5 h-3.5" />
+              <History className="w-4 h-4" />
               History
             </button>
           </div>
