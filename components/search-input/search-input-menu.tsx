@@ -66,6 +66,21 @@ export function SearchInputMenu({
         </button>
       </div>
 
+      {onFileUploadClick && (
+        <>
+          <div className="h-px bg-border/50 mx-2" />
+          <div className="p-2">
+            <button
+              onClick={onFileUploadClick}
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-sm font-medium hover:bg-muted text-foreground"
+            >
+              <Paperclip className="w-4 h-4" />
+              Attach File
+            </button>
+          </div>
+        </>
+      )}
+
       {contentType === "search" && isAuthenticated && (
         <>
           <div className="h-px bg-border/50 mx-2" />
@@ -109,21 +124,6 @@ export function SearchInputMenu({
                 {selectedModel === model.id && <div className="w-2 h-2 rounded-full bg-miami-aqua" />}
               </button>
             ))}
-          </div>
-        </>
-      )}
-
-      {onFileUploadClick && (
-        <>
-          <div className="h-px bg-border/50 mx-2" />
-          <div className="p-2">
-            <button
-              onClick={onFileUploadClick}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-sm font-medium hover:bg-muted text-foreground"
-            >
-              <Paperclip className="w-4 h-4" />
-              Attach File
-            </button>
           </div>
         </>
       )}

@@ -320,6 +320,18 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
   return (
     <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
+      {/* Rate limit messages - Only show for authenticated users */}
+      {user && contentType === "image" && !isLoading && (
+        <p className="text-sm text-muted-foreground text-center mb-3">
+          50 images per day
+        </p>
+      )}
+      {user && contentType === "search" && attachments.length > 0 && !isLoading && (
+        <p className="text-sm text-muted-foreground text-center mb-3">
+          {`${attachments.length} of 5 attachments • 50 per day`}
+        </p>
+      )}
+
       <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} />
 
       {/* Search Form */}
@@ -421,20 +433,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
       {showSuggestions && query.length >= 2 && (
         <SearchSuggestions suggestions={suggestions} selectedIndex={selectedIndex} onSelect={handleSuggestionClick} />
-      )}
-
-      {/* Rate limit messages */}
-      {contentType === "image" && !isLoading && (
-        <p className="text-sm text-muted-foreground text-center mt-3">
-          {user ? "50 images per day" : "3 free images per day • Sign up for 50/day"}
-        </p>
-      )}
-      {contentType === "search" && attachments.length > 0 && !isLoading && (
-        <p className="text-sm text-muted-foreground text-center mt-3">
-          {user
-            ? `${attachments.length} of 5 attachments • 50 per day`
-            : `${attachments.length} of 1 attachment • 5 per day • Sign up for more`}
-        </p>
       )}
 
       <input
