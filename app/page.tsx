@@ -26,6 +26,7 @@ import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { FancyGlowingButton } from "@/components/fancy-glowing-button"
+import { SignupBenefitsCard } from "@/components/signup-benefits-card"
 
 const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
@@ -980,12 +981,8 @@ export default function Home() {
               />
 
               {!user && lastMessage && !lastMessage.isStreaming && (
-                <div className="mt-12 mb-24 flex justify-center">
-                  <Link href="/login">
-                    <FancyGlowingButton>
-                      LOGIN / SIGN UP
-                    </FancyGlowingButton>
-                  </Link>
+                <div className="mt-12 mb-24 flex flex-col items-center">
+                  <SignupBenefitsCard />
                 </div>
               )}
             </>
