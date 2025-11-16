@@ -48,18 +48,14 @@ export function PageHeader({
   const logoHeight = hasSearched ? 32 : 28
   const logoClassName = hasSearched ? "h-10 md:h-12 w-auto" : "h-12 w-auto"
 
-  const logoPositionClass = hasSearched
-    ? "absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 md:top-2 md:translate-y-0"
-    : "absolute left-1/2 -translate-x-1/2"
-
   return (
     <div
       className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6"
     >
       <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between h-14 md:h-12 relative">
+        <div className="flex items-center justify-center h-14 md:h-12 relative">
           {isAuthenticated && (
-            <div className="pointer-events-auto z-[60] relative">
+            <div className="absolute left-0 z-[60]">
               <MobileDrawer
                 isOpen={isDrawerOpen}
                 onOpenChange={onOpenChange}
@@ -80,7 +76,7 @@ export function PageHeader({
           )}
 
           {showLogo && (
-            <div className={logoPositionClass}>
+            <div className="flex items-center justify-center">
               <Image
                 src="/miami-ai-logo.png"
                 alt="MIAMI.AI"
