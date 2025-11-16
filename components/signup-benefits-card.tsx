@@ -14,7 +14,7 @@ export function SignupBenefitsCard() {
           {/* Header */}
           <div className="space-y-2 text-center md:text-left">
             <h3 className="text-xl md:text-2xl font-semibold bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple bg-clip-text text-transparent">
-              Unlock the Full Experience
+              Unlock the Full Experience - Free!  
             </h3>
             <p className="text-sm md:text-base text-muted-foreground">
               Sign up for free to access premium features and unlimited searches
@@ -30,7 +30,7 @@ export function SignupBenefitsCard() {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-foreground">1,000 Searches/Day</h4>
-                <p className="text-xs text-muted-foreground mt-0.5">Up from 3 daily searches</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Up from 15 daily searches</p>
               </div>
             </div>
 
@@ -71,7 +71,7 @@ export function SignupBenefitsCard() {
           {/* CTA Button */}
           <Link href="/login" className="block">
             <button className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-miami-aqua via-miami-blue to-miami-purple text-white font-medium hover:opacity-90 transition-opacity shadow-lg shadow-miami-blue/20">
-              Sign Up Free
+              Login / Sign Up  
             </button>
           </Link>
 
