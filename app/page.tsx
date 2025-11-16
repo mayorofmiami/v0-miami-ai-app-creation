@@ -859,7 +859,7 @@ export default function Home() {
       )}
 
       <div
-        className={`min-h-screen flex flex-col transition-all duration-300 ${user && !searchState.hasSearched ? (uiState.isSidebarCollapsed ? "md:ml-16" : "md:ml-64") : ""}`}
+        className="min-h-screen flex flex-col"
       >
         {(user || searchState.hasSearched) && (
           <>

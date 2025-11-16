@@ -50,12 +50,12 @@ export function PageHeader({
 
   return (
     <div
-      className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6"
+      className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 pointer-events-none"
     >
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-center h-14 md:h-12 relative">
           {isAuthenticated && (
-            <div className="absolute left-0 z-[60]">
+            <div className="absolute left-0 z-[60] pointer-events-auto">
               <MobileDrawer
                 isOpen={isDrawerOpen}
                 onOpenChange={onOpenChange}
@@ -76,7 +76,7 @@ export function PageHeader({
           )}
 
           {showLogo && (
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center pointer-events-auto">
               <Image
                 src="/miami-ai-logo.png"
                 alt="MIAMI.AI"

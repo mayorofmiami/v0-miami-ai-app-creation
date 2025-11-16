@@ -58,7 +58,7 @@ export function ConversationView({
             {message.isStreaming && !message.response && !message.generatedImage ? (
               <SkeletonSearch />
             ) : message.response || message.generatedImage ? (
-              <div className="w-full max-w-3xl mx-auto px-4 md:px-6">
+              <div className="w-full max-w-3xl mx-auto">
                 <Suspense fallback={<SkeletonSearch />}>
                   {message.generatedImage ? (
                     <ImageResult
