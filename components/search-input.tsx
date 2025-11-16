@@ -336,7 +336,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
       {/* Search Form */}
       <form onSubmit={handleSubmit} className="relative">
-        <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-border/40 bg-background/80 backdrop-blur-md shadow-sm transition-all">
+        <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md shadow-lg shadow-black/20 transition-all hover:border-white/30 hover:shadow-xl hover:shadow-black/30">
           <button
             type="button"
             onClick={handleMenuToggle}
