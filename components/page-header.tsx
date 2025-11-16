@@ -52,11 +52,13 @@ export function PageHeader({
     ? "absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 md:top-2 md:translate-y-0"
     : "absolute left-1/2 -translate-x-1/2"
 
+  const headerOffsetClass = isAuthenticated
+    ? `transition-all duration-300 ${isSidebarCollapsed ? "md:left-16" : "md:left-64"}`
+    : ""
+
   return (
     <div
-      className={`fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 transition-all duration-300 ${
-        isSidebarCollapsed ? "md:left-16" : "md:left-64"
-      }`}
+      className={`fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 ${headerOffsetClass}`}
     >
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between h-14 md:h-12 relative">

@@ -319,7 +319,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   }, [])
 
   return (
-    <div ref={wrapperRef} className="w-full max-w-3xl mx-auto relative">
+    <div ref={wrapperRef} className="w-full relative">
       {/* Rate limit messages - Only show for authenticated users */}
       {user && contentType === "image" && !isLoading && (
         <p className="text-sm text-muted-foreground text-center mb-3">

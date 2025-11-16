@@ -780,3 +780,23 @@ html {
 .animate-shimmer {
   animation: shimmer 2s ease-in-out infinite;
 }
+
+/* Adding elegant morphing animation with slow timing */
+@keyframes elegant-morph {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    opacity: 0.5;
+  }
+  25% {
+    transform: scale(1.4) translateY(-8px);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1) translateY(0);
+    opacity: 0.6;
+  }
+  75% {
+    transform: scale(0.8) translateY(4px);
+    opacity: 0.4;
+  }
+}

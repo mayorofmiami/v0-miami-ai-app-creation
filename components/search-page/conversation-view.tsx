@@ -44,7 +44,7 @@ export function ConversationView({
               ref={(el) => {
                 messageRefs.current[message.id] = el
               }}
-              className="w-full max-w-3xl mx-auto scroll-mt-16 px-4 md:px-0"
+              className="w-full max-w-3xl mx-auto scroll-mt-16 px-4 md:px-6"
             >
               <div className="bg-muted/50 border border-border rounded-xl px-3 py-2.5 md:px-5 md:py-4 flex items-center gap-2.5 md:gap-3">
                 <Palmtree className="w-4 h-4 md:w-5 md:h-5 text-miami-blue dark:text-miami-aqua flex-shrink-0" />
@@ -58,7 +58,7 @@ export function ConversationView({
             {message.isStreaming && !message.response && !message.generatedImage ? (
               <SkeletonSearch />
             ) : message.response || message.generatedImage ? (
-              <div className="w-full max-w-3xl mx-auto">
+              <div className="w-full max-w-3xl mx-auto px-4 md:px-6">
                 <Suspense fallback={<SkeletonSearch />}>
                   {message.generatedImage ? (
                     <ImageResult
