@@ -904,16 +904,20 @@ export default function Home() {
                     loop
                     muted
                     playsInline
-                    preload="auto"
+                    preload="metadata"
+                    onLoadedData={() => setVideoLoaded(true)}
                     className="absolute inset-0 w-full h-full object-cover -z-10"
+                    poster={isMobile ? "/videos/miami-mobile-poster.jpg" : "/videos/miami-desktop-poster.jpg"}
                   >
                     {isMobile ? (
-                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
+                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/miami-mobile.mp4-wqIaE5YzEe0dxkBSqRRRgWHKmutjp4.mp4" type="video/mp4" />
                     ) : (
-                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/watermarked_preview-qKD8h0fBGCw772rYynhBkPD2nstHPK.mp4" type="video/mp4" />
+                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/miami-desktop.mp4-xf3xmvDmr0PnYGLw2zP0VMJ0ETplab.mp4" type="video/mp4" />
                     )}
                   </video>
-                  
+                  {!videoLoaded && (
+                    <div className="absolute inset-0 bg-gradient-to-br from-miami-blue/30 via-miami-purple/20 to-miami-aqua/30 -z-20 animate-pulse" />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-br from-gray-900/30 via-gray-800/20 to-black/40 -z-20" />
 
                   <div className="absolute top-12 z-10">
