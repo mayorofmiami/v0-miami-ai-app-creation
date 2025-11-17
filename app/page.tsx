@@ -910,9 +910,9 @@ export default function Home() {
                     poster={isMobile ? "/videos/miami-mobile-poster.jpg" : "/videos/miami-desktop-poster.jpg"}
                   >
                     {isMobile ? (
-                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/miami-mobile.mp4-wqIaE5YzEe0dxkBSqRRRgWHKmutjp4.mp4" type="video/mp4" />
+                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/night-miami-traffic-mobile.mp4-2-CWh1oOGYX82ztWbL9gvoFINdR9BTpn.mp4" type="video/mp4" />
                     ) : (
-                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/miami-desktop.mp4-xf3xmvDmr0PnYGLw2zP0VMJ0ETplab.mp4" type="video/mp4" />
+                      <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/night-miami-traffic-desktop.mp4-HELLerchqRDbqyiaIMCAzMl4GYVaAX.mp4" type="video/mp4" />
                     )}
                   </video>
                   {!videoLoaded && (
