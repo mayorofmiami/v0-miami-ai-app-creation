@@ -17,7 +17,7 @@ function getClientIp(request: NextRequest): string | null {
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
-    const file = formData.get("file") as File
+    let file = formData.get("file") as File
     const userId = formData.get("userId") as string | null
 
     if (!file) {
@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
       ? ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf", "text/plain", "text/csv"]
       : ["image/jpeg", "image/png", "image/webp", "image/gif"]
 
-    // Validate MIME type
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         {
@@ -56,27 +55,17 @@ export async function POST(request: NextRequest) {
     if (file.type.startsWith('image/')) {
       try {
         const arrayBuffer = await file.arrayBuffer()
-        const blob = new Blob([arrayBuffer], { type: file.type })
         
-        // Check if it's a valid image by trying to read it
-        const bitmap = await createImageBitmap(blob)
-        
-        // Limit image dimensions to prevent memory issues
-        const maxDimension = 10000 // 10k pixels max per side
-        if (bitmap.width > maxDimension || bitmap.height > maxDimension) {
-          bitmap.close()
+        // Validate it's not an empty file
+        if (arrayBuffer.byteLength === 0) {
           return NextResponse.json(
-            {
-              error: `Image dimensions too large. Max: ${maxDimension}x${maxDimension} pixels`,
-            },
+            { error: "Invalid image file - file is empty" },
             { status: 400 },
           )
         }
-        bitmap.close()
-
-        // Recreate file from validated buffer
-        const validatedFile = new File([arrayBuffer], sanitizedFileName, { type: file.type })
-        file = validatedFile as any
+        
+        // Recreate file with sanitized name
+        file = new File([arrayBuffer], sanitizedFileName, { type: file.type })
       } catch (error) {
         return NextResponse.json(
           { error: "Invalid image file or corrupted data" },
