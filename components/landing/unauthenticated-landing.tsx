@@ -19,6 +19,7 @@ import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { FancyGlowingButton } from "@/components/fancy-glowing-button"
 import { SignupBenefitsCard } from "@/components/signup-benefits-card"
+import { PageHeader } from "@/components/page-header"
 
 const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
@@ -539,6 +540,29 @@ export function UnauthenticatedLanding() {
       />
 
       <div className="min-h-screen flex flex-col">
+        {searchState.hasSearched && (
+          <div className="fixed inset-x-0 top-0 h-26 md:h-32 bg-gradient-to-b from-background via-background to-transparent pointer-events-none z-40" />
+        )}
+
+        <PageHeader
+          hasSearched={searchState.hasSearched}
+          isAuthenticated={false}
+          isSidebarCollapsed={true}
+          isDrawerOpen={false}
+          onOpenChange={() => {}}
+          isAdmin={false}
+          recentSearches={[]}
+          user={null}
+          isLoadingUser={false}
+          theme="dark"
+          setTheme={() => {}}
+          handleNewChat={handleClearSearch}
+          handleToggleHistory={() => {}}
+          handleToggleBookmarks={() => {}}
+          handleSearch={() => {}}
+          searchMode={searchState.mode}
+        />
+
         <main className={`flex-1 ${searchState.hasSearched ? "container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 pb-36 md:pb-32 pt-20 md:pt-24" : ""}`}>
           {!searchState.hasSearched ? (
             <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">

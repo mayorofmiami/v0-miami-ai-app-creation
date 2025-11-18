@@ -7,6 +7,8 @@ const isBrowser = typeof window !== "undefined"
 const CACHE_EXPIRATION_MS = 60 * 60 * 1000 // 1 hour
 const MAX_STORAGE_SIZE = 4 * 1024 * 1024 // 4MB limit (localStorage is typically 5-10MB)
 const MAX_CACHE_ENTRIES = 50 // Maximum number of cache entries
+const MAINTENANCE_INTERVAL_MS = 60 * 60 * 1000 // 1 hour between maintenance checks
+const STORAGE_WARNING_THRESHOLD = 0.8 // Warn at 80% capacity
 
 function getStorageSize(): number {
   if (!isBrowser) return 0
@@ -14,7 +16,7 @@ function getStorageSize(): number {
   let totalSize = 0
   try {
     for (const key in window.localStorage) {
-      if (window.localStorage.hasOwnProperty(key)) {
+      if (window.localStorage.hasOwnProperty(key) && key.startsWith('miami-ai:')) {
         totalSize += window.localStorage[key].length + key.length
       }
     }
@@ -56,6 +58,39 @@ function cleanOldCacheEntries(): void {
   }
 }
 
+function shouldPerformMaintenance(): boolean {
+  if (!isBrowser) return false
+  
+  try {
+    const lastMaintenanceStr = window.localStorage.getItem('miami-ai:last-maintenance')
+    const lastMaintenance = lastMaintenanceStr ? parseInt(lastMaintenanceStr) : 0
+    const now = Date.now()
+    
+    return (now - lastMaintenance) > MAINTENANCE_INTERVAL_MS
+  } catch {
+    return false
+  }
+}
+
+function performMaintenance(): void {
+  if (!isBrowser) return
+  
+  try {
+    const currentSize = getStorageSize()
+    
+    // Clean if we're at 80% capacity
+    if (currentSize > MAX_STORAGE_SIZE * STORAGE_WARNING_THRESHOLD) {
+      console.warn(`[v0] Storage at ${Math.round((currentSize / MAX_STORAGE_SIZE) * 100)}% capacity, cleaning old entries`)
+      cleanOldCacheEntries()
+    }
+    
+    // Update last maintenance timestamp
+    window.localStorage.setItem('miami-ai:last-maintenance', Date.now().toString())
+  } catch (error) {
+    console.error('Error performing maintenance:', error)
+  }
+}
+
 export const storage = {
   getItem: (key: string, defaultValue: any): any => {
     if (!isBrowser) return defaultValue
@@ -67,7 +102,6 @@ export const storage = {
       const parsed = JSON.parse(item)
       
       if (parsed.timestamp && Date.now() - parsed.timestamp > CACHE_EXPIRATION_MS) {
-        console.log(`[v0] Cache expired for ${key}, removing`)
         window.localStorage.removeItem(key)
         return defaultValue
       }
@@ -89,19 +123,8 @@ export const storage = {
       
       const serialized = JSON.stringify(dataToStore)
       
-      const currentSize = getStorageSize()
-      const newItemSize = serialized.length + key.length
-      
-      if (currentSize + newItemSize > MAX_STORAGE_SIZE) {
-        console.warn(`[v0] Storage approaching limit (${currentSize} bytes), cleaning old entries`)
-        cleanOldCacheEntries()
-        
-        // Check again after cleaning
-        const sizeAfterClean = getStorageSize()
-        if (sizeAfterClean + newItemSize > MAX_STORAGE_SIZE) {
-          console.error(`[v0] Storage still full after cleaning, cannot save ${key}`)
-          return
-        }
+      if (shouldPerformMaintenance()) {
+        performMaintenance()
       }
       
       window.localStorage.setItem(key, serialized)

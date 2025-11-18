@@ -2,7 +2,20 @@ import "server-only"
 import { neon } from "@neondatabase/serverless"
 import { generateText } from "ai"
 
-export const sql = neon(process.env.DATABASE_URL!)
+let _sql: ReturnType<typeof neon> | null = null
+
+function getSQL() {
+  if (!_sql) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is not set")
+    }
+    _sql = neon(process.env.DATABASE_URL)
+  }
+  return _sql
+}
+
+// Export the singleton instance
+export const sql = getSQL()
 
 export interface SearchHistory {
   id: string
@@ -122,11 +135,18 @@ Title:`,
 export async function getUserThreads(userId: string, limit = 20) {
   try {
     const result = await sql`
-      SELECT t.*, 
-             (SELECT COUNT(*) FROM search_history WHERE thread_id = t.id) as message_count,
-             t.updated_at as last_message_at
+      SELECT 
+        t.id,
+        t.user_id,
+        t.title,
+        t.created_at,
+        t.updated_at,
+        COUNT(sh.id)::int as message_count,
+        COALESCE(MAX(sh.created_at), t.updated_at) as last_message_at
       FROM threads t
+      LEFT JOIN search_history sh ON sh.thread_id = t.id
       WHERE t.user_id = ${userId}
+      GROUP BY t.id, t.user_id, t.title, t.created_at, t.updated_at
       ORDER BY t.updated_at DESC
       LIMIT ${limit}
     `

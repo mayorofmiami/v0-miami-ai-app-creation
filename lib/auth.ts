@@ -1,19 +1,7 @@
 import "server-only"
-import { neon } from "@neondatabase/serverless"
 import { cookies } from "next/headers"
 import { redirect } from 'next/navigation'
-
-let _sql: ReturnType<typeof neon> | null = null
-
-function getSQL() {
-  if (!_sql) {
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL environment variable is not set")
-    }
-    _sql = neon(process.env.DATABASE_URL)
-  }
-  return _sql
-}
+import { sql } from "./db"
 
 export interface User {
   id: string
@@ -63,7 +51,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function createSession(userId: string): Promise<string> {
-  const sql = getSQL()
+  await sql`
+    DELETE FROM sessions 
+    WHERE user_id = ${userId}
+    AND expires_at < NOW() + INTERVAL '7 days'
+  `
+
   const sessionId = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
 
@@ -93,7 +86,6 @@ export async function getSession(): Promise<{ userId: string } | null> {
 
     if (!sessionId) return null
 
-    const sql = getSQL()
     const result = await sql`
       SELECT user_id
       FROM sessions
@@ -117,7 +109,6 @@ export async function getCurrentUser(): Promise<User | null> {
 
     if (!sessionId) return null
 
-    const sql = getSQL()
     const result = await sql`
       SELECT u.id, u.email, u.name, u.created_at, u.role, u.oauth_provider, u.oauth_id, u.avatar_url
       FROM sessions s
@@ -144,7 +135,6 @@ export async function requireAuth(): Promise<User> {
 }
 
 export async function logout() {
-  const sql = getSQL()
   const cookieStore = await cookies()
   const sessionId = cookieStore.get("session")?.value
 
@@ -158,7 +148,7 @@ export async function logout() {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    expires: new Date(0), // Set to past date to delete
+    expires: new Date(0),
     maxAge: 0,
   })
   
@@ -172,8 +162,6 @@ export async function signUp(
 ): Promise<{ success: boolean; error?: string; userId?: string }> {
   try {
     console.log("[v0] Sign up attempt for email:", email)
-
-    const sql = getSQL()
 
     const existing = await sql`
       SELECT id FROM users WHERE email = ${email}
@@ -208,7 +196,6 @@ export async function signIn(
   password: string,
 ): Promise<{ success: boolean; error?: string; userId?: string }> {
   try {
-    const sql = getSQL()
     const result = await sql`
       SELECT id, password_hash FROM users WHERE email = ${email}
     `
@@ -251,7 +238,6 @@ export async function createOrUpdateOAuthUser(
 ): Promise<{ success: boolean; error?: string; userId?: string }> {
   try {
     console.log("[v0] OAuth user creation attempt:", { provider, email, name })
-    const sql = getSQL()
 
     // Check if user exists with this OAuth provider
     const existingOAuth = await sql`
@@ -326,5 +312,72 @@ export async function createOrUpdateOAuthUser(
   } catch (error) {
     console.error("[v0] OAuth user creation error:", error)
     return { success: false, error: error instanceof Error ? error.message : "Failed to create or update user" }
+  }
+}
+
+export async function createPasswordResetToken(email: string): Promise<{ success: boolean; token?: string; error?: string }> {
+  try {
+    const user = await sql`
+      SELECT id FROM users WHERE email = ${email}
+    `
+
+    if (user.length === 0) {
+      // Don't reveal if email exists
+      return { success: true }
+    }
+
+    const token = crypto.randomUUID()
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+    await sql`
+      INSERT INTO password_reset_tokens (token, user_id, expires_at)
+      VALUES (${token}, ${user[0].id}, ${expiresAt.toISOString()})
+    `
+
+    return { success: true, token }
+  } catch (error) {
+    console.error("[v0] Password reset token creation error:", error)
+    return { success: false, error: "Failed to create reset token" }
+  }
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const result = await sql`
+      SELECT user_id, expires_at FROM password_reset_tokens
+      WHERE token = ${token}
+    `
+
+    if (result.length === 0) {
+      return { success: false, error: "Invalid or expired reset token" }
+    }
+
+    const resetToken = result[0]
+    if (new Date(resetToken.expires_at) < new Date()) {
+      return { success: false, error: "Reset token has expired" }
+    }
+
+    const passwordHash = await hashPassword(newPassword)
+
+    await sql`
+      UPDATE users
+      SET password_hash = ${passwordHash}
+      WHERE id = ${resetToken.user_id}
+    `
+
+    // Delete used token
+    await sql`
+      DELETE FROM password_reset_tokens WHERE token = ${token}
+    `
+
+    // Invalidate all existing sessions for security
+    await sql`
+      DELETE FROM sessions WHERE user_id = ${resetToken.user_id}
+    `
+
+    return { success: true }
+  } catch (error) {
+    console.error("[v0] Password reset error:", error)
+    return { success: false, error: "Failed to reset password" }
   }
 }
