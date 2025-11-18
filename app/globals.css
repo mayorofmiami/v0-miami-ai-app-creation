@@ -800,3 +800,7 @@ html {
     opacity: 0.4;
   }
 }
+
+.animate-elegant-morph {
+  animation: elegant-morph 3s ease-in-out infinite;
+}

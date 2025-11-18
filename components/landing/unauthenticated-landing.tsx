@@ -1,38 +1,24 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback, useReducer, Suspense, useMemo } from "react"
+import { useState, useRef, useCallback, useReducer, useEffect } from "react"
 import { SearchInput } from "@/components/search-input"
-import { HistorySidebar } from "@/components/history-sidebar"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
-import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
 import type { ModelId } from "@/components/model-selector"
-import Image from "next/image"
 import type { SearchHistory } from "@/lib/db"
 import { toast } from "@/lib/toast"
-import { ErrorBoundary } from "@/components/error-boundary"
 import type { SearchInputRef } from "@/components/search-input"
-import { useTheme } from "next-themes"
 import type { Attachment } from "@/types"
-import type { SearchState, SearchAction, SearchMode, ContentType, User } from "@/types"
-import { PageHeader } from "@/components/page-header"
-import { ExampleQueries } from "@/components/example-queries"
+import type { SearchState, SearchAction, SearchMode, ContentType } from "@/types"
 import { handleSearchError } from "@/lib/error-handling"
 import { handleImageError } from "@/lib/error-handling"
 import { storage, STORAGE_KEYS, threadStorage } from "@/lib/local-storage"
 import { logger } from "@/lib/logger"
 import { ConversationView } from "@/components/search-page/conversation-view"
 import { SearchFormContainer } from "@/components/search-page/search-form-container"
-import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { FancyGlowingButton } from "@/components/fancy-glowing-button"
 import { SignupBenefitsCard } from "@/components/signup-benefits-card"
-import { getCurrentUser } from "@/lib/auth"
-import { getSearchHistory, getModelPreference } from "@/lib/db"
-import { UnauthenticatedLanding } from "@/components/landing/unauthenticated-landing"
-import { AuthenticatedLanding } from "@/components/landing/authenticated-landing"
-import { sql } from "@/lib/db"
-import { MiamiLoader } from "@/components/miami-loader"
 
 const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
@@ -166,16 +152,7 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
   }
 }
 
-export default function Home() {
-  const [user, setUser] = useState<User | null>(null)
-  const [history, setHistory] = useState<SearchHistory[]>([])
-  const [modelPreference, setModelPreference] = useState<any>(null)
-  const [initialBookmarks, setInitialBookmarks] = useState<
-    Array<{ id: string; query: string; response: string; created_at: string }>
-  >([])
-
-  const { theme, setTheme } = useTheme()
-
+export function UnauthenticatedLanding() {
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false)
   const [connectionType, setConnectionType] = useState<'fast' | 'medium' | 'slow'>('medium')
   const [videoLoaded, setVideoLoaded] = useState(false)
@@ -191,14 +168,6 @@ export default function Home() {
     imageRateLimit: null,
   })
 
-  const [uiState, setUIState] = useState({
-    showHistory: false,
-    showBookmarks: false,
-    isDrawerOpen: false,
-    isSidebarCollapsed: true,
-    sidebarLoaded: false,
-  })
-
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       return threadStorage.getCurrentThreadId()
@@ -206,21 +175,11 @@ export default function Home() {
     return null
   })
 
-  const [isLoadingUser, setIsLoadingUser] = useState(() => {
-    if (typeof window !== "undefined") {
-      const cachedData = storage.getItem("miami_user_cache", null)
-      return !cachedData // Only show loading if no cache exists
-    }
-    return true
-  })
-
   const [selectedModel, setSelectedModel] = useState<ModelId>(NON_AUTH_DEFAULT_MODEL)
 
   const abortControllerRef = useRef<AbortController | null>(null)
   const searchInputRef = useRef<SearchInputRef>(null)
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
-
-  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [recentSearches, setRecentSearches] = useState<string[]>([])
 
@@ -232,243 +191,12 @@ export default function Home() {
     dispatchSearch({ type: "SET_MODE", mode: searchState.mode === "quick" ? "deep" : "quick" })
   }, [searchState.mode])
 
-  const handleToggleHistory = useCallback(() => {
-    setUIState((prev) => ({ ...prev, showHistory: !prev.showHistory }))
-  }, [])
-
-  const handleToggleBookmarks = useCallback(() => {
-    setUIState((prev) => ({ ...prev, showBookmarks: !prev.showBookmarks }))
-  }, [])
-
-  const handleSelectThread = useCallback(async (threadId: string) => {
-    try {
-      const res = await fetch(`/api/threads/${threadId}`)
-      if (!res.ok) {
-        toast.error("Failed to load conversation")
-        return
-      }
-
-      const data = await res.json()
-      const messages = data.messages // API returns { messages: SearchHistory[] }
-
-      if (!messages || messages.length === 0) {
-        toast.info("This conversation has no messages")
-        return
-      }
-
-      // Clear current search state
-      dispatchSearch({ type: "CLEAR_SEARCH" })
-      setCurrentThreadId(threadId)
-
-      // Convert thread messages to conversation messages format
-      const conversationMessages = messages.map((message: SearchHistory) => ({
-        id: message.id || Date.now().toString(),
-        type: message.generated_image ? "image" : "search",
-        query: message.query,
-        response: message.response,
-        citations: message.citations || [],
-        modelInfo: message.model_used
-          ? {
-              model: message.model_used,
-              reason: message.selection_reason || "",
-              autoSelected: message.auto_selected ?? true,
-            }
-          : undefined,
-        generatedImage: message.generated_image || undefined,
-        isStreaming: false,
-      }))
-
-      // Load the first message using LOAD_FROM_HISTORY, then set the rest directly
-      if (conversationMessages.length > 0) {
-        dispatchSearch({ type: "LOAD_FROM_HISTORY", history: messages[0] })
-
-        // For additional messages, we need to add them to state
-        // Since we don't have a direct action for this, we'll dispatch START_SEARCH and complete for each
-        for (let i = 1; i < messages.length; i++) {
-          const msg = messages[i]
-          dispatchSearch({
-            type: "START_SEARCH",
-            query: msg.query,
-            mode: msg.mode || "quick",
-          })
-
-          if (msg.response) {
-            dispatchSearch({
-              type: "UPDATE_CURRENT_RESPONSE",
-              response: msg.response,
-            })
-          }
-
-          if (msg.citations) {
-            dispatchSearch({
-              type: "SET_CURRENT_CITATIONS",
-              citations: msg.citations,
-            })
-          }
-
-          if (msg.model_used) {
-            dispatchSearch({
-              type: "SET_CURRENT_MODEL_INFO",
-              modelInfo: {
-                model: msg.model_used,
-                reason: msg.selection_reason || "",
-                autoSelected: msg.auto_selected ?? true,
-              },
-            })
-          }
-
-          dispatchSearch({ type: "SEARCH_COMPLETE" })
-        }
-      }
-
-      // Close sidebars after loading thread
-      setUIState((prev) => ({
-        ...prev,
-        showHistory: false,
-        showBookmarks: false,
-        isDrawerOpen: false,
-      }))
-
-      toast.success("Conversation loaded")
-    } catch (error) {
-      console.error("Failed to load thread:", error)
-      toast.error("Failed to load conversation")
-    }
-  }, [])
-
-  useEffect(() => {
-    async function loadInitialData() {
-      const cachedUserData = typeof window !== "undefined" ? storage.getItem("miami_user_cache", null) : null
-      
-      if (cachedUserData && cachedUserData.user) {
-        console.log('[v0] Loading from cache for instant display')
-        setUser(cachedUserData.user)
-        setHistory(cachedUserData.history || [])
-        setModelPreference(cachedUserData.modelPreference)
-        setInitialBookmarks(cachedUserData.bookmarks || [])
-        
-        const recent = (cachedUserData.history || []).slice(0, 10).map((h: SearchHistory) => h.query)
-        setRecentSearches(recent)
-        
-        if (cachedUserData.modelPreference?.model_preference === "manual" && cachedUserData.modelPreference.selected_model) {
-          setSelectedModel(cachedUserData.modelPreference.selected_model as ModelId)
-        } else {
-          setSelectedModel("auto")
-        }
-      }
-
-      try {
-        const res = await fetch("/api/init")
-        if (res.ok) {
-          const data = await res.json()
-          setUser(data.user)
-
-          if (data.user) {
-            // Authenticated user: load history and preferences
-            setHistory(data.history || [])
-            setModelPreference(data.modelPreference)
-            setInitialBookmarks(data.bookmarks || [])
-
-            const recent = (data.history || []).slice(0, 10).map((h: SearchHistory) => h.query)
-            setRecentSearches(recent)
-
-            // Set model preference from database
-            if (data.modelPreference?.model_preference === "manual" && data.modelPreference.selected_model) {
-              setSelectedModel(data.modelPreference.selected_model as ModelId)
-            } else {
-              setSelectedModel("auto")
-            }
-            
-            if (typeof window !== "undefined") {
-              storage.setItem("miami_user_cache", {
-                user: data.user,
-                history: data.history,
-                modelPreference: data.modelPreference,
-                bookmarks: data.bookmarks,
-                timestamp: Date.now(), // Add timestamp for cache validation
-              })
-            }
-          } else {
-            if (typeof window !== "undefined") {
-              storage.removeItem("miami_user_cache")
-            }
-            
-            // Non-authenticated user: load from localStorage
-            if (typeof window !== "undefined") {
-              const storedModel = storage.getItem(STORAGE_KEYS.MODEL_PREFERENCE, null)
-              if (storedModel) {
-                setSelectedModel(storedModel as ModelId)
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error("[v0] Failed to load initial data:", error)
-        if (typeof window !== "undefined") {
-          storage.removeItem("miami_user_cache")
-        }
-      } finally {
-        setIsLoadingUser(false)
-      }
-    }
-    loadInitialData()
-  }, [])
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Page became visible, refresh user state
-        fetch("/api/init")
-          .then(res => res.json())
-          .then(data => {
-            if (data.user) {
-              setUser(data.user)
-            }
-          })
-          .catch(err => console.error('Failed to refresh user state:', err))
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [])
-
-  const handleModelChange = async (newModel: ModelId) => {
-    setSelectedModel(newModel)
-
-    if (!user?.id) {
-      if (typeof window !== "undefined") {
-        storage.setItem(STORAGE_KEYS.MODEL_PREFERENCE, newModel)
-      }
-      return
-    }
-
-    try {
-      const response = await fetch("/api/model-preference", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          modelPreference: newModel === "auto" ? "auto" : "manual",
-          selectedModel: newModel === "auto" ? null : newModel,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to save preference")
-      }
-    } catch (error) {
-      logger.error("Failed to update model preference", { error })
-      toast.error("Failed to save preference", "Your model preference couldn't be saved. It will reset on refresh.")
-    }
-  }
-
   const handleCancelSearch = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
-      dispatchSearch({ type: "SEARCH_ERROR", error: "" }) // Clear any ongoing response
-      dispatchSearch({ type: "SEARCH_COMPLETE" }) // Ensure loading is set to false
+      dispatchSearch({ type: "SEARCH_ERROR", error: "" })
+      dispatchSearch({ type: "SEARCH_COMPLETE" })
     }
   }
 
@@ -493,7 +221,7 @@ export default function Home() {
       abortControllerRef.current = new AbortController()
 
       let effectiveThreadId = currentThreadId
-      if (!user?.id && !effectiveThreadId) {
+      if (!effectiveThreadId) {
         effectiveThreadId = `local-thread-${Date.now()}`
         setCurrentThreadId(effectiveThreadId)
         threadStorage.setCurrentThreadId(effectiveThreadId)
@@ -513,13 +241,6 @@ export default function Home() {
       try {
         const body: any = { query, mode: searchMode }
 
-        if (user?.id) {
-          body.userId = user.id
-          if (currentThreadId) {
-            body.threadId = currentThreadId
-          }
-        }
-
         if (selectedModel !== "auto") {
           body.selectedModel = selectedModel
         }
@@ -529,9 +250,8 @@ export default function Home() {
         }
 
         if (searchState.messages.length > 0 && currentThreadId) {
-          const contextLimit = user?.id ? 10 : 5
           body.conversationHistory = searchState.messages
-            .slice(-contextLimit)
+            .slice(-5)
             .map((msg) => ({
               role: msg.type === "search" ? "user" : "assistant",
               content: msg.type === "search" ? msg.query : msg.response || "",
@@ -550,7 +270,7 @@ export default function Home() {
           const errorData = await res.json()
           const errorMessage = handleSearchError({
             error: errorData,
-            user,
+            user: null,
             status: res.status,
           })
           dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
@@ -561,17 +281,14 @@ export default function Home() {
           const errorData = await res.json()
           const errorMessage = handleSearchError({
             error: errorData,
-            user,
+            user: null,
             status: res.status,
           })
           dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
           return
         }
 
-        const threadId = res.headers.get("X-Thread-Id")
-        const searchId = res.headers.get("X-Search-Id")
-
-        if (!user?.id && effectiveThreadId) {
+        if (effectiveThreadId) {
           const thread = threadStorage.getThread(effectiveThreadId)
           if (thread) {
             threadStorage.updateThread(effectiveThreadId, {
@@ -584,8 +301,6 @@ export default function Home() {
           if (thread && thread.messageCount === 0) {
             generateThreadTitle(effectiveThreadId, query)
           }
-        } else if (user?.id && threadId) {
-          setCurrentThreadId(threadId)
         }
 
         const remaining = res.headers.get("X-RateLimit-Remaining")
@@ -645,6 +360,7 @@ export default function Home() {
 
         dispatchSearch({ type: "SEARCH_COMPLETE" })
 
+        const searchId = res.headers.get("X-Search-Id")
         if (searchId) {
           dispatchSearch({ type: "SET_SEARCH_ID", searchId })
         }
@@ -667,7 +383,7 @@ export default function Home() {
         abortControllerRef.current = null
       }
     },
-    [user, selectedModel, searchState.isLoading, currentThreadId, searchState.messages],
+    [selectedModel, searchState.isLoading, currentThreadId, searchState.messages],
   )
 
   const handleImageGeneration = useCallback(
@@ -679,7 +395,7 @@ export default function Home() {
       dispatchSearch({ type: "START_IMAGE_GENERATION", prompt })
 
       try {
-        const body: any = { prompt, userId: user?.id }
+        const body: any = { prompt }
 
         const res = await fetch("/api/generate-image", {
           method: "POST",
@@ -712,7 +428,7 @@ export default function Home() {
         dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, image generation failed. Please try again." })
       }
     },
-    [user, searchState.isLoading],
+    [searchState.isLoading],
   )
 
   const handleSearchOrGenerate = useCallback(
@@ -726,48 +442,14 @@ export default function Home() {
     [searchState.contentType, handleImageGeneration, handleSearch],
   )
 
-  const handleSelectHistory = (history: SearchHistory) => {
-    if (!history.response || history.response.trim() === "") {
-      handleSearch(history.query, history.mode)
-      return
-    }
-
-    dispatchSearch({ type: "LOAD_FROM_HISTORY", history })
-    toast.info("Loaded from history")
-  }
-
-  const handleLogout = async () => {
-    try {
-      const formData = new FormData()
-      await fetch("/api/auth/logout", { method: "POST", body: formData })
-      setUser(null)
-      toast.success("Logged out successfully")
-      setUIState((prev) => ({ ...prev, isDrawerOpen: false }))
-    } catch (error) {
-      toast.error("Failed to log out")
+  const handleModelChange = async (newModel: ModelId) => {
+    setSelectedModel(newModel)
+    if (typeof window !== "undefined") {
+      storage.setItem(STORAGE_KEYS.MODEL_PREFERENCE, newModel)
     }
   }
 
-  const handleNewChat = useCallback(() => {
-    handleCancelSearch()
-    handleClearSearch()
-
-    setCurrentThreadId(null)
-    if (!user?.id) {
-      threadStorage.clearCurrentThread()
-    }
-
-    setUIState((prev) => ({ ...prev, isDrawerOpen: false }))
-    setTimeout(() => {
-      searchInputRef.current?.focus()
-    }, 300)
-  }, [user])
-
-  const isAdmin = useMemo(() => user?.role === "owner" || user?.role === "admin", [user?.role])
-
-  const lastMessage = useMemo(() => {
-    return searchState.messages.length > 0 ? searchState.messages[searchState.messages.length - 1] : null
-  }, [searchState.messages])
+  const lastMessage = searchState.messages.length > 0 ? searchState.messages[searchState.messages.length - 1] : null
 
   const handleRegenerate = useCallback(() => {
     if (lastMessage) {
@@ -778,77 +460,6 @@ export default function Home() {
   const handleContentTypeChange = useCallback((type: ContentType) => {
     dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })
   }, [])
-
-  const handleFeatureAction = useCallback((query: string, actionMode: SearchMode) => {
-    if (actionMode === "deep" && !query) {
-      dispatchSearch({ type: "SET_MODE", mode: "deep" })
-      setTimeout(() => {
-        searchInputRef.current?.focus()
-      }, 100)
-    } else if (query) {
-      dispatchSearch({ type: "SET_MODE", mode: actionMode })
-      setTimeout(() => {
-        searchInputRef.current?.focus()
-      }, 100)
-    }
-  }, [])
-
-  useEffect(() => {
-    const messages = searchState.messages
-    const currentMessageCount = messages.length
-
-    const currentMessageIds = new Set(messages.map((m) => m.id))
-    Object.keys(messageRefs.current).forEach((id) => {
-      if (!currentMessageIds.has(id)) {
-        delete messageRefs.current[id]
-      }
-    })
-
-    if (currentMessageCount > 0) {
-      const latestMessage = messages[currentMessageCount - 1]
-      const messageElement = messageRefs.current[latestMessage.id]
-
-      if (messageElement) {
-        const scrollThreshold = 150
-        const isNearBottom =
-          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - scrollThreshold
-
-        if (isNearBottom) {
-          requestAnimationFrame(() => {
-            const headerOffset = 100
-            const elementPosition = messageElement.getBoundingClientRect().top
-            const offsetPosition = elementPosition + window.pageYOffset - headerOffset
-
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: "smooth",
-            })
-          })
-        }
-      }
-    }
-  }, [searchState.messages])
-
-  useEffect(() => {
-    if (searchState.hasSearched) {
-      // Placeholder for effect logic
-    }
-  }, [searchState.hasSearched])
-
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-        abortControllerRef.current = null
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!uiState.isSidebarCollapsed && !uiState.sidebarLoaded) {
-      setUIState((prev) => ({ ...prev, sidebarLoaded: true }))
-    }
-  }, [uiState.isSidebarCollapsed, uiState.sidebarLoaded])
 
   const generateThreadTitle = async (threadId: string, query: string) => {
     try {
@@ -874,41 +485,29 @@ export default function Home() {
     checkMobile()
     window.addEventListener('resize', checkMobile)
 
-    // Check connection type using Network Information API
     const detectConnection = () => {
       if ('connection' in navigator) {
         const conn = (navigator as any).connection
         const effectiveType = conn?.effectiveType || 'unknown'
         const saveData = conn?.saveData || false
 
-        console.log('[v0] Connection detected:', { effectiveType, saveData })
-
-        // If user has data saver enabled, don't load video
         if (saveData) {
-          console.log('[v0] Data saver enabled - showing static image only')
           setConnectionType('slow')
           setShouldLoadVideo(false)
           return
         }
 
-        // Determine connection speed
         if (effectiveType === '4g' || effectiveType === 'wifi') {
-          console.log('[v0] Fast connection - loading video immediately')
           setConnectionType('fast')
           setShouldLoadVideo(true)
         } else if (effectiveType === '3g') {
-          console.log('[v0] Medium connection - will load video after image')
           setConnectionType('medium')
-          // Delay video load by 2 seconds to show image first
           setTimeout(() => setShouldLoadVideo(true), 2000)
         } else {
-          console.log('[v0] Slow connection - showing static image only')
           setConnectionType('slow')
           setShouldLoadVideo(false)
         }
       } else {
-        // API not supported, use safe default: load image first, then video
-        console.log('[v0] Network API not supported - using safe default')
         setConnectionType('medium')
         setTimeout(() => setShouldLoadVideo(true), 2000)
       }
@@ -916,7 +515,6 @@ export default function Home() {
 
     detectConnection()
 
-    // Listen for connection changes
     if ('connection' in navigator) {
       const conn = (navigator as any).connection
       conn?.addEventListener('change', detectConnection)
@@ -930,24 +528,158 @@ export default function Home() {
   }, [])
 
   return (
-    <ErrorBoundary>
-      {isLoadingUser ? (
-        <MiamiLoader />
-      ) : user ? (
-        <AuthenticatedLanding
-          user={{
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role || "user",
-          }}
-          initialHistory={history}
-          initialModelPreference={modelPreference}
-          initialBookmarks={initialBookmarks}
-        />
-      ) : (
-        <UnauthenticatedLanding />
-      )}
-    </ErrorBoundary>
+    <>
+      <KeyboardShortcuts
+        onSearch={handleFocusSearch}
+        onClear={handleClearSearch}
+        onToggleMode={handleToggleMode}
+        onToggleHistory={() => {}}
+        onNewChat={handleClearSearch}
+        onToggleBookmarks={() => {}}
+      />
+
+      <div className="min-h-screen flex flex-col">
+        <main className={`flex-1 ${searchState.hasSearched ? "container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 pb-36 md:pb-32 pt-20 md:pt-24" : ""}`}>
+          {!searchState.hasSearched ? (
+            <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
+              <div 
+                className="absolute inset-0 w-full h-full object-cover -z-10 bg-cover bg-center"
+                style={{
+                  backgroundImage: `url(${isMobile ? '/videos/miami-mobile-poster.jpg' : '/videos/miami-desktop-poster.jpg'})`,
+                  opacity: videoLoaded ? 0 : 1,
+                  transition: 'opacity 1s ease-in-out'
+                }}
+              />
+
+              {shouldLoadVideo && (
+                <video
+                  key={isMobile ? 'mobile' : 'desktop'}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  onLoadedData={() => setVideoLoaded(true)}
+                  className="absolute inset-0 w-full h-full object-cover -z-10"
+                  style={{
+                    opacity: videoLoaded ? 1 : 0,
+                    transition: 'opacity 1s ease-in-out'
+                  }}
+                >
+                  {isMobile ? (
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/night-miami-traffic-mobile.mp4-2-CWh1oOGYX82ztWbL9gvoFINdR9BTpn.mp4" type="video/mp4" />
+                  ) : (
+                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/night-miami-traffic-desktop.mp4-HELLerchqRDbqyiaIMCAzMl4GYVaAX.mp4" type="video/mp4" />
+                  )}
+                </video>
+              )}
+
+              {!videoLoaded && connectionType === 'slow' && (
+                <div className="absolute inset-0 bg-gradient-to-br from-miami-blue/30 via-miami-purple/20 to-miami-aqua/30 -z-20" />
+              )}
+              
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-900/30 via-gray-800/20 to-black/40 -z-20" />
+
+              <div className="absolute top-12 z-10">
+                <Logo className="w-48" />
+              </div>
+
+              <div className="w-full max-w-2xl z-10">
+                <SearchInput
+                  ref={searchInputRef}
+                  onSearch={handleSearchOrGenerate}
+                  isLoading={searchState.isLoading}
+                  mode={searchState.mode}
+                  onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+                  onCancel={handleCancelSearch}
+                  recentSearches={recentSearches}
+                  user={null}
+                  selectedModel={selectedModel}
+                  onModelChange={handleModelChange}
+                  onHistoryClick={() => {}}
+                  contentType={searchState.contentType}
+                  onContentTypeChange={handleContentTypeChange}
+                />
+              </div>
+
+              <div className="absolute bottom-12 z-10 flex flex-col items-center gap-4">
+                <button
+                  onClick={() => (window.location.href = "/api/auth/google")}
+                  className="flex items-center gap-3 px-8 py-4 bg-white text-gray-900 rounded-full font-semibold hover:bg-gray-100 transition-colors shadow-lg hover:shadow-xl"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="currentColor"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  Continue with Google
+                </button>
+                
+                <div className="text-sm text-muted-foreground">or</div>
+                
+                <Link href="/login">
+                  <FancyGlowingButton>
+                    LOGIN / SIGN UP
+                  </FancyGlowingButton>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              <ConversationView
+                messages={searchState.messages}
+                messageRefs={messageRefs}
+                user={null}
+                searchMode={searchState.mode}
+                onRegenerate={handleRegenerate}
+                onRelatedSearchClick={(search) => handleSearch(search, searchState.mode)}
+                onImageRegenerate={handleImageGeneration}
+              />
+
+              {lastMessage && !lastMessage.isStreaming && (
+                <div className="mt-12 mb-24 flex flex-col items-center">
+                  <SignupBenefitsCard />
+                </div>
+              )}
+            </>
+          )}
+        </main>
+
+        {searchState.hasSearched && (
+          <SearchFormContainer
+            searchInputRef={searchInputRef}
+            onSearch={handleSearchOrGenerate}
+            isLoading={searchState.isLoading}
+            mode={searchState.mode}
+            onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
+            onCancel={handleCancelSearch}
+            recentSearches={recentSearches}
+            user={null}
+            selectedModel={selectedModel}
+            onModelChange={handleModelChange}
+            onHistoryClick={() => {}}
+            contentType={searchState.contentType}
+            onContentTypeChange={handleContentTypeChange}
+            rateLimitInfo={searchState.rateLimitInfo}
+            imageRateLimit={searchState.imageRateLimit}
+            isSidebarCollapsed={true}
+            hasSearched={searchState.hasSearched}
+          />
+        )}
+      </div>
+    </>
   )
 }
