@@ -384,43 +384,49 @@ export default function AdminDashboard() {
                 </form>
               </div>
 
-              <div className="space-y-3">
-                {users.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No users found</p>
-                ) : (
-                  users.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center justify-between p-4 bg-background rounded-lg border border-border"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{user.email}</p>
-                          {user.role === "owner" && (
-                            <Badge variant="default" className="bg-miami-aqua text-white">
-                              Owner
-                            </Badge>
-                          )}
-                          {user.role === "admin" && (
-                            <Badge variant="default" className="bg-miami-pink text-white">
-                              Admin
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{user.name || "No name"}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span>Joined: {new Date(user.created_at).toLocaleDateString()}</span>
-                          <span>Searches: {user.search_count}</span>
-                          {user.plan && (
-                            <span className="capitalize">
-                              Plan: {user.plan} ({user.status})
-                            </span>
-                          )}
+              <div className="overflow-x-auto">
+                <div className="min-w-full space-y-3">
+                  {users.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No users found</p>
+                  ) : (
+                    users.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-background rounded-lg border border-border gap-3"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-medium truncate">{user.email}</p>
+                            {user.role === "owner" && (
+                              <Badge variant="default" className="bg-miami-aqua text-white shrink-0">
+                                Owner
+                              </Badge>
+                            )}
+                            {user.role === "admin" && (
+                              <Badge variant="default" className="bg-miami-pink text-white shrink-0">
+                                Admin
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate">{user.name || "No name"}</p>
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs text-muted-foreground">
+                            <span className="whitespace-nowrap">Joined: {new Date(user.created_at).toLocaleDateString()}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="whitespace-nowrap">Searches: {user.search_count}</span>
+                            {user.plan && (
+                              <>
+                                <span className="hidden sm:inline">•</span>
+                                <span className="capitalize whitespace-nowrap">
+                                  Plan: {user.plan} ({user.status})
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           </TabsContent>

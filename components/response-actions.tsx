@@ -81,7 +81,6 @@ export function ResponseActions({
   const handleBookmark = useCallback(async () => {
     if (!userId) {
       setAuthPromptOpen(true)
-      // Store pending bookmark in localStorage so we can save it after sign in
       if (typeof window !== "undefined" && query) {
         localStorage.setItem(
           "pendingBookmark",
@@ -102,10 +101,15 @@ export function ResponseActions({
 
     if (isBookmarking) return
 
+    // Optimistic UI update
+    const previousBookmarkState = bookmarked
+    setBookmarked(!bookmarked)
+    onBookmarkChange?.(!bookmarked)
+
     try {
       setIsBookmarking(true)
 
-      if (bookmarked) {
+      if (previousBookmarkState) {
         const response = await fetch("/api/bookmarks", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
@@ -115,9 +119,6 @@ export function ResponseActions({
         if (!response.ok) {
           throw new Error("Failed to remove bookmark")
         }
-
-        setBookmarked(false)
-        onBookmarkChange?.(false)
       } else {
         const response = await fetch("/api/bookmarks", {
           method: "POST",
@@ -129,11 +130,10 @@ export function ResponseActions({
           const errorData = await response.json()
           throw new Error(errorData.error || "Failed to add bookmark")
         }
-
-        setBookmarked(true)
-        onBookmarkChange?.(true)
       }
     } catch (error) {
+      setBookmarked(previousBookmarkState)
+      onBookmarkChange?.(previousBookmarkState)
       toast.error("Failed to update bookmark")
     } finally {
       setIsBookmarking(false)

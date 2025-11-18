@@ -340,31 +340,38 @@ export default function Home() {
     async function loadInitialData() {
       const cachedUserData = typeof window !== "undefined" ? storage.getItem("miami_user_cache", null) : null
       
-      if (cachedUserData && cachedUserData.user) {
-        console.log('[v0] Loading from cache for instant display')
-        setUser(cachedUserData.user)
-        setHistory(cachedUserData.history || [])
-        setModelPreference(cachedUserData.modelPreference)
-        setInitialBookmarks(cachedUserData.bookmarks || [])
+      if (cachedUserData && cachedUserData.user && cachedUserData.timestamp) {
+        const cacheAge = Date.now() - cachedUserData.timestamp
+        const isExpired = cacheAge > (60 * 60 * 1000) // 1 hour
         
-        const recent = (cachedUserData.history || []).slice(0, 10).map((h: SearchHistory) => h.query)
-        setRecentSearches(recent)
-        
-        if (cachedUserData.modelPreference?.model_preference === "manual" && cachedUserData.modelPreference.selected_model) {
-          setSelectedModel(cachedUserData.modelPreference.selected_model as ModelId)
+        if (!isExpired) {
+          console.log('[v0] Loading from valid cache for instant display')
+          setUser(cachedUserData.user)
+          setHistory(cachedUserData.history || [])
+          setModelPreference(cachedUserData.modelPreference)
+          setInitialBookmarks(cachedUserData.bookmarks || [])
+          
+          const recent = (cachedUserData.history || []).slice(0, 10).map((h: SearchHistory) => h.query)
+          setRecentSearches(recent)
+          
+          if (cachedUserData.modelPreference?.model_preference === "manual" && cachedUserData.modelPreference.selected_model) {
+            setSelectedModel(cachedUserData.modelPreference.selected_model as ModelId)
+          } else {
+            setSelectedModel("auto")
+          }
         } else {
-          setSelectedModel("auto")
+          console.log('[v0] Cache expired, clearing')
+          storage.removeItem("miami_user_cache")
         }
       }
 
       try {
-        const res = await fetch("/api/init")
+        const res = await fetch(`/api/init?t=${Date.now()}`)
         if (res.ok) {
           const data = await res.json()
           setUser(data.user)
 
           if (data.user) {
-            // Authenticated user: load history and preferences
             setHistory(data.history || [])
             setModelPreference(data.modelPreference)
             setInitialBookmarks(data.bookmarks || [])
@@ -372,7 +379,6 @@ export default function Home() {
             const recent = (data.history || []).slice(0, 10).map((h: SearchHistory) => h.query)
             setRecentSearches(recent)
 
-            // Set model preference from database
             if (data.modelPreference?.model_preference === "manual" && data.modelPreference.selected_model) {
               setSelectedModel(data.modelPreference.selected_model as ModelId)
             } else {
@@ -385,7 +391,7 @@ export default function Home() {
                 history: data.history,
                 modelPreference: data.modelPreference,
                 bookmarks: data.bookmarks,
-                timestamp: Date.now(), // Add timestamp for cache validation
+                timestamp: Date.now(),
               })
             }
           } else {
@@ -393,7 +399,6 @@ export default function Home() {
               storage.removeItem("miami_user_cache")
             }
             
-            // Non-authenticated user: load from localStorage
             if (typeof window !== "undefined") {
               const storedModel = storage.getItem(STORAGE_KEYS.MODEL_PREFERENCE, null)
               if (storedModel) {
@@ -740,6 +745,12 @@ export default function Home() {
     try {
       const formData = new FormData()
       await fetch("/api/auth/logout", { method: "POST", body: formData })
+      
+      if (typeof window !== "undefined") {
+        storage.removeItem("miami_user_cache")
+        console.log("[v0] Cleared user cache from localStorage")
+      }
+      
       setUser(null)
       toast.success("Logged out successfully")
       setUIState((prev) => ({ ...prev, isDrawerOpen: false }))

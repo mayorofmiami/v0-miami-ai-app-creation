@@ -143,11 +143,29 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
-      if (query.trim() && !isLoading) {
-        onSearch(query, mode || "quick", attachments.length > 0 ? attachments : undefined)
+      
+      const trimmedQuery = query.trim()
+      
+      // Validate query length
+      if (!trimmedQuery) {
+        return
+      }
+      
+      if (trimmedQuery.length > 2000) {
+        alert("Query too long. Please keep it under 2000 characters.")
+        return
+      }
+      
+      if (trimmedQuery.length < 2) {
+        alert("Please enter at least 2 characters.")
+        return
+      }
+      
+      if (!isLoading) {
+        onSearch(trimmedQuery, mode || "quick", attachments.length > 0 ? attachments : undefined)
         setShowSuggestions(false)
         setIsFocused(false)
-        setAttachments([]) // Clear attachments after search
+        setAttachments([])
         inputRef.current?.blur()
       }
     },

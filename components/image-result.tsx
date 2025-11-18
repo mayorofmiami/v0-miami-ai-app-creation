@@ -33,6 +33,7 @@ export const ImageResult = memo(function ImageResult({
   const [isSharing, setIsSharing] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [shareUrl, setShareUrl] = useState("")
+  const [isRegenerating, setIsRegenerating] = useState(false)
 
   const handleDownload = useCallback(async () => {
     setIsDownloading(true)
@@ -96,10 +97,27 @@ export const ImageResult = memo(function ImageResult({
     }
   }, [imageUrl, prompt, model, resolution, userId, isSharing])
 
+  const handleRegenerate = useCallback(() => {
+    if (onRegenerate && !isRegenerating) {
+      setIsRegenerating(true)
+      onRegenerate()
+      // Reset after 3 seconds (image generation typically takes time)
+      setTimeout(() => setIsRegenerating(false), 3000)
+    }
+  }, [onRegenerate, isRegenerating])
+
   return (
     <>
       <div className="w-full max-w-3xl mx-auto space-y-4 animate-in fade-in duration-500">
-        {/* Image Display */}
+        {isRegenerating && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center rounded-2xl z-10">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 border-4 border-miami-aqua border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-muted-foreground">Regenerating image...</p>
+            </div>
+          </div>
+        )}
+        
         <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-muted/20">
           <div className="relative aspect-square w-full">
             <Image
@@ -113,7 +131,6 @@ export const ImageResult = memo(function ImageResult({
           </div>
         </div>
 
-        {/* Prompt Display */}
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -126,7 +143,6 @@ export const ImageResult = memo(function ImageResult({
             </Button>
           </div>
 
-          {/* Metadata */}
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span>Model: {model.split("/").pop()}</span>
             <span>•</span>
@@ -136,7 +152,6 @@ export const ImageResult = memo(function ImageResult({
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2 pt-2">
           <Button onClick={handleDownload} disabled={isDownloading} className="flex-1">
             <DownloadIcon className="w-4 h-4 mr-2" />
@@ -144,8 +159,13 @@ export const ImageResult = memo(function ImageResult({
           </Button>
 
           {onRegenerate && (
-            <Button onClick={onRegenerate} variant="outline" className="flex-1 bg-transparent">
-              Regenerate
+            <Button 
+              onClick={handleRegenerate} 
+              variant="outline" 
+              className="flex-1 bg-transparent"
+              disabled={isRegenerating}
+            >
+              {isRegenerating ? "Regenerating..." : "Regenerate"}
             </Button>
           )}
 

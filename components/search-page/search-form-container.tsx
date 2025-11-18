@@ -54,6 +54,20 @@ export function SearchFormContainer({
   const searchWarningLevel = rateLimitInfo ? rateLimitInfo.remaining / rateLimitInfo.limit : 1
   const isSearchCritical = searchWarningLevel < 0.1
 
+  const getResetTimeMessage = (resetAt?: Date) => {
+    if (!resetAt) return ''
+    const now = new Date()
+    const reset = new Date(resetAt)
+    const diffMs = reset.getTime() - now.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (diffHours > 0) {
+      return ` • Resets in ${diffHours}h ${diffMins}m`
+    }
+    return ` • Resets in ${diffMins}m`
+  }
+
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-40 bg-background/98 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90"
@@ -98,6 +112,7 @@ export function SearchFormContainer({
               </svg>
               <span className="text-yellow-600 dark:text-yellow-500">
                 {imageRateLimit!.remaining} of {imageRateLimit!.limit} images remaining today
+                {getResetTimeMessage(imageRateLimit!.resetAt)}
               </span>
             </div>
           </div>
@@ -134,6 +149,7 @@ export function SearchFormContainer({
                 className={isSearchCritical ? "text-red-600 dark:text-red-500" : "text-yellow-600 dark:text-yellow-500"}
               >
                 {rateLimitInfo!.remaining} of {rateLimitInfo!.limit} queries remaining today
+                {getResetTimeMessage(rateLimitInfo!.resetAt)}
                 {isSearchCritical && " • Please upgrade to continue"}
               </span>
             </div>

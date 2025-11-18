@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes"
 import { PrefetchProvider } from "@/components/prefetch-provider"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { OfflineIndicator } from "@/components/offline-indicator"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -90,6 +91,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <PrefetchProvider />
           {children}
+          <OfflineIndicator />
           <Toaster
             position="top-center"
             offset="24px"

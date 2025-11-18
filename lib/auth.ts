@@ -1,7 +1,7 @@
 import "server-only"
 import { neon } from "@neondatabase/serverless"
 import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
+import { redirect } from 'next/navigation'
 
 let _sql: ReturnType<typeof neon> | null = null
 
@@ -150,9 +150,19 @@ export async function logout() {
 
   if (sessionId) {
     await sql`DELETE FROM sessions WHERE id = ${sessionId}`
+    console.log("[v0] Deleted session from database:", sessionId)
   }
 
-  cookieStore.delete("session")
+  cookieStore.set("session", "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    expires: new Date(0), // Set to past date to delete
+    maxAge: 0,
+  })
+  
+  console.log("[v0] Session cookie cleared")
 }
 
 export async function signUp(

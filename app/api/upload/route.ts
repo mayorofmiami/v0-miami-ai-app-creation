@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       ? ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf", "text/plain", "text/csv"]
       : ["image/jpeg", "image/png", "image/webp", "image/gif"]
 
+    // Validate MIME type
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         {
@@ -40,6 +41,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 255)
+
     const maxSize = isAuthenticated ? 20 * 1024 * 1024 : 5 * 1024 * 1024 // 20MB for auth, 5MB for free
     if (file.size > maxSize) {
       return NextResponse.json(
@@ -48,6 +51,38 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 },
       )
+    }
+
+    if (file.type.startsWith('image/')) {
+      try {
+        const arrayBuffer = await file.arrayBuffer()
+        const blob = new Blob([arrayBuffer], { type: file.type })
+        
+        // Check if it's a valid image by trying to read it
+        const bitmap = await createImageBitmap(blob)
+        
+        // Limit image dimensions to prevent memory issues
+        const maxDimension = 10000 // 10k pixels max per side
+        if (bitmap.width > maxDimension || bitmap.height > maxDimension) {
+          bitmap.close()
+          return NextResponse.json(
+            {
+              error: `Image dimensions too large. Max: ${maxDimension}x${maxDimension} pixels`,
+            },
+            { status: 400 },
+          )
+        }
+        bitmap.close()
+
+        // Recreate file from validated buffer
+        const validatedFile = new File([arrayBuffer], sanitizedFileName, { type: file.type })
+        file = validatedFile as any
+      } catch (error) {
+        return NextResponse.json(
+          { error: "Invalid image file or corrupted data" },
+          { status: 400 },
+        )
+      }
     }
 
     const ipAddress = getClientIp(request)
@@ -65,7 +100,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const blob = await put(file.name, file, {
+    const blob = await put(sanitizedFileName, file, {
       access: "public",
       addRandomSuffix: true,
     })
@@ -74,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       url: blob.url,
-      filename: file.name,
+      filename: sanitizedFileName,
       size: file.size,
       type: file.type,
       rateLimit: {

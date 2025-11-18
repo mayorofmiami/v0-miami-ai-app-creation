@@ -2,9 +2,10 @@
 
 import { Button } from "@/components/ui/button"
 import LogOut from "@/components/icons/LogOut"
-import { useRouter } from "next/navigation"
+import { useRouter } from 'next/navigation'
 import { logoutAction } from "@/app/actions/auth"
 import { useState } from "react"
+import { storage } from "@/lib/local-storage"
 
 export function LogoutButton() {
   const router = useRouter()
@@ -13,9 +14,12 @@ export function LogoutButton() {
   const handleLogout = async () => {
     setIsLoading(true)
     try {
+      storage.removeItem("miami_user_cache")
+      console.log("[v0] Cleared user cache from localStorage")
+      
       await logoutAction()
-      router.push("/login")
-      router.refresh()
+      
+      window.location.href = "/"
     } catch (error) {
       console.error("Logout failed:", error)
       setIsLoading(false)

@@ -19,7 +19,9 @@ export async function GET() {
         {
           status: 200,
           headers: {
-            "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+            "Cache-Control": "private, no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
           },
         },
       )
@@ -42,7 +44,9 @@ export async function GET() {
       {
         status: 200,
         headers: {
-          "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0",
         },
       },
     )

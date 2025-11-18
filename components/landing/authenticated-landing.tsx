@@ -21,6 +21,7 @@ import { logger } from "@/lib/logger"
 import { ConversationView } from "@/components/search-page/conversation-view"
 import { SearchFormContainer } from "@/components/search-page/search-form-container"
 import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
+import XIcon from "@/components/icons/X"
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -207,6 +208,33 @@ export function AuthenticatedLanding({
     initialHistory.slice(0, 10).map((h) => h.query),
   )
   const [bookmarks, setBookmarks] = useState(initialBookmarks)
+
+  const [showRateLimitNotification, setShowRateLimitNotification] = useState(false)
+  const [rateLimitResetTime, setRateLimitResetTime] = useState<Date | null>(null)
+
+  useEffect(() => {
+    if (searchState.rateLimitInfo) {
+      const { remaining, limit } = searchState.rateLimitInfo
+      
+      // Show notification when approaching limit
+      if (remaining <= 10 && remaining > 0) {
+        setShowRateLimitNotification(true)
+        
+        // Calculate reset time (24 hours from now if not provided)
+        const resetTime = new Date()
+        resetTime.setHours(resetTime.getHours() + 24)
+        setRateLimitResetTime(resetTime)
+      } else if (remaining === 0) {
+        setShowRateLimitNotification(true)
+        
+        const resetTime = new Date()
+        resetTime.setHours(resetTime.getHours() + 24)
+        setRateLimitResetTime(resetTime)
+      } else {
+        setShowRateLimitNotification(false)
+      }
+    }
+  }, [searchState.rateLimitInfo])
 
   useEffect(() => {
     storage.setItem(STORAGE_KEYS.RECENT_SEARCHES, recentSearches)
@@ -551,8 +579,14 @@ export function AuthenticatedLanding({
 
   const handleLogout = async () => {
     try {
+      if (typeof window !== "undefined") {
+        storage.removeItem("miami_user_cache")
+        console.log("[v0] Cleared user cache from localStorage")
+      }
+      
       const formData = new FormData()
       await fetch("/api/auth/logout", { method: "POST", body: formData })
+      
       window.location.href = "/"
     } catch (error) {
       toast.error("Failed to log out")
@@ -595,6 +629,35 @@ export function AuthenticatedLanding({
 
   return (
     <>
+      {showRateLimitNotification && searchState.rateLimitInfo && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
+          <div className={`rounded-lg p-4 shadow-lg border ${
+            searchState.rateLimitInfo.remaining === 0 
+              ? 'bg-red-500/10 border-red-500/50' 
+              : 'bg-yellow-500/10 border-yellow-500/50'
+          }`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium">
+                  {searchState.rateLimitInfo.remaining === 0 
+                    ? '⚠️ Rate Limit Reached' 
+                    : `⚠️ ${searchState.rateLimitInfo.remaining} queries remaining`}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {rateLimitResetTime && `Resets ${rateLimitResetTime.toLocaleTimeString()}`}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowRateLimitNotification(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <KeyboardShortcuts
         onSearch={handleFocusSearch}
         onClear={handleClearSearch}
