@@ -44,9 +44,9 @@ export function PageHeader({
   searchMode,
 }: PageHeaderProps) {
   const showLogo = hasSearched || isAuthenticated
-  const logoWidth = hasSearched ? 160 : 140
-  const logoHeight = hasSearched ? 32 : 28
-  const logoClassName = hasSearched ? "h-10 md:h-12 w-auto" : "h-12 w-auto"
+  const logoWidth = 140
+  const logoHeight = 28
+  const logoClassName = "h-12 w-auto"
 
   return (
     <div
