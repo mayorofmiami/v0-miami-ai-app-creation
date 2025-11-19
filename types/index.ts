@@ -100,9 +100,8 @@ export interface CouncilMessage {
   verdict?: string
   isStreaming?: boolean
 }
-// </CHANGE>
 
-export type ConversationMessage = 
+export type ConversationMessage =
   | {
       id: string
       type: "search"
@@ -123,7 +122,7 @@ export type ConversationMessage =
       isStreaming?: boolean
     }
   | BoardroomMessage
-  | CouncilMessage // Adding Council to conversation types
+  | CouncilMessage
 
 export interface SearchState {
   mode: SearchMode
@@ -162,10 +161,23 @@ export type SearchAction =
   | { type: "START_SEARCH"; query: string; mode: SearchMode }
   | { type: "START_BOARDROOM"; query: string; boardType: BoardType }
   | { type: "SET_BOARDROOM_SESSION"; sessionId: string; personas: BoardPersona[] }
-  | { type: "START_COUNCIL"; query: string; councilId: string | null } // Adding Council actions
-  | { type: "SET_COUNCIL_SESSION"; debateId: string; councilId: string | null; councilName: string | null; advisors: CouncilAdvisor[] } // 
-  | { type: "UPDATE_COUNCIL_RESPONSE"; advisorArchetype: string; advisorName: string; round: number; content: string; modelUsed: string } // 
-  | { type: "SET_COUNCIL_VERDICT"; content: string } // 
+  | { type: "START_COUNCIL"; query: string; councilId: string | null }
+  | {
+      type: "SET_COUNCIL_SESSION"
+      debateId: string
+      councilId: string | null
+      councilName: string | null
+      advisors: CouncilAdvisor[]
+    }
+  | {
+      type: "UPDATE_COUNCIL_RESPONSE"
+      advisorArchetype: string
+      advisorName: string
+      round: number
+      content: string
+      modelUsed: string
+    }
+  | { type: "SET_COUNCIL_VERDICT"; content: string }
   | { type: "START_IMAGE_GENERATION"; prompt: string }
   | { type: "UPDATE_CURRENT_RESPONSE"; response: string }
   | { type: "UPDATE_BOARDROOM_RESPONSE"; persona: string; round: number; content: string }
