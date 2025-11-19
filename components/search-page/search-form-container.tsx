@@ -22,6 +22,9 @@ interface SearchFormContainerProps {
   imageRateLimit: RateLimitInfo | null
   isSidebarCollapsed: boolean
   hasSearched: boolean
+  isCouncilMode?: boolean
+  onCouncilModeChange?: (enabled: boolean) => void
+  selectedCouncilId?: string | null
 }
 
 export function SearchFormContainer({
@@ -42,6 +45,9 @@ export function SearchFormContainer({
   imageRateLimit,
   isSidebarCollapsed,
   hasSearched,
+  isCouncilMode,
+  onCouncilModeChange,
+  selectedCouncilId,
 }: SearchFormContainerProps) {
   // Only show when user has searched or is authenticated
   if (!hasSearched && !user) {
@@ -89,6 +95,8 @@ export function SearchFormContainer({
               onHistoryClick={onHistoryClick}
               contentType={contentType}
               onContentTypeChange={onContentTypeChange}
+              isCouncilMode={isCouncilMode}
+              onCouncilModeChange={onCouncilModeChange}
             />
           </div>
         </div>

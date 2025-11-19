@@ -30,6 +30,8 @@ interface SearchInputMenuProps {
   onHistoryClick?: () => void
   onFileUploadClick?: () => void
   isAuthenticated?: boolean
+  isCouncilMode?: boolean
+  onCouncilModeChange?: (enabled: boolean) => void
 }
 
 export function SearchInputMenu({
@@ -44,6 +46,8 @@ export function SearchInputMenu({
   onHistoryClick,
   onFileUploadClick,
   isAuthenticated = false,
+  isCouncilMode = false,
+  onCouncilModeChange,
 }: SearchInputMenuProps) {
   return (
     <div className="w-56 bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -76,6 +80,26 @@ export function SearchInputMenu({
             >
               <Paperclip className="w-4 h-4" />
               Attach File
+            </button>
+          </div>
+        </>
+      )}
+
+      {contentType === "search" && onCouncilModeChange && (
+        <>
+          <div className="h-px bg-border/50 mx-2" />
+          <div className="p-2">
+            <button
+              onClick={() => onCouncilModeChange(!isCouncilMode)}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-sm font-medium ${
+                isCouncilMode
+                  ? 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-400 border border-purple-500/30'
+                  : 'hover:bg-muted text-foreground'
+              }`}
+            >
+              <span>🏛️</span>
+              <span>The Council</span>
+              {isCouncilMode && <div className="ml-auto w-2 h-2 rounded-full bg-purple-400" />}
             </button>
           </div>
         </>

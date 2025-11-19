@@ -38,6 +38,8 @@ interface SearchInputProps {
   contentType?: "search" | "image"
   onContentTypeChange?: (type: "search" | "image") => void
   hasHistory?: boolean
+  isCouncilMode?: boolean
+  onCouncilModeChange?: (enabled: boolean) => void
 }
 
 export interface SearchInputRef {
@@ -60,6 +62,8 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     contentType = "search",
     onContentTypeChange,
     hasHistory = false,
+    isCouncilMode = false,
+    onCouncilModeChange,
   },
   ref,
 ) {
@@ -445,6 +449,8 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             onHistoryClick={handleHistoryClickCallback}
             onFileUploadClick={handleFileUploadClick}
             isAuthenticated={!!user}
+            isCouncilMode={isCouncilMode}
+            onCouncilModeChange={onCouncilModeChange}
           />
         </div>
       )}

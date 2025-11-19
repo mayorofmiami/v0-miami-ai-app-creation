@@ -13,7 +13,7 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import type { SearchInputRef } from "@/components/search-input"
 import { useTheme } from "next-themes"
 import type { Attachment } from "@/types"
-import type { SearchState, SearchAction, SearchMode, ContentType, User } from "@/types"
+import type { SearchState, SearchAction, SearchMode, ContentType, User, BoardType } from "@/types"
 import { PageHeader } from "@/components/page-header"
 import { ExampleQueries } from "@/components/example-queries"
 import { handleSearchError } from "@/lib/error-handling"
@@ -53,6 +53,69 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
             isStreaming: true,
           },
         ],
+      }
+    case "START_BOARDROOM":
+      return {
+        ...state,
+        isLoading: true,
+        hasSearched: true,
+        messages: [
+          ...state.messages,
+          {
+            id: Date.now().toString(),
+            type: "boardroom",
+            query: action.query,
+            sessionId: `session-${Date.now()}`,
+            personas: [],
+            responses: [],
+            isStreaming: true,
+          },
+        ],
+      }
+    case "UPDATE_BOARDROOM_RESPONSE":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) => {
+          if (idx === state.messages.length - 1 && msg.type === "boardroom") {
+            const existingResponseIndex = msg.responses.findIndex(
+              r => r.persona === action.persona && r.round === action.round
+            )
+            
+            if (existingResponseIndex >= 0) {
+              const updatedResponses = [...msg.responses]
+              updatedResponses[existingResponseIndex] = {
+                ...updatedResponses[existingResponseIndex],
+                content: updatedResponses[existingResponseIndex].content + action.content
+              }
+              return {
+                ...msg,
+                responses: updatedResponses,
+              }
+            } else {
+              return {
+                ...msg,
+                responses: [
+                  ...msg.responses,
+                  {
+                    persona: action.persona,
+                    round: action.round,
+                    content: action.content,
+                  },
+                ],
+              }
+            }
+          }
+          return msg
+        }),
+      }
+    case "SET_BOARDROOM_SYNTHESIS":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 && msg.type === "boardroom"
+            ? { ...msg, synthesis: (msg.synthesis || "") + action.synthesis }
+            : msg
+        ),
       }
     case "START_IMAGE_GENERATION":
       return {
@@ -130,6 +193,10 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
       return { ...state, mode: action.mode }
     case "SET_CONTENT_TYPE":
       return { ...state, contentType: action.contentType }
+    case "SET_BOARDROOM_MODE":
+      return { ...state, boardroomMode: action.enabled }
+    case "SET_BOARD_TYPE":
+      return { ...state, boardType: action.boardType }
     case "LOAD_FROM_HISTORY":
       return {
         ...state,
@@ -184,6 +251,8 @@ export default function Home() {
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
     mode: "quick",
     contentType: "search",
+    boardroomMode: false,
+    boardType: "startup",
     isLoading: false,
     messages: [],
     hasSearched: false,
@@ -513,6 +582,11 @@ export default function Home() {
         threadStorage.addThread(newThread)
       }
 
+      if (searchState.boardroomMode) {
+        await handleBoardroomSearch(query, searchState.boardType)
+        return
+      }
+
       dispatchSearch({ type: "START_SEARCH", query, mode: searchMode })
 
       try {
@@ -672,8 +746,88 @@ export default function Home() {
         abortControllerRef.current = null
       }
     },
-    [user, selectedModel, searchState.isLoading, currentThreadId, searchState.messages],
+    [user, selectedModel, searchState.isLoading, searchState.boardroomMode, searchState.boardType, currentThreadId, searchState.messages],
   )
+
+  const handleBoardroomSearch = useCallback(
+    async (query: string, boardType: BoardType) => {
+      dispatchSearch({ type: "START_BOARDROOM", query, boardType })
+
+      try {
+        const res = await fetch("/api/boardroom", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            boardType,
+            userId: user?.id,
+          }),
+        })
+
+        if (!res.ok) {
+          throw new Error("Boardroom request failed")
+        }
+
+        const reader = res.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) {
+          throw new Error("No response body")
+        }
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          const lines = chunk.split("\n")
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6)
+              if (data === "[DONE]") continue
+
+              try {
+                const parsed = JSON.parse(data)
+
+                if (parsed.type === "persona_chunk") {
+                  dispatchSearch({
+                    type: "UPDATE_BOARDROOM_RESPONSE",
+                    persona: parsed.persona,
+                    round: parsed.round,
+                    content: parsed.content,
+                  })
+                } else if (parsed.type === "synthesis_chunk") {
+                  dispatchSearch({
+                    type: "SET_BOARDROOM_SYNTHESIS",
+                    synthesis: parsed.content,
+                  })
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+
+        dispatchSearch({ type: "SEARCH_COMPLETE" })
+        searchInputRef.current?.clear()
+      } catch (error) {
+        console.error("Boardroom error:", error)
+        toast.error("Boardroom failed", "Please try again")
+        dispatchSearch({ type: "SEARCH_ERROR", error: "Boardroom debate failed. Please try again." })
+      }
+    },
+    [user],
+  )
+
+  const handleToggleBoardroomMode = useCallback((enabled: boolean) => {
+    dispatchSearch({ type: "SET_BOARDROOM_MODE", enabled })
+  }, [])
+
+  const handleBoardTypeChange = useCallback((boardType: BoardType) => {
+    dispatchSearch({ type: "SET_BOARD_TYPE", boardType })
+  }, [])
 
   const handleImageGeneration = useCallback(
     async (prompt: string) => {

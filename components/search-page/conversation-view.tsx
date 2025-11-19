@@ -8,6 +8,9 @@ import { SkeletonSearch } from "@/components/skeleton-search"
 import { ResponseActions } from "@/components/response-actions"
 import { ModelBadge } from "@/components/model-badge"
 import Palmtree from "@/components/icons/Palmtree"
+import { BoardroomView } from "@/components/boardroom/boardroom-view"
+import { CouncilChatView } from "@/components/council/council-chat-view"
+// </CHANGE>
 import type { ConversationMessage, User, SearchMode } from "@/types"
 
 interface ConversationViewProps {
@@ -35,11 +38,11 @@ export function ConversationView({
     <div className="space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {messages.map((message, index) => {
         const isRelatedExpanded = expandedRelatedId === message.id
-        const showButtons = !message.isStreaming && message.response
+        const showButtons = !message.isStreaming && (message.type === "search" ? message.response : true)
 
         return (
           <div key={message.id} className="space-y-4 md:space-y-6">
-            {/* Query Display - Modern minimal style */}
+            {/* Query Display */}
             <div
               ref={(el) => {
                 messageRefs.current[message.id] = el
@@ -55,7 +58,12 @@ export function ConversationView({
             </div>
 
             {/* Response */}
-            {message.isStreaming && !message.response && !message.generatedImage ? (
+            {message.type === "council" ? (
+              <CouncilChatView message={message} />
+            ) : message.type === "boardroom" ? (
+              <BoardroomView message={message} />
+            ) : message.isStreaming && !message.response && !message.generatedImage ? (
+            // </CHANGE> */}
               <SkeletonSearch />
             ) : message.response || message.generatedImage ? (
               <div className="w-full max-w-3xl mx-auto">

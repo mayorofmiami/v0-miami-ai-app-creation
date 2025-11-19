@@ -22,6 +22,8 @@ import { ConversationView } from "@/components/search-page/conversation-view"
 import { SearchFormContainer } from "@/components/search-page/search-form-container"
 import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
 import XIcon from "@/components/icons/X"
+import { searchReducer } from "@/lib/reducers/search-reducer"
+import { CouncilSelectorDialog } from "@/components/council/council-selector-dialog"
 
 function searchReducer(state: SearchState, action: SearchAction): SearchState {
   switch (action.type) {
@@ -148,6 +150,84 @@ function searchReducer(state: SearchState, action: SearchAction): SearchState {
           idx === state.messages.length - 1 ? { ...msg, searchId: action.searchId } : msg,
         ),
       }
+    case "SET_BOARDROOM_MODE":
+      return { ...state, boardroomMode: action.enabled }
+    case "START_BOARDROOM":
+      return {
+        ...state,
+        isLoading: true,
+        hasSearched: true,
+        messages: [
+          ...state.messages,
+          {
+            id: Date.now().toString(),
+            type: "boardroom",
+            query: action.query,
+            sessionId: "",
+            personas: [],
+            responses: [],
+            isStreaming: true,
+          },
+        ],
+      }
+    case "SET_BOARDROOM_SESSION":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 && msg.type === "boardroom"
+            ? {
+                ...msg,
+                sessionId: action.sessionId,
+                personas: action.personas,
+              }
+            : msg,
+        ),
+      }
+    case "UPDATE_BOARDROOM_RESPONSE":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) => {
+          if (idx === state.messages.length - 1 && msg.type === "boardroom") {
+            const existingResponses = msg.responses || []
+            const existingResponseIndex = existingResponses.findIndex(
+              (r) => r.persona === action.persona && r.round === action.round
+            )
+            
+            let updatedResponses
+            if (existingResponseIndex >= 0) {
+              updatedResponses = existingResponses.map((r, i) =>
+                i === existingResponseIndex
+                  ? { ...r, content: r.content + action.content }
+                  : r
+              )
+            } else {
+              updatedResponses = [
+                ...existingResponses,
+                {
+                  persona: action.persona,
+                  round: action.round,
+                  content: action.content,
+                },
+              ]
+            }
+            
+            return {
+              ...msg,
+              responses: updatedResponses,
+            }
+          }
+          return msg
+        }),
+      }
+    case "SET_BOARDROOM_SYNTHESIS":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 && msg.type === "boardroom"
+            ? { ...msg, synthesis: (msg.synthesis || "") + action.content }
+            : msg,
+        ),
+      }
     default:
       return state
   }
@@ -176,6 +256,8 @@ export function AuthenticatedLanding({
     hasSearched: false,
     rateLimitInfo: null,
     imageRateLimit: null,
+    boardroomMode: false,
+    boardType: "startup",
   })
 
   const [uiState, setUIState] = useState({
@@ -211,6 +293,10 @@ export function AuthenticatedLanding({
 
   const [showRateLimitNotification, setShowRateLimitNotification] = useState(false)
   const [rateLimitResetTime, setRateLimitResetTime] = useState<Date | null>(null)
+
+  const [showCouncilSelector, setShowCouncilSelector] = useState(false)
+  const [selectedCouncilId, setSelectedCouncilId] = useState<string | null>(null)
+  const [councilMode, setCouncilMode] = useState(false)
 
   useEffect(() => {
     if (searchState.rateLimitInfo) {
@@ -276,24 +362,14 @@ export function AuthenticatedLanding({
 
         for (let i = 1; i < messages.length; i++) {
           const msg = messages[i]
-          dispatchSearch({
-            type: "START_SEARCH",
-            query: msg.query,
-            mode: msg.mode || "quick",
-          })
+          dispatchSearch({ type: "START_SEARCH", query: msg.query, mode: msg.mode || "quick" })
 
           if (msg.response) {
-            dispatchSearch({
-              type: "UPDATE_CURRENT_RESPONSE",
-              response: msg.response,
-            })
+            dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: msg.response })
           }
 
           if (msg.citations) {
-            dispatchSearch({
-              type: "SET_CURRENT_CITATIONS",
-              citations: msg.citations,
-            })
+            dispatchSearch({ type: "SET_CURRENT_CITATIONS", citations: msg.citations })
           }
 
           if (msg.model_used) {
@@ -566,18 +642,118 @@ export function AuthenticatedLanding({
     [user, searchState.isLoading],
   )
 
+  const handleBoardroomModeChange = useCallback((enabled: boolean) => {
+    dispatchSearch({ type: "SET_BOARDROOM_MODE", enabled })
+  }, [])
+
+  const handleBoardroomSearch = useCallback(
+    async (query: string, boardType: string) => {
+      if (searchState.isLoading) {
+        return
+      }
+
+      dispatchSearch({ type: "START_BOARDROOM", query, boardType: boardType as BoardType })
+
+      try {
+        const body: any = {
+          query,
+          boardType,
+          userId: user.id,
+          threadId: currentThreadId || undefined,
+        }
+
+        const res = await fetch("/api/boardroom", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        })
+
+        if (!res.ok) {
+          const errorData = await res.json()
+          toast.error("Boardroom failed", errorData.error || "Please try again")
+          dispatchSearch({ type: "SEARCH_ERROR", error: errorData.error || "Boardroom request failed" })
+          return
+        }
+
+        const reader = res.body?.getReader()
+        const decoder = new TextDecoder()
+
+        if (!reader) {
+          throw new Error("No response body")
+        }
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value)
+          const lines = chunk.split("\n")
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6)
+              if (data === "[DONE]") continue
+
+              try {
+                const parsed = JSON.parse(data)
+
+                if (parsed.type === "session_start") {
+                  dispatchSearch({
+                    type: "SET_BOARDROOM_SESSION",
+                    sessionId: parsed.sessionId,
+                    personas: parsed.personas.map((p: any) => ({
+                      name: p.name,
+                      role: p.role,
+                      avatar: p.avatar,
+                      model: p.model || 'Unknown',
+                    })),
+                  })
+                } else if (parsed.type === "persona_chunk") {
+                  dispatchSearch({
+                    type: "UPDATE_BOARDROOM_RESPONSE",
+                    persona: parsed.persona,
+                    round: parsed.round,
+                    content: parsed.content,
+                  })
+                } else if (parsed.type === "synthesis_chunk") {
+                  dispatchSearch({
+                    type: "SET_BOARDROOM_SYNTHESIS",
+                    content: parsed.content,
+                  })
+                }
+              } catch (e) {
+                console.error("[v0] Failed to parse boardroom chunk:", e)
+              }
+            }
+          }
+        }
+
+        dispatchSearch({ type: "SEARCH_COMPLETE" })
+        searchInputRef.current?.clear()
+      } catch (error: any) {
+        console.error("[v0] Boardroom error:", error)
+        toast.error("Boardroom failed", error.message || "Please try again")
+        dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, boardroom mode failed. Please try again." })
+      }
+    },
+    [user, searchState.isLoading, currentThreadId],
+  )
+
   const handleSearchOrGenerate = useCallback(
     (query: string, searchMode: SearchMode, attachments?: Attachment[]) => {
-      if (searchState.contentType === "image") {
+      if (councilMode) {
+        // Handle council search logic here
+        console.log("Council search logic not implemented yet")
+      } else if (searchState.contentType === "image") {
         handleImageGeneration(query)
       } else {
         handleSearch(query, searchMode, attachments)
       }
     },
-    [searchState.contentType, handleImageGeneration, handleSearch],
+    [councilMode, searchState.contentType, handleImageGeneration, handleSearch],
   )
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       if (typeof window !== "undefined") {
         storage.removeItem("miami_user_cache")
@@ -591,7 +767,7 @@ export function AuthenticatedLanding({
     } catch (error) {
       toast.error("Failed to log out")
     }
-  }
+  }, [])
 
   const handleNewChat = useCallback(() => {
     handleCancelSearch()
@@ -627,8 +803,38 @@ export function AuthenticatedLanding({
     }
   }, [uiState.isSidebarCollapsed, uiState.sidebarLoaded])
 
+  const handleCouncilModeChange = useCallback((enabled: boolean) => {
+    if (enabled) {
+      // Open the council selector dialog
+      setShowCouncilSelector(true)
+    } else {
+      // Disable council mode
+      setCouncilMode(false)
+      setSelectedCouncilId(null)
+    }
+  }, [])
+
+  const handleSelectCouncil = useCallback((councilId: string | 'quick') => {
+    console.log("[v0] Council selected:", councilId)
+    setSelectedCouncilId(councilId)
+    setCouncilMode(true)
+    setShowCouncilSelector(false)
+    
+    // Auto-focus the search input after selection
+    setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 100)
+  }, [])
+
   return (
     <>
+      <CouncilSelectorDialog
+        open={showCouncilSelector}
+        onOpenChange={setShowCouncilSelector}
+        onSelectCouncil={handleSelectCouncil}
+        userId={user.id}
+      />
+
       {showRateLimitNotification && searchState.rateLimitInfo && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
           <div className={`rounded-lg p-4 shadow-lg border ${
@@ -783,6 +989,9 @@ export function AuthenticatedLanding({
           imageRateLimit={searchState.imageRateLimit}
           isSidebarCollapsed={uiState.isSidebarCollapsed}
           hasSearched={searchState.hasSearched}
+          isCouncilMode={councilMode}
+          onCouncilModeChange={handleCouncilModeChange}
+          selectedCouncilId={selectedCouncilId}
         />
       </div>
     </>
