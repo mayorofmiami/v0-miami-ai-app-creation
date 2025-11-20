@@ -1,6 +1,8 @@
 import { CouncilLandingView } from "@/components/council/council-landing-view"
 import { Suspense } from "react"
 
+export const dynamic = "force-dynamic"
+
 export const metadata = {
   title: "The Council - AI Advisory Board | Miami.AI",
   description: "Summon your Council of AI advisors with custom personalities to debate important decisions",

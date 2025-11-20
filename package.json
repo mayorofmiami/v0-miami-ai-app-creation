@@ -52,7 +52,7 @@
     "@vercel/analytics": "latest",
     "@vercel/blob": "latest",
     "@vercel/kv": "3.0.0",
-    "@vercel/postgres": "latest",
+    "@vercel/postgres": "0.10.0",
     "@vercel/speed-insights": "latest",
     "ai": "latest",
     "arctic": "latest",

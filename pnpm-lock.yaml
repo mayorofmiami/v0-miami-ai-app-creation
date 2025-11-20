@@ -138,7 +138,7 @@ importers:
         specifier: 3.0.0
         version: 3.0.0
       '@vercel/postgres':
-        specifier: latest
+        specifier: 0.10.0
         version: 0.10.0
       '@vercel/speed-insights':
         specifier: latest

@@ -22,13 +22,14 @@ import { BookmarksSidebar } from "@/components/bookmarks-sidebar"
 import XIcon from "@/components/icons/X"
 import { searchReducer } from "@/lib/reducers/search-reducer"
 import { CouncilSelectorDialog } from "@/components/council/council-selector-dialog"
+import { useAuthenticatedUser } from "@/hooks/use-authenticated-user"
 
 export function AuthenticatedHome({
-  user,
-  initialHistory,
-  initialModelPreference,
-  initialBookmarks,
-}: AuthenticatedLandingProps) {
+  initialHistory = [],
+  initialModelPreference = null,
+  initialBookmarks = [],
+}: Omit<AuthenticatedLandingProps, "user">) {
+  const user = useAuthenticatedUser()
   const { theme, setTheme } = useTheme()
 
   const [searchState, dispatchSearch] = useReducer(searchReducer, {
@@ -615,6 +616,17 @@ export function AuthenticatedHome({
       searchInputRef.current?.focus()
     }, 100)
   }, [])
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-miami-aqua border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

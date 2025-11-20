@@ -205,6 +205,11 @@ export async function signIn(
     }
 
     const user = result[0]
+
+    if (!user.password_hash) {
+      return { success: false, error: "This account uses social login. Please sign in with Google." }
+    }
+
     const isValid = await verifyPassword(password, user.password_hash)
 
     if (!isValid) {
