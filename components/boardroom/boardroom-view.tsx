@@ -74,15 +74,17 @@ export function BoardroomView({ message }: BoardroomViewProps) {
   }
 
   return (
-    <div className="w-full max-w-4xl mx-auto font-sans">
+    <div className="w-full max-w-4xl mx-auto font-sans px-4 md:px-0">
       {/* Header */}
       <div className="mb-8 border-b pb-6">
         <div className="flex items-center gap-2 mb-2 text-primary font-mono text-xs uppercase tracking-wider">
           <FileText className="w-4 h-4" />
           <span>Intelligence Briefing</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Council Recommendation</h1>
-        <p className="text-muted-foreground mt-2">Synthesized analysis from {personas.length} expert perspectives.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Council Recommendation</h1>
+        <p className="text-muted-foreground mt-2 text-sm md:text-base">
+          Synthesized analysis from {personas.length} expert perspectives.
+        </p>
       </div>
 
       {/* Executive Summary (Synthesis) */}
@@ -93,7 +95,7 @@ export function BoardroomView({ message }: BoardroomViewProps) {
             <h2 className="text-xl font-semibold">Executive Summary</h2>
           </div>
 
-          <div className="bg-card border rounded-lg p-6 md:p-8 shadow-sm">
+          <div className="bg-card border rounded-lg p-4 md:p-8 shadow-sm">
             <div className="prose prose-neutral dark:prose-invert max-w-none">{formatSynthesis(message.synthesis)}</div>
           </div>
         </section>
@@ -124,10 +126,10 @@ export function BoardroomView({ message }: BoardroomViewProps) {
                 >
                   <button
                     onClick={() => toggleSection(persona.name)}
-                    className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
+                    className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors min-h-[60px]"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border flex-shrink-0">
                         {persona.avatar ? (
                           <img
                             src={persona.avatar || "/placeholder.svg"}
@@ -158,7 +160,7 @@ export function BoardroomView({ message }: BoardroomViewProps) {
                   </button>
 
                   {isExpanded && (
-                    <div className="p-6 pt-0 border-t bg-muted/10 animate-in slide-in-from-top-2 duration-200">
+                    <div className="p-4 md:p-6 pt-0 border-t bg-muted/10 animate-in slide-in-from-top-2 duration-200">
                       <div className="pt-4 prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed">
                         {response.content.split("\n").map((paragraph, i) => (
                           <p key={i} className="mb-3 last:mb-0">

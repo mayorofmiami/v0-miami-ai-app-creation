@@ -10,7 +10,6 @@ import { ModelBadge } from "@/components/model-badge"
 import Palmtree from "@/components/icons/Palmtree"
 import { BoardroomView } from "@/components/boardroom/boardroom-view"
 import { CouncilChatView } from "@/components/council/council-chat-view"
-// </CHANGE>
 import type { ConversationMessage, User, SearchMode } from "@/types"
 
 interface ConversationViewProps {
@@ -49,11 +48,15 @@ export function ConversationView({
               }}
               className="w-full max-w-3xl mx-auto scroll-mt-16 px-4 md:px-6"
             >
-              <div className="bg-muted/50 border border-border rounded-xl px-3 py-2.5 md:px-5 md:py-4 flex items-center gap-2.5 md:gap-3">
-                <Palmtree className="w-4 h-4 md:w-5 md:h-5 text-miami-blue dark:text-miami-aqua flex-shrink-0" />
-                <p className="text-sm md:text-base lg:text-lg text-foreground leading-relaxed flex-1">
-                  {message.query}
-                </p>
+              <div className="flex items-start gap-4 group">
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-miami-blue/10 dark:bg-miami-aqua/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Palmtree className="w-4 h-4 md:w-5 md:h-5 text-miami-blue dark:text-miami-aqua" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-lg md:text-xl lg:text-2xl font-medium text-foreground leading-relaxed tracking-tight">
+                    {message.query}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -63,7 +66,6 @@ export function ConversationView({
             ) : message.type === "boardroom" ? (
               <BoardroomView message={message} />
             ) : message.isStreaming && !message.response && !message.generatedImage ? (
-            // </CHANGE> */}
               <SkeletonSearch />
             ) : message.response || message.generatedImage ? (
               <div className="w-full max-w-3xl mx-auto">
@@ -107,7 +109,7 @@ export function ConversationView({
                           showButtons ? (
                             <button
                               onClick={() => setExpandedRelatedId(isRelatedExpanded ? null : message.id)}
-                              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-accent"
+                              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg hover:bg-accent min-h-[44px] md:min-h-0"
                               aria-expanded={isRelatedExpanded}
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
