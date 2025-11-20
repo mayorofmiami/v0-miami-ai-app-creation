@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles, Plus, Users } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { Sparkles, Plus, Users } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface Council {
   id: string
@@ -20,7 +19,7 @@ interface Council {
 interface CouncilSelectorDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSelectCouncil: (councilId: string | 'quick') => void
+  onSelectCouncil: (councilId: string | "quick") => void
   userId: string
 }
 
@@ -51,7 +50,7 @@ export function CouncilSelectorDialog({ open, onOpenChange, onSelectCouncil, use
   }
 
   const handleQuickCouncil = () => {
-    onSelectCouncil('quick')
+    onSelectCouncil("quick")
     onOpenChange(false)
   }
 
@@ -61,7 +60,7 @@ export function CouncilSelectorDialog({ open, onOpenChange, onSelectCouncil, use
   }
 
   const handleCreateNew = () => {
-    router.push('/council')
+    router.push("/app/council")
     onOpenChange(false)
   }
 
@@ -73,9 +72,7 @@ export function CouncilSelectorDialog({ open, onOpenChange, onSelectCouncil, use
             <span>🏛️</span>
             Select Your Council
           </DialogTitle>
-          <DialogDescription>
-            Choose a saved council or start a quick debate with default advisors
-          </DialogDescription>
+          <DialogDescription>Choose a saved council or start a quick debate with default advisors</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
@@ -117,9 +114,7 @@ export function CouncilSelectorDialog({ open, onOpenChange, onSelectCouncil, use
 
           {/* Saved Councils */}
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading your councils...
-            </div>
+            <div className="text-center py-8 text-muted-foreground">Loading your councils...</div>
           ) : councils.length > 0 ? (
             <>
               <div className="flex items-center gap-2 pt-4">
@@ -137,17 +132,17 @@ export function CouncilSelectorDialog({ open, onOpenChange, onSelectCouncil, use
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold">{council.name}</h3>
-                          {council.type === 'preset' && (
-                            <Badge variant="secondary" className="text-xs">Preset</Badge>
+                          {council.type === "preset" && (
+                            <Badge variant="secondary" className="text-xs">
+                              Preset
+                            </Badge>
                           )}
                         </div>
                         {council.description && (
                           <p className="text-sm text-muted-foreground line-clamp-1">{council.description}</p>
                         )}
                         <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                          {council.advisorCount && (
-                            <span>{council.advisorCount} advisors</span>
-                          )}
+                          {council.advisorCount && <span>{council.advisorCount} advisors</span>}
                           <span>Used {council.uses_count} times</span>
                         </div>
                       </div>

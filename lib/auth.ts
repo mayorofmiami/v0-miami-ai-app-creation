@@ -1,6 +1,6 @@
 import "server-only"
 import { cookies } from "next/headers"
-import { redirect } from 'next/navigation'
+import { redirect } from "next/navigation"
 import { sql } from "./db"
 
 export interface User {
@@ -151,7 +151,7 @@ export async function logout() {
     expires: new Date(0),
     maxAge: 0,
   })
-  
+
   console.log("[v0] Session cookie cleared")
 }
 
@@ -224,7 +224,7 @@ export async function requireAdmin(): Promise<User> {
     redirect("/login")
   }
   if (user.role !== "owner" && user.role !== "admin") {
-    redirect("/")
+    redirect("/app")
   }
   return user
 }
@@ -315,7 +315,9 @@ export async function createOrUpdateOAuthUser(
   }
 }
 
-export async function createPasswordResetToken(email: string): Promise<{ success: boolean; token?: string; error?: string }> {
+export async function createPasswordResetToken(
+  email: string,
+): Promise<{ success: boolean; token?: string; error?: string }> {
   try {
     const user = await sql`
       SELECT id FROM users WHERE email = ${email}

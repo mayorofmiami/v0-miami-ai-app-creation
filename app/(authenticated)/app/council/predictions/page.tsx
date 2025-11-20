@@ -2,8 +2,9 @@ import { Suspense } from "react"
 import { PredictionsView } from "@/components/council/predictions-view"
 
 export const metadata = {
-  title: "Predictions - The Council | Miami.ai",
+  title: "Predictions - The Council | Miami.AI",
   description: "Track and verify your Council's predictions",
+  robots: "noindex, nofollow",
 }
 
 export default function PredictionsPage() {

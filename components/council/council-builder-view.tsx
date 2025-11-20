@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
-import { ArrowLeft, Plus, X, Sparkles } from 'lucide-react'
+import { ArrowLeft, Plus, X, Sparkles } from "lucide-react"
 import { CouncilLayout } from "@/components/council/council-layout"
 
 interface Archetype {
@@ -57,13 +57,13 @@ export function CouncilBuilderView() {
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch('/api/init')
+        const res = await fetch("/api/init")
         if (res.ok) {
           const data = await res.json()
           setUser(data.user)
         }
       } catch (error) {
-        console.error('[v0] Error loading user:', error)
+        console.error("[v0] Error loading user:", error)
       }
     }
     loadUser()
@@ -75,17 +75,17 @@ export function CouncilBuilderView() {
 
   const fetchArchetypes = async () => {
     try {
-      const res = await fetch('/api/council/archetypes')
+      const res = await fetch("/api/council/archetypes")
       const data = await res.json()
       setArchetypes(data.archetypes || [])
     } catch (error) {
-      console.error('[v0] Error fetching archetypes:', error)
+      console.error("[v0] Error fetching archetypes:", error)
     }
   }
 
   const addAdvisor = (archetype: Archetype) => {
     if (selectedAdvisors.length >= 6) {
-      alert('Maximum 6 advisors per council')
+      alert("Maximum 6 advisors per council")
       return
     }
 
@@ -115,21 +115,21 @@ export function CouncilBuilderView() {
 
   const createCouncil = async () => {
     if (!councilName.trim() || selectedAdvisors.length < 3 || !user?.id) {
-      alert('Please name your council and select at least 3 advisors')
+      alert("Please name your council and select at least 3 advisors")
       return
     }
 
     setIsLoading(true)
     try {
-      const res = await fetch('/api/council/councils', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/council/councils", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
           name: councilName,
           description: councilDescription,
-          type: 'custom',
-          advisors: selectedAdvisors.map(advisor => ({
+          type: "custom",
+          advisors: selectedAdvisors.map((advisor) => ({
             archetype: advisor.archetype.archetype_key,
             ethics: advisor.ethics,
             risk: advisor.risk,
@@ -137,59 +137,62 @@ export function CouncilBuilderView() {
             ideology: advisor.ideology,
             experience: advisor.experience,
             personalityPreset: advisor.personalityPreset,
-          }))
-        })
+          })),
+        }),
       })
 
       const data = await res.json()
-      
+
       if (data.council) {
-        router.push(`/council/chat/${data.council.id}`)
+        router.push(`/app/council/chat/${data.council.id}`)
       }
     } catch (error) {
-      console.error('[v0] Error creating council:', error)
+      console.error("[v0] Error creating council:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const categorizedArchetypes = archetypes.reduce((acc, archetype) => {
-    if (!acc[archetype.category]) acc[archetype.category] = []
-    acc[archetype.category].push(archetype)
-    return acc
-  }, {} as Record<string, Archetype[]>)
+  const categorizedArchetypes = archetypes.reduce(
+    (acc, archetype) => {
+      if (!acc[archetype.category]) acc[archetype.category] = []
+      acc[archetype.category].push(archetype)
+      return acc
+    },
+    {} as Record<string, Archetype[]>,
+  )
 
   const getSliderLabel = (slider: string, value: number) => {
     const labels: Record<string, Record<string, string>> = {
       ethics: {
         low: "Ruthless",
         mid: "Pragmatic",
-        high: "Principled"
+        high: "Principled",
       },
       risk: {
         low: "Conservative",
         mid: "Moderate",
-        high: "Aggressive"
+        high: "Aggressive",
       },
       timeHorizon: {
         low: "Immediate",
         mid: "Medium-term",
-        high: "Long-term"
+        high: "Long-term",
       },
       ideology: {
         low: "Progressive",
         mid: "Centrist",
-        high: "Conservative"
+        high: "Conservative",
       },
       experience: {
         low: "Rookie",
         mid: "Veteran",
-        high: "Legend"
-      }
+        high: "Legend",
+      },
     }
 
-    const range = value < 33 ? 'low' : value < 67 ? 'mid' : 'high'
-    return labels[slider]?.[range] || ''
+    const range = value < 33 ? "low" : value < 67 ? "mid" : "high"
+    return labels[slider]?.[range] || ""
   }
 
   return (
@@ -197,12 +200,7 @@ export function CouncilBuilderView() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/council')}
-            className="gap-2"
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.push("/app/council")} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
@@ -217,7 +215,7 @@ export function CouncilBuilderView() {
           <div className="lg:col-span-2 space-y-6">
             <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Select Advisors ({selectedAdvisors.length}/6)</h2>
-              
+
               <Tabs value={activeCategory} onValueChange={setActiveCategory}>
                 <TabsList className="grid grid-cols-5 w-full">
                   <TabsTrigger value="executive">Executive</TabsTrigger>
@@ -230,17 +228,15 @@ export function CouncilBuilderView() {
                 {Object.entries(categorizedArchetypes).map(([category, archetypeList]) => (
                   <TabsContent key={category} value={category} className="mt-4 space-y-3">
                     {archetypeList.map((archetype) => {
-                      const isSelected = selectedAdvisors.some(
-                        (a) => a.archetype.id === archetype.id
-                      )
-                      
+                      const isSelected = selectedAdvisors.some((a) => a.archetype.id === archetype.id)
+
                       return (
                         <Card
                           key={archetype.id}
                           className={`p-4 cursor-pointer transition-all ${
                             isSelected
-                              ? 'border-[var(--color-miami-aqua)] bg-[var(--color-miami-aqua)]/5'
-                              : 'hover:border-[var(--color-miami-aqua)]/50'
+                              ? "border-[var(--color-miami-aqua)] bg-[var(--color-miami-aqua)]/5"
+                              : "hover:border-[var(--color-miami-aqua)]/50"
                           }`}
                           onClick={() => !isSelected && addAdvisor(archetype)}
                         >
@@ -253,9 +249,7 @@ export function CouncilBuilderView() {
                                   {archetype.rarity}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground">
-                                {archetype.description}
-                              </p>
+                              <p className="text-sm text-muted-foreground">{archetype.description}</p>
                             </div>
                             {isSelected && (
                               <Badge variant="default" className="bg-[var(--color-miami-aqua)] text-black">
@@ -301,7 +295,7 @@ export function CouncilBuilderView() {
             {/* Selected Advisors */}
             <Card className="p-6">
               <h3 className="font-semibold mb-4">Your Council</h3>
-              
+
               {selectedAdvisors.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Plus className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -312,7 +306,7 @@ export function CouncilBuilderView() {
                   {selectedAdvisors.map((advisor, index) => (
                     <Card
                       key={index}
-                      className={`p-4 ${editingIndex === index ? 'border-[var(--color-miami-aqua)]' : ''}`}
+                      className={`p-4 ${editingIndex === index ? "border-[var(--color-miami-aqua)]" : ""}`}
                     >
                       <div className="flex items-center gap-3 mb-3">
                         <span className="text-xl">{advisor.archetype.default_icon}</span>
@@ -325,7 +319,7 @@ export function CouncilBuilderView() {
                           onClick={() => setEditingIndex(editingIndex === index ? null : index)}
                           className="h-8 px-2"
                         >
-                          {editingIndex === index ? 'Done' : 'Edit'}
+                          {editingIndex === index ? "Done" : "Edit"}
                         </Button>
                         <Button
                           variant="ghost"
@@ -343,9 +337,7 @@ export function CouncilBuilderView() {
                           <div>
                             <div className="flex justify-between text-xs mb-2">
                               <span className="text-muted-foreground">Ethics</span>
-                              <span className="font-medium">
-                                {getSliderLabel('ethics', advisor.ethics)}
-                              </span>
+                              <span className="font-medium">{getSliderLabel("ethics", advisor.ethics)}</span>
                             </div>
                             <Slider
                               value={[advisor.ethics]}
@@ -364,9 +356,7 @@ export function CouncilBuilderView() {
                           <div>
                             <div className="flex justify-between text-xs mb-2">
                               <span className="text-muted-foreground">Risk Tolerance</span>
-                              <span className="font-medium">
-                                {getSliderLabel('risk', advisor.risk)}
-                              </span>
+                              <span className="font-medium">{getSliderLabel("risk", advisor.risk)}</span>
                             </div>
                             <Slider
                               value={[advisor.risk]}
@@ -385,9 +375,7 @@ export function CouncilBuilderView() {
                           <div>
                             <div className="flex justify-between text-xs mb-2">
                               <span className="text-muted-foreground">Time Horizon</span>
-                              <span className="font-medium">
-                                {getSliderLabel('timeHorizon', advisor.timeHorizon)}
-                              </span>
+                              <span className="font-medium">{getSliderLabel("timeHorizon", advisor.timeHorizon)}</span>
                             </div>
                             <Slider
                               value={[advisor.timeHorizon]}
@@ -406,9 +394,7 @@ export function CouncilBuilderView() {
                           <div>
                             <div className="flex justify-between text-xs mb-2">
                               <span className="text-muted-foreground">Ideology</span>
-                              <span className="font-medium">
-                                {getSliderLabel('ideology', advisor.ideology)}
-                              </span>
+                              <span className="font-medium">{getSliderLabel("ideology", advisor.ideology)}</span>
                             </div>
                             <Slider
                               value={[advisor.ideology]}
@@ -427,9 +413,7 @@ export function CouncilBuilderView() {
                           <div>
                             <div className="flex justify-between text-xs mb-2">
                               <span className="text-muted-foreground">Experience</span>
-                              <span className="font-medium">
-                                {getSliderLabel('experience', advisor.experience)}
-                              </span>
+                              <span className="font-medium">{getSliderLabel("experience", advisor.experience)}</span>
                             </div>
                             <Slider
                               value={[advisor.experience]}
@@ -457,7 +441,9 @@ export function CouncilBuilderView() {
               disabled={isLoading || selectedAdvisors.length < 3 || !councilName.trim()}
               className="w-full bg-gradient-to-r from-[var(--color-miami-aqua)] to-[var(--color-miami-pink)] text-black font-semibold h-12 gap-2"
             >
-              {isLoading ? 'Summoning...' : (
+              {isLoading ? (
+                "Summoning..."
+              ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
                   Summon Council

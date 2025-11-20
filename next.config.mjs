@@ -19,13 +19,39 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  // Enable compression
   compress: true,
-  // Optimize production builds
   productionBrowserSourceMaps: false,
   experimental: {
-    // Enable optimized package imports
     optimizePackageImports: ['@/components', '@/lib'],
+  },
+  async redirects() {
+    return [
+      {
+        source: '/profile',
+        destination: '/app/profile',
+        permanent: true,
+      },
+      {
+        source: '/council',
+        destination: '/app/council',
+        permanent: true,
+      },
+      {
+        source: '/council/:path*',
+        destination: '/app/council/:path*',
+        permanent: true,
+      },
+      {
+        source: '/subscription/:path*',
+        destination: '/app/subscription/:path*',
+        permanent: true,
+      },
+      {
+        source: '/setup-image-generation',
+        destination: '/app/setup-image-generation',
+        permanent: true,
+      },
+    ]
   },
   async headers() {
     return [

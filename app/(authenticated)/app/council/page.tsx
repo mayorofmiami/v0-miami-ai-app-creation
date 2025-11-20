@@ -2,8 +2,9 @@ import { CouncilLandingView } from "@/components/council/council-landing-view"
 import { Suspense } from "react"
 
 export const metadata = {
-  title: "The Council - AI Advisory Board | Miami.ai",
+  title: "The Council - AI Advisory Board | Miami.AI",
   description: "Summon your Council of AI advisors with custom personalities to debate important decisions",
+  robots: "noindex, nofollow",
 }
 
 export default function CouncilPage() {

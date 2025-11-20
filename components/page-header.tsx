@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { MobileDrawer } from "@/components/mobile-drawer"
 import type { User } from "@/types"
 
@@ -49,9 +50,7 @@ export function PageHeader({
   const logoClassName = "h-12 w-auto"
 
   return (
-    <div
-      className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 pointer-events-none"
-    >
+    <div className="fixed top-3 md:top-4 left-0 right-0 z-50 px-4 md:px-6 pointer-events-none">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-center h-14 md:h-12 relative">
           {isAuthenticated && (
@@ -77,15 +76,17 @@ export function PageHeader({
 
           {showLogo && (
             <div className="flex items-center justify-center pointer-events-auto">
-              <Image
-                src="/miami-ai-logo.png"
-                alt="MIAMI.AI"
-                width={logoWidth}
-                height={logoHeight}
-                className={logoClassName}
-                sizes="(max-width: 768px) 140px, 180px"
-                priority
-              />
+              <Link href={isAuthenticated ? "/app" : "/"} className="cursor-pointer">
+                <Image
+                  src="/miami-ai-logo.png"
+                  alt="MIAMI.AI"
+                  width={logoWidth}
+                  height={logoHeight}
+                  className={logoClassName}
+                  sizes="(max-width: 768px) 140px, 180px"
+                  priority
+                />
+              </Link>
             </div>
           )}
         </div>

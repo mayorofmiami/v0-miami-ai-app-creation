@@ -188,7 +188,7 @@ export function CollapsibleSidebar({
         </Button>
 
         {/* The Council navigation link */}
-        <Link href="/council">
+        <Link href="/app/council">
           <Button
             variant="ghost"
             className={`w-full justify-start h-10 ${isCollapsed ? "px-0 justify-center" : ""} text-miami-pink hover:text-miami-pink hover:bg-miami-pink/10`}
@@ -215,7 +215,8 @@ export function CollapsibleSidebar({
 
         {!isCollapsed && (
           <div className="ml-8 space-y-1">
-            <Link href="/council/history">
+            {/* Council sub-links */}
+            <Link href="/app/council/history">
               <Button
                 variant="ghost"
                 className="w-full justify-start h-8 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -224,7 +225,7 @@ export function CollapsibleSidebar({
                 Debate History
               </Button>
             </Link>
-            <Link href="/council/predictions">
+            <Link href="/app/council/predictions">
               <Button
                 variant="ghost"
                 className="w-full justify-start h-8 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -478,7 +479,8 @@ export function CollapsibleSidebar({
           </div>
         ) : user ? (
           <>
-            <Link href="/profile">
+            {/* Profile link */}
+            <Link href="/app/profile">
               <div
                 className={`flex items-center gap-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group ${
                   isCollapsed ? "justify-center p-2" : "p-2"

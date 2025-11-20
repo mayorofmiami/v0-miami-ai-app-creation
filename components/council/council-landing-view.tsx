@@ -101,7 +101,7 @@ export function CouncilLandingView() {
 
             <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
               <Button
-                onClick={() => router.push("/council/new")}
+                onClick={() => router.push("/app/council/new")}
                 size="lg"
                 className="bg-[var(--color-miami-aqua)] hover:bg-[var(--color-miami-aqua)]/90 text-black font-bold h-12 px-8 rounded-full shadow-[0_0_20px_rgba(2,216,233,0.3)] hover:shadow-[0_0_30px_rgba(2,216,233,0.5)] transition-all duration-300"
               >
@@ -112,7 +112,7 @@ export function CouncilLandingView() {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => router.push("/council/history")}
+                onClick={() => router.push("/app/council/history")}
                 className="h-12 px-8 rounded-full border-white/10 hover:bg-white/5 hover:border-[var(--color-miami-pink)]/50 transition-all duration-300"
               >
                 <History className="w-5 h-5 mr-2" />
@@ -149,7 +149,7 @@ export function CouncilLandingView() {
                   You haven't created any councils yet. Start by assembling your first team of AI advisors.
                 </p>
                 <Button
-                  onClick={() => router.push("/council/new")}
+                  onClick={() => router.push("/app/council/new")}
                   size="lg"
                   className="bg-white text-black hover:bg-white/90 rounded-full font-semibold"
                 >
@@ -201,7 +201,7 @@ export function CouncilLandingView() {
                           variant="ghost"
                           size="sm"
                           className="text-[var(--color-miami-aqua)] hover:text-[var(--color-miami-aqua)] hover:bg-[var(--color-miami-aqua)]/10 -mr-2"
-                          onClick={() => router.push(`/council/edit/${council.id}`)}
+                          onClick={() => router.push(`/app/council/edit/${council.id}`)}
                         >
                           Manage <ArrowRight className="w-4 h-4 ml-1" />
                         </Button>
@@ -256,7 +256,7 @@ export function CouncilLandingView() {
                     "group relative overflow-hidden bg-black/40 border-white/10 transition-all duration-500 hover:-translate-y-1 cursor-pointer rounded-2xl backdrop-blur-md",
                     template.border,
                   )}
-                  onClick={() => router.push("/council/new")}
+                  onClick={() => router.push("/app/council/new")}
                 >
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${template.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}

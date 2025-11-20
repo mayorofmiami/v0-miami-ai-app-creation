@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Plus, Shield, Clock, Sun, Moon, User } from 'lucide-react'
+import { Menu, Plus, Shield, Clock, Sun, Moon, User } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { HelpMenu } from "@/components/help-menu"
@@ -92,7 +92,7 @@ export function MobileDrawer({
             New Chat
           </Button>
 
-          <Link href="/council" onClick={() => onOpenChange(false)}>
+          <Link href="/app/council" onClick={() => onOpenChange(false)}>
             <Button
               variant="ghost"
               className="w-full justify-start text-base text-miami-pink hover:text-miami-pink hover:bg-miami-pink/10 h-12 px-4"
@@ -260,7 +260,7 @@ export function MobileDrawer({
             </div>
           ) : user ? (
             <>
-              <Link href="/profile" onClick={() => onOpenChange(false)}>
+              <Link href="/app/profile" onClick={() => onOpenChange(false)}>
                 <div className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-miami-aqua/20 to-miami-pink/20 flex items-center justify-center flex-shrink-0 border border-miami-aqua/20">
                     <span className="text-miami-aqua text-2xl">

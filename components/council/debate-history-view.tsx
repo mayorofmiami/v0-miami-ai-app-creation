@@ -1,19 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { ArrowLeft, Search, Clock, MessageSquare, Filter, ExternalLink, Share2, RotateCcw } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ArrowLeft, Search, Clock, MessageSquare, ExternalLink, Share2, RotateCcw } from "lucide-react"
 import { CouncilLayout } from "@/components/council/council-layout"
 
 interface Debate {
@@ -46,18 +40,18 @@ export function DebateHistoryView() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedDebate, setSelectedDebate] = useState<any>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
-  const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'in_progress'>('all')
+  const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "in_progress">("all")
 
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch('/api/init')
+        const res = await fetch("/api/init")
         if (res.ok) {
           const data = await res.json()
           setUser(data.user)
         }
       } catch (error) {
-        console.error('[v0] Error loading user:', error)
+        console.error("[v0] Error loading user:", error)
       }
     }
     loadUser()
@@ -81,7 +75,7 @@ export function DebateHistoryView() {
       const data = await res.json()
       setDebates(data.debates || [])
     } catch (error) {
-      console.error('[v0] Error fetching debates:', error)
+      console.error("[v0] Error fetching debates:", error)
     } finally {
       setIsLoading(false)
     }
@@ -90,16 +84,17 @@ export function DebateHistoryView() {
   const filterDebates = () => {
     let filtered = debates
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(d => d.status === statusFilter)
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((d) => d.status === statusFilter)
     }
 
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(d =>
-        d.question.toLowerCase().includes(term) ||
-        d.verdict?.toLowerCase().includes(term) ||
-        d.council_name?.toLowerCase().includes(term)
+      filtered = filtered.filter(
+        (d) =>
+          d.question.toLowerCase().includes(term) ||
+          d.verdict?.toLowerCase().includes(term) ||
+          d.council_name?.toLowerCase().includes(term),
       )
     }
 
@@ -113,15 +108,15 @@ export function DebateHistoryView() {
       setSelectedDebate(data.debate)
       setIsDetailOpen(true)
     } catch (error) {
-      console.error('[v0] Error fetching debate details:', error)
+      console.error("[v0] Error fetching debate details:", error)
     }
   }
 
   const rerunDebate = (debate: Debate) => {
     if (debate.council_name) {
-      router.push(`/council/chat/${debate.id}?question=${encodeURIComponent(debate.question)}&rerun=true`)
+      router.push(`/app/council/chat/${debate.id}?question=${encodeURIComponent(debate.question)}&rerun=true`)
     } else {
-      router.push(`/council?question=${encodeURIComponent(debate.question)}`)
+      router.push(`/app/council?question=${encodeURIComponent(debate.question)}`)
     }
   }
 
@@ -129,14 +124,14 @@ export function DebateHistoryView() {
     const shareUrl = `${window.location.origin}/council/shared/${debateId}`
     try {
       await navigator.clipboard.writeText(shareUrl)
-      alert('Share link copied to clipboard!')
+      alert("Share link copied to clipboard!")
     } catch (error) {
-      console.error('[v0] Error copying link:', error)
+      console.error("[v0] Error copying link:", error)
     }
   }
 
   const getDebateDuration = (createdAt: string, completedAt: string | null) => {
-    if (!completedAt) return 'In progress'
+    if (!completedAt) return "In progress"
     const start = new Date(createdAt).getTime()
     const end = new Date(completedAt).getTime()
     const minutes = Math.round((end - start) / 1000 / 60)
@@ -148,12 +143,7 @@ export function DebateHistoryView() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/council')}
-            className="gap-2"
-          >
+          <Button variant="ghost" size="sm" onClick={() => router.push("/app/council")} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
@@ -176,23 +166,23 @@ export function DebateHistoryView() {
           </div>
           <div className="flex gap-2">
             <Button
-              variant={statusFilter === 'all' ? 'default' : 'outline'}
+              variant={statusFilter === "all" ? "default" : "outline"}
               size="sm"
-              onClick={() => setStatusFilter('all')}
+              onClick={() => setStatusFilter("all")}
             >
               All
             </Button>
             <Button
-              variant={statusFilter === 'completed' ? 'default' : 'outline'}
+              variant={statusFilter === "completed" ? "default" : "outline"}
               size="sm"
-              onClick={() => setStatusFilter('completed')}
+              onClick={() => setStatusFilter("completed")}
             >
               Completed
             </Button>
             <Button
-              variant={statusFilter === 'in_progress' ? 'default' : 'outline'}
+              variant={statusFilter === "in_progress" ? "default" : "outline"}
               size="sm"
-              onClick={() => setStatusFilter('in_progress')}
+              onClick={() => setStatusFilter("in_progress")}
             >
               In Progress
             </Button>
@@ -206,15 +196,11 @@ export function DebateHistoryView() {
             <div className="text-sm text-muted-foreground">Total Debates</div>
           </Card>
           <Card className="p-4">
-            <div className="text-2xl font-bold">
-              {debates.filter(d => d.status === 'completed').length}
-            </div>
+            <div className="text-2xl font-bold">{debates.filter((d) => d.status === "completed").length}</div>
             <div className="text-sm text-muted-foreground">Completed</div>
           </Card>
           <Card className="p-4">
-            <div className="text-2xl font-bold">
-              {debates.reduce((sum, d) => sum + d.response_count, 0)}
-            </div>
+            <div className="text-2xl font-bold">{debates.reduce((sum, d) => sum + d.response_count, 0)}</div>
             <div className="text-sm text-muted-foreground">Total Responses</div>
           </Card>
         </div>
@@ -232,44 +218,25 @@ export function DebateHistoryView() {
         ) : filteredDebates.length === 0 ? (
           <Card className="p-12 text-center border-dashed">
             <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">
-              {searchTerm ? 'No debates found' : 'No debates yet'}
-            </h3>
+            <h3 className="text-lg font-semibold mb-2">{searchTerm ? "No debates found" : "No debates yet"}</h3>
             <p className="text-muted-foreground mb-6">
-              {searchTerm
-                ? 'Try adjusting your search or filters'
-                : 'Start your first Council debate to see it here'}
+              {searchTerm ? "Try adjusting your search or filters" : "Start your first Council debate to see it here"}
             </p>
-            {!searchTerm && (
-              <Button onClick={() => router.push('/council')}>
-                Start a Debate
-              </Button>
-            )}
+            {!searchTerm && <Button onClick={() => router.push("/app/council")}>Start a Debate</Button>}
           </Card>
         ) : (
           <div className="space-y-3">
             {filteredDebates.map((debate) => (
-              <Card
-                key={debate.id}
-                className="p-6 hover:border-[var(--color-miami-aqua)]/50 transition-colors"
-              >
+              <Card key={debate.id} className="p-6 hover:border-[var(--color-miami-aqua)]/50 transition-colors">
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">
-                      {debate.question}
-                    </h3>
+                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">{debate.question}</h3>
                     <div className="flex flex-wrap gap-2 items-center">
-                      <Badge variant={debate.status === 'completed' ? 'default' : 'secondary'}>
-                        {debate.status === 'completed' ? 'Completed' : 'In Progress'}
+                      <Badge variant={debate.status === "completed" ? "default" : "secondary"}>
+                        {debate.status === "completed" ? "Completed" : "In Progress"}
                       </Badge>
-                      {debate.council_name && (
-                        <Badge variant="outline">
-                          {debate.council_name}
-                        </Badge>
-                      )}
-                      <Badge variant="outline">
-                        {debate.council_type}
-                      </Badge>
+                      {debate.council_name && <Badge variant="outline">{debate.council_name}</Badge>}
+                      <Badge variant="outline">{debate.council_type}</Badge>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <MessageSquare className="w-3 h-3" />
                         {debate.response_count} responses
@@ -285,37 +252,18 @@ export function DebateHistoryView() {
                   </div>
                 </div>
 
-                {debate.verdict && (
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {debate.verdict}
-                  </p>
-                )}
+                {debate.verdict && <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{debate.verdict}</p>}
 
                 <div className="flex gap-2 flex-wrap">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => viewDebateDetails(debate.id)}
-                    className="gap-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => viewDebateDetails(debate.id)} className="gap-2">
                     <ExternalLink className="w-3 h-3" />
                     View Full Debate
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => rerunDebate(debate)}
-                    className="gap-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => rerunDebate(debate)} className="gap-2">
                     <RotateCcw className="w-3 h-3" />
                     Re-run
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => shareDebate(debate.id)}
-                    className="gap-2"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => shareDebate(debate.id)} className="gap-2">
                     <Share2 className="w-3 h-3" />
                     Share
                   </Button>
@@ -331,9 +279,7 @@ export function DebateHistoryView() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Debate Details</DialogTitle>
-            <DialogDescription>
-              Full transcript and responses from this Council debate
-            </DialogDescription>
+            <DialogDescription>Full transcript and responses from this Council debate</DialogDescription>
           </DialogHeader>
 
           {selectedDebate && (
@@ -348,16 +294,12 @@ export function DebateHistoryView() {
                   <h3 className="font-semibold mb-4">Responses ({selectedDebate.responses.length})</h3>
                   <div className="space-y-4">
                     {[1, 2, 3].map((round) => {
-                      const roundResponses = selectedDebate.responses.filter(
-                        (r: any) => r.round_number === round
-                      )
+                      const roundResponses = selectedDebate.responses.filter((r: any) => r.round_number === round)
                       if (roundResponses.length === 0) return null
 
                       return (
                         <div key={round} className="space-y-3">
-                          <h4 className="text-sm font-semibold text-muted-foreground">
-                            Round {round}
-                          </h4>
+                          <h4 className="text-sm font-semibold text-muted-foreground">Round {round}</h4>
                           {roundResponses.map((response: any, i: number) => (
                             <Card key={i} className="p-4">
                               <div className="flex items-center gap-2 mb-2">
@@ -366,9 +308,7 @@ export function DebateHistoryView() {
                                   {response.model_used}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                {response.content}
-                              </p>
+                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{response.content}</p>
                             </Card>
                           ))}
                         </div>

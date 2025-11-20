@@ -56,11 +56,18 @@ export function SearchInputMenu({
     onModeChange(newMode)
   }
 
+  const handleContentTypeChange = (type: "search" | "image") => {
+    if (type === "image" && isCouncilMode && onCouncilModeChange) {
+      onCouncilModeChange(false)
+    }
+    onContentTypeChange(type)
+  }
+
   return (
     <div className="w-56 bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div className="p-2">
         <button
-          onClick={() => onContentTypeChange(contentType === "search" ? "image" : "search")}
+          onClick={() => handleContentTypeChange(contentType === "search" ? "image" : "search")}
           className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-sm font-medium hover:bg-muted text-foreground"
         >
           {contentType === "search" ? (

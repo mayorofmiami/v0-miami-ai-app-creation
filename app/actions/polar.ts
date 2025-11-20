@@ -27,7 +27,6 @@ export async function startCheckoutSession(productId: string, userId: string, us
       checkoutUrl: checkout.url,
     }
   } catch (error) {
-    console.error("[v0] Failed to create Polar checkout:", error)
     throw new Error("Failed to create checkout session")
   }
 }
@@ -37,7 +36,6 @@ export async function getCheckoutSession(checkoutId: string) {
     const checkout = await polar.checkouts.get({ id: checkoutId })
     return checkout
   } catch (error) {
-    console.error("[v0] Failed to get checkout session:", error)
     throw new Error("Failed to get checkout session")
   }
 }

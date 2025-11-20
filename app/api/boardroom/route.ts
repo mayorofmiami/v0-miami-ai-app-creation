@@ -100,7 +100,6 @@ export async function POST(req: Request) {
           )
 
           await streamSynthesis(controller, encoder, session.id, personas, query)
-          // </CHANGE>
 
           // Mark session as complete
           await completeBoardSession(session.id)
@@ -134,13 +133,17 @@ async function streamRound1(
   personas: any[],
   query: string,
 ) {
+  console.log("[v0] Starting Round 1 with", personas.length, "personas")
+
   // Generate all responses in parallel
   const promises = personas.map(async (persona) => {
+    console.log("[v0] Generating response for:", persona.name)
+
     const result = streamText({
       model: persona.model,
       system: persona.systemPrompt,
-      prompt: `Question: ${query}\n\nProvide your expert perspective based on your role. Structure your response with clear paragraphs separated by double line breaks. Be comprehensive but concise.`,
-      maxOutputTokens: 500,
+      prompt: `Question: ${query}\n\nProvide your expert perspective based on your role. Be comprehensive but concise (max 3-4 paragraphs).`,
+      maxTokens: 500,
     })
 
     let fullText = ""
@@ -158,11 +161,13 @@ async function streamRound1(
       )
     }
 
+    console.log("[v0] Completed response for:", persona.name, "length:", fullText.length)
     await saveBoardResponse(sessionId, persona.name, persona.model, 1, fullText)
     return fullText
   })
 
   await Promise.all(promises)
+  console.log("[v0] Round 1 complete")
 }
 
 async function streamSynthesis(
@@ -172,17 +177,19 @@ async function streamSynthesis(
   personas: any[],
   query: string,
 ) {
+  console.log("[v0] Starting synthesis")
+
   // Get all Round 1 responses
   const allResponses = await getBoardResponses(sessionId, 1)
+  console.log("[v0] Retrieved", allResponses.length, "responses for synthesis")
 
   const opinions = allResponses.map((r) => `${r.persona_name}: ${r.content}`).join("\n\n")
 
   const result = streamText({
     model: "openai/gpt-4o",
-    system:
-      "You are an impartial chairman synthesizing council opinions. Structure your synthesis with clear sections.",
-    prompt: `Question: ${query}\n\nHere are the council members' opinions:\n\n${opinions}\n\nProvide a balanced synthesis that:\n1. Summarizes the key perspectives from each council member\n2. Identifies common themes and consensus areas\n3. Notes any differing viewpoints or concerns\n4. Offers a clear, actionable recommendation considering all opinions\n\nStructure your response with clear paragraphs separated by double line breaks.`,
-    maxOutputTokens: 800,
+    system: "You are an impartial chairman synthesizing council opinions. Provide a balanced, structured synthesis.",
+    prompt: `Question: ${query}\n\nHere are the council members' opinions:\n\n${opinions}\n\nProvide a balanced synthesis that:\n1. Summarizes key perspectives\n2. Identifies consensus areas\n3. Notes differing viewpoints\n4. Offers actionable recommendations\n\nKeep it concise and structured.`,
+    maxTokens: 800,
   })
 
   let fullText = ""
@@ -198,6 +205,6 @@ async function streamSynthesis(
     )
   }
 
+  console.log("[v0] Synthesis complete, length:", fullText.length)
   await saveBoardResponse(sessionId, "Chairman", "openai/gpt-4o", 2, fullText)
 }
-// </CHANGE>

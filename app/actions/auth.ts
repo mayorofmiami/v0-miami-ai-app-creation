@@ -25,7 +25,7 @@ export async function signUpAction(formData: FormData) {
   // Create session
   await createSession(result.userId!)
 
-  redirect("/")
+  redirect("/app")
 }
 
 export async function signInAction(formData: FormData) {
@@ -45,7 +45,7 @@ export async function signInAction(formData: FormData) {
   // Create session
   await createSession(result.userId!)
 
-  redirect("/")
+  redirect("/app")
 }
 
 export async function logoutAction() {

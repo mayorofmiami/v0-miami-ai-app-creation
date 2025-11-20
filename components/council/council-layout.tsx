@@ -1,7 +1,9 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useCallback } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { PageHeader } from "@/components/page-header"
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
@@ -21,8 +23,25 @@ interface CouncilLayoutProps {
 export function CouncilLayout({ children }: CouncilLayoutProps) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoadingUser, setIsLoadingUser] = useState(true)
+
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== "undefined") {
+      const cachedData = storage.getItem("miami_user_cache", null)
+      if (cachedData && cachedData.user) {
+        return cachedData.user
+      }
+    }
+    return null
+  })
+
+  const [isLoadingUser, setIsLoadingUser] = useState(() => {
+    if (typeof window !== "undefined") {
+      const cachedData = storage.getItem("miami_user_cache", null)
+      return !cachedData
+    }
+    return true
+  })
+
   const [uiState, setUIState] = useState({
     isDrawerOpen: false,
     isSidebarCollapsed: true,
@@ -32,13 +51,22 @@ export function CouncilLayout({ children }: CouncilLayoutProps) {
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch('/api/init')
+        const res = await fetch("/api/init")
         if (res.ok) {
           const data = await res.json()
           setUser(data.user)
+
+          if (typeof window !== "undefined" && data.user) {
+            const currentCache = storage.getItem("miami_user_cache", {})
+            storage.setItem("miami_user_cache", {
+              ...currentCache,
+              user: data.user,
+              timestamp: Date.now(),
+            })
+          }
         }
       } catch (error) {
-        console.error('[v0] Error loading user:', error)
+        console.error("[v0] Error loading user:", error)
       } finally {
         setIsLoadingUser(false)
       }
@@ -57,31 +85,35 @@ export function CouncilLayout({ children }: CouncilLayoutProps) {
       if (typeof window !== "undefined") {
         storage.removeItem("miami_user_cache")
       }
-      
+
       const formData = new FormData()
       await fetch("/api/auth/logout", { method: "POST", body: formData })
-      
+
       window.location.href = "/"
     } catch (error) {
-      console.error('[v0] Error logging out:', error)
+      console.error("[v0] Error logging out:", error)
     }
   }, [])
 
   const handleNewChat = useCallback(() => {
-    router.push('/')
+    router.push("/app")
   }, [router])
 
   const isAdmin = user?.role === "owner" || user?.role === "admin"
 
-  if (isLoadingUser) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  // If isLoadingUser is true (no cache), we render a minimal loading state or just the structure.
+  // But since we want to avoid flash, we render the structure even if loading,
+  // and let the sidebar handle the "loading user" state internally if needed.
+
+  if (isLoadingUser && !user) {
+    return <div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>
   }
 
   return (
     <>
       <CollapsibleSidebar
         user={user}
-        isLoadingUser={false}
+        isLoadingUser={isLoadingUser}
         recentSearches={[]}
         onNewChat={handleNewChat}
         onSearchSelect={() => {}}
@@ -107,7 +139,7 @@ export function CouncilLayout({ children }: CouncilLayoutProps) {
           recentSearches={[]}
           bookmarks={[]}
           user={user}
-          isLoadingUser={false}
+          isLoadingUser={isLoadingUser}
           theme={theme || "dark"}
           setTheme={setTheme}
           handleNewChat={handleNewChat}

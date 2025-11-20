@@ -9,7 +9,7 @@ import Loader2 from "@/components/icons/Loader2"
 import Link from "next/link"
 import { getCheckoutSession } from "@/app/actions/polar"
 
-export default function SubscriptionSuccessPage() {
+export default function SubscriptionSuccessPageClient() {
   const searchParams = useSearchParams()
   const checkoutId = searchParams.get("checkout_id")
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
@@ -62,7 +62,8 @@ export default function SubscriptionSuccessPage() {
               <p className="text-muted-foreground text-balance">
                 Your subscription is now active. Enjoy unlimited searches and Deep Research mode.
               </p>
-              <Link href="/">
+              {/* <CHANGE> Updated link to /app instead of / */}
+              <Link href="/app">
                 <Button className="bg-miami-aqua hover:bg-miami-aqua/80 text-miami-dark">Start Searching</Button>
               </Link>
             </>

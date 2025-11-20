@@ -42,13 +42,13 @@ export async function GET(request: Request): Promise<Response> {
     // Create session
     await createSession(result.userId)
 
-    console.log("[v0] OAuth session created, redirecting to home")
+    console.log("[v0] OAuth session created, redirecting to /app")
 
     // Clear OAuth cookies
     cookieStore.delete("google_oauth_state")
     cookieStore.delete("google_code_verifier")
 
-    return Response.redirect(new URL("/", request.url))
+    return Response.redirect(new URL("/app", request.url))
   } catch (error) {
     console.error("[v0] Google OAuth callback error:", error)
 

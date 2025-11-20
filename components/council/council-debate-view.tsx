@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Send, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Send, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from "lucide-react"
 import { CouncilLayout } from "@/components/council/council-layout"
 
 interface Advisor {
@@ -31,28 +31,28 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [user, setUser] = useState<User | null>(null)
-  const [question, setQuestion] = useState(searchParams.get('question') || '')
+  const [question, setQuestion] = useState(searchParams.get("question") || "")
   const [isDebating, setIsDebating] = useState(false)
   const [advisors, setAdvisors] = useState<Advisor[]>([])
   const [responses, setResponses] = useState<Response[]>([])
   const [currentRound, setCurrentRound] = useState<number>(0)
-  const [currentAdvisor, setCurrentAdvisor] = useState<string>('')
-  const [verdict, setVerdict] = useState('')
+  const [currentAdvisor, setCurrentAdvisor] = useState<string>("")
+  const [verdict, setVerdict] = useState("")
   const [isComplete, setIsComplete] = useState(false)
   const [collapsedRounds, setCollapsedRounds] = useState<Set<number>>(new Set())
-  const [votes, setVotes] = useState<Record<string, 'agree' | 'disagree'>>({})
+  const [votes, setVotes] = useState<Record<string, "agree" | "disagree">>({})
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch('/api/init')
+        const res = await fetch("/api/init")
         if (res.ok) {
           const data = await res.json()
           setUser(data.user)
         }
       } catch (error) {
-        console.error('[v0] Error loading user:', error)
+        console.error("[v0] Error loading user:", error)
       }
     }
     loadUser()
@@ -69,19 +69,19 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
 
     setIsDebating(true)
     setResponses([])
-    setVerdict('')
+    setVerdict("")
     setIsComplete(false)
     setCurrentRound(1)
 
     try {
-      const res = await fetch('/api/council/debate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/council/debate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: user.id,
           councilId,
           question,
-        })
+        }),
       })
 
       const reader = res.body?.getReader()
@@ -89,9 +89,9 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
 
       if (!reader) return
 
-      let buffer = ''
-      let currentResponse = ''
-      let currentResponseAdvisor = ''
+      let buffer = ""
+      let currentResponse = ""
+      let currentResponseAdvisor = ""
       let currentResponseRound = 0
 
       while (true) {
@@ -99,13 +99,13 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
         if (done) break
 
         buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n\n')
-        buffer = lines.pop() || ''
+        const lines = buffer.split("\n\n")
+        buffer = lines.pop() || ""
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith("data: ")) {
             const data = line.slice(6)
-            if (data === '[DONE]') {
+            if (data === "[DONE]") {
               setIsComplete(true)
               setIsDebating(false)
               break
@@ -114,50 +114,49 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
             try {
               const parsed = JSON.parse(data)
 
-              if (parsed.type === 'advisors') {
+              if (parsed.type === "advisors") {
                 setAdvisors(parsed.advisors)
-              } else if (parsed.type === 'round_start') {
+              } else if (parsed.type === "round_start") {
                 setCurrentRound(parsed.round)
                 if (parsed.round > 1) {
-                  setCollapsedRounds(prev => new Set([...prev, parsed.round - 1]))
+                  setCollapsedRounds((prev) => new Set([...prev, parsed.round - 1]))
                 }
-              } else if (parsed.type === 'advisor_start') {
+              } else if (parsed.type === "advisor_start") {
                 currentResponseAdvisor = parsed.advisor
                 currentResponseRound = parsed.round
-                currentResponse = ''
+                currentResponse = ""
                 setCurrentAdvisor(parsed.advisor)
-              } else if (parsed.type === 'text') {
+              } else if (parsed.type === "text") {
                 currentResponse += parsed.content
-                setResponses(prev => {
-                  const existing = prev.find(
-                    r => r.advisor === parsed.advisor && r.round === parsed.round
-                  )
+                setResponses((prev) => {
+                  const existing = prev.find((r) => r.advisor === parsed.advisor && r.round === parsed.round)
                   if (existing) {
-                    return prev.map(r =>
-                      r.advisor === parsed.advisor && r.round === parsed.round
-                        ? { ...r, content: currentResponse }
-                        : r
+                    return prev.map((r) =>
+                      r.advisor === parsed.advisor && r.round === parsed.round ? { ...r, content: currentResponse } : r,
                     )
                   }
-                  return [...prev, {
-                    advisor: parsed.advisor,
-                    content: currentResponse,
-                    round: parsed.round
-                  }]
+                  return [
+                    ...prev,
+                    {
+                      advisor: parsed.advisor,
+                      content: currentResponse,
+                      round: parsed.round,
+                    },
+                  ]
                 })
-              } else if (parsed.type === 'advisor_end') {
-                setCurrentAdvisor('')
-              } else if (parsed.type === 'verdict') {
-                setVerdict(prev => prev + parsed.content)
+              } else if (parsed.type === "advisor_end") {
+                setCurrentAdvisor("")
+              } else if (parsed.type === "verdict") {
+                setVerdict((prev) => prev + parsed.content)
               }
             } catch (e) {
-              console.error('[v0] Parse error:', e)
+              console.error("[v0] Parse error:", e)
             }
           }
         }
       }
     } catch (error) {
-      console.error('[v0] Debate error:', error)
+      console.error("[v0] Debate error:", error)
       setIsDebating(false)
     }
   }
@@ -172,16 +171,16 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
     setCollapsedRounds(newCollapsed)
   }
 
-  const handleVote = (advisor: string, round: number, voteType: 'agree' | 'disagree') => {
+  const handleVote = (advisor: string, round: number, voteType: "agree" | "disagree") => {
     const key = `${advisor}-${round}`
-    setVotes(prev => ({
+    setVotes((prev) => ({
       ...prev,
-      [key]: prev[key] === voteType ? undefined : voteType
+      [key]: prev[key] === voteType ? undefined : voteType,
     }))
   }
 
   const getRoundResponses = (round: number) => {
-    return responses.filter(r => r.round === round)
+    return responses.filter((r) => r.round === round)
   }
 
   const getRoundTitle = (round: number) => {
@@ -197,12 +196,7 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
         <div className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4 max-w-6xl">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/council')}
-                className="gap-2"
-              >
+              <Button variant="ghost" size="sm" onClick={() => router.push("/app/council")} className="gap-2">
                 <ArrowLeft className="w-4 h-4" />
                 Back
               </Button>
@@ -233,15 +227,15 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
                     key={round}
                     onClick={() => {
                       const element = document.getElementById(`round-${round}`)
-                      element?.scrollIntoView({ behavior: 'smooth' })
+                      element?.scrollIntoView({ behavior: "smooth" })
                     }}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                       round <= currentRound
-                        ? 'bg-[var(--color-miami-aqua)] text-black'
-                        : 'bg-muted text-muted-foreground'
+                        ? "bg-[var(--color-miami-aqua)] text-black"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {round <= currentRound ? '✓' : round}
+                    {round <= currentRound ? "✓" : round}
                     <span className="hidden sm:inline">Round {round}</span>
                   </button>
                 ))}
@@ -260,17 +254,17 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
                     className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-3 rounded-lg transition-colors"
                     onClick={() => roundResponses.length > 0 && toggleRound(round)}
                   >
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      round <= currentRound ? 'bg-[var(--color-miami-aqua)] text-black' : 'bg-muted'
-                    } text-sm font-semibold`}>
-                      {round <= currentRound ? '✓' : round}
+                    <div
+                      className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                        round <= currentRound ? "bg-[var(--color-miami-aqua)] text-black" : "bg-muted"
+                      } text-sm font-semibold`}
+                    >
+                      {round <= currentRound ? "✓" : round}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <h2 className="text-lg font-semibold">{getRoundTitle(round)}</h2>
                       {round === currentRound && !isComplete && (
-                        <span className="text-sm text-muted-foreground animate-pulse">
-                          In progress...
-                        </span>
+                        <span className="text-sm text-muted-foreground animate-pulse">In progress...</span>
                       )}
                     </div>
                     {roundResponses.length > 0 && (
@@ -283,7 +277,7 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
                   {!isCollapsed && roundResponses.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {advisors.map((advisor) => {
-                        const response = roundResponses.find(r => r.advisor === advisor.name)
+                        const response = roundResponses.find((r) => r.advisor === advisor.name)
                         if (!response) return null
 
                         const voteKey = `${advisor.name}-${round}`
@@ -305,19 +299,19 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
                             {round < 3 && (
                               <div className="flex gap-2">
                                 <Button
-                                  variant={vote === 'agree' ? 'default' : 'outline'}
+                                  variant={vote === "agree" ? "default" : "outline"}
                                   size="sm"
                                   className="flex-1 h-8"
-                                  onClick={() => handleVote(advisor.name, round, 'agree')}
+                                  onClick={() => handleVote(advisor.name, round, "agree")}
                                 >
                                   <ThumbsUp className="w-3 h-3 mr-1" />
                                   Agree
                                 </Button>
                                 <Button
-                                  variant={vote === 'disagree' ? 'default' : 'outline'}
+                                  variant={vote === "disagree" ? "default" : "outline"}
                                   size="sm"
                                   className="flex-1 h-8"
-                                  onClick={() => handleVote(advisor.name, round, 'disagree')}
+                                  onClick={() => handleVote(advisor.name, round, "disagree")}
                                 >
                                   <ThumbsDown className="w-3 h-3 mr-1" />
                                   Disagree
@@ -328,9 +322,18 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
                             {currentAdvisor === advisor.name && (
                               <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                                 <div className="flex gap-1">
-                                  <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                  <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                  <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                  <div
+                                    className="w-2 h-2 bg-current rounded-full animate-bounce"
+                                    style={{ animationDelay: "0ms" }}
+                                  />
+                                  <div
+                                    className="w-2 h-2 bg-current rounded-full animate-bounce"
+                                    style={{ animationDelay: "150ms" }}
+                                  />
+                                  <div
+                                    className="w-2 h-2 bg-current rounded-full animate-bounce"
+                                    style={{ animationDelay: "300ms" }}
+                                  />
                                 </div>
                                 <span>Thinking...</span>
                               </div>
@@ -365,7 +368,7 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
                       variant="outline"
                       onClick={() => {
                         setCollapsedRounds(new Set())
-                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                        window.scrollTo({ top: 0, behavior: "smooth" })
                       }}
                       className="w-full"
                     >
@@ -387,7 +390,7 @@ export function CouncilDebateView({ councilId }: { councilId: string }) {
                   placeholder="What decision do you need help with?"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && startDebate()}
+                  onKeyDown={(e) => e.key === "Enter" && startDebate()}
                   className="flex-1 h-12"
                 />
                 <Button
