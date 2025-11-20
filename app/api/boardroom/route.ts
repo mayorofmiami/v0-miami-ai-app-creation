@@ -75,44 +75,32 @@ export async function POST(req: Request) {
             ),
           )
 
-          // ROUND 1: Opening statements (parallel)
+          // ROUND 1: Councilor Opinions (parallel)
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: "round_start",
                 round: 1,
-                title: "Opening Statements",
+                title: "Councilor Opinions",
               })}\n\n`,
             ),
           )
 
           await streamRound1(controller, encoder, session.id, personas, query)
 
-          // ROUND 2: Debate/rebuttals (sequential with context)
+          // ROUND 2: Chairman's Synthesis
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({
                 type: "round_start",
                 round: 2,
-                title: "Debate & Rebuttals",
-              })}\n\n`,
-            ),
-          )
-
-          await streamRound2(controller, encoder, session.id, personas)
-
-          // ROUND 3: Synthesis
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "round_start",
-                round: 3,
-                title: "Synthesis",
+                title: "Chairman's Synthesis",
               })}\n\n`,
             ),
           )
 
           await streamSynthesis(controller, encoder, session.id, personas, query)
+          // </CHANGE>
 
           // Mark session as complete
           await completeBoardSession(session.id)
@@ -151,8 +139,8 @@ async function streamRound1(
     const result = streamText({
       model: persona.model,
       system: persona.systemPrompt,
-      prompt: `Question: ${query}\n\nProvide your perspective based on your role. Structure your response with clear paragraphs separated by double line breaks.`,
-      maxOutputTokens: 400,
+      prompt: `Question: ${query}\n\nProvide your expert perspective based on your role. Structure your response with clear paragraphs separated by double line breaks. Be comprehensive but concise.`,
+      maxOutputTokens: 500,
     })
 
     let fullText = ""
@@ -177,45 +165,6 @@ async function streamRound1(
   await Promise.all(promises)
 }
 
-async function streamRound2(
-  controller: ReadableStreamDefaultController,
-  encoder: TextEncoder,
-  sessionId: string,
-  personas: any[],
-) {
-  // Get all Round 1 responses
-  const round1Responses = await getBoardResponses(sessionId, 1)
-
-  const context = round1Responses.map((r) => `${r.persona_name}: ${r.content}`).join("\n\n")
-
-  // Each persona responds sequentially
-  for (const persona of personas) {
-    const result = streamText({
-      model: persona.model,
-      system: persona.systemPrompt,
-      prompt: `Here's what the other board members said:\n\n${context}\n\nNow respond to their arguments. Point out flaws, agree with strengths, or offer counterpoints. Complete your thought fully before finishing.`,
-      maxOutputTokens: 350,
-    })
-
-    let fullText = ""
-    for await (const chunk of result.textStream) {
-      fullText += chunk
-      controller.enqueue(
-        encoder.encode(
-          `data: ${JSON.stringify({
-            type: "persona_chunk",
-            persona: persona.name,
-            round: 2,
-            content: chunk,
-          })}\n\n`,
-        ),
-      )
-    }
-
-    await saveBoardResponse(sessionId, persona.name, persona.model, 2, fullText)
-  }
-}
-
 async function streamSynthesis(
   controller: ReadableStreamDefaultController,
   encoder: TextEncoder,
@@ -223,16 +172,17 @@ async function streamSynthesis(
   personas: any[],
   query: string,
 ) {
-  // Get all responses
-  const allResponses = await getBoardResponses(sessionId)
+  // Get all Round 1 responses
+  const allResponses = await getBoardResponses(sessionId, 1)
 
-  const debate = allResponses.map((r) => `Round ${r.round_number} - ${r.persona_name}: ${r.content}`).join("\n\n")
+  const opinions = allResponses.map((r) => `${r.persona_name}: ${r.content}`).join("\n\n")
 
   const result = streamText({
     model: "openai/gpt-4o",
-    system: "You are an impartial chairman synthesizing a boardroom debate. Structure your synthesis with clear sections.",
-    prompt: `Question: ${query}\n\nHere's the full debate:\n\n${debate}\n\nProvide a balanced synthesis that:\n1. Summarizes key points from each perspective\n2. Identifies consensus areas\n3. Highlights remaining disagreements\n4. Offers a recommendation considering all viewpoints\n\nStructure your response with clear paragraphs separated by double line breaks.`,
-    maxOutputTokens: 700,
+    system:
+      "You are an impartial chairman synthesizing council opinions. Structure your synthesis with clear sections.",
+    prompt: `Question: ${query}\n\nHere are the council members' opinions:\n\n${opinions}\n\nProvide a balanced synthesis that:\n1. Summarizes the key perspectives from each council member\n2. Identifies common themes and consensus areas\n3. Notes any differing viewpoints or concerns\n4. Offers a clear, actionable recommendation considering all opinions\n\nStructure your response with clear paragraphs separated by double line breaks.`,
+    maxOutputTokens: 800,
   })
 
   let fullText = ""
@@ -248,5 +198,6 @@ async function streamSynthesis(
     )
   }
 
-  await saveBoardResponse(sessionId, "Chairman", "openai/gpt-4o", 3, fullText)
+  await saveBoardResponse(sessionId, "Chairman", "openai/gpt-4o", 2, fullText)
 }
+// </CHANGE>

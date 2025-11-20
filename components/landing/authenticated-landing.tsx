@@ -1,17 +1,15 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback, useReducer, Suspense, useMemo } from "react"
-import { SearchInput } from "@/components/search-input"
 import { HistorySidebar } from "@/components/history-sidebar"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
 import { CollapsibleSidebar } from "@/components/collapsible-sidebar"
 import type { ModelId } from "@/components/model-selector"
-import type { SearchHistory } from "@/lib/db"
 import { toast } from "@/lib/toast"
 import type { SearchInputRef } from "@/components/search-input"
 import { useTheme } from "next-themes"
 import type { Attachment } from "@/types"
-import type { SearchState, SearchAction, SearchMode, ContentType, User } from "@/types"
+import type { SearchMode, ContentType, AuthenticatedLandingProps, BoardType } from "@/types"
 import { PageHeader } from "@/components/page-header"
 import { ExampleQueries } from "@/components/example-queries"
 import { handleSearchError } from "@/lib/error-handling"
@@ -71,9 +69,7 @@ export function AuthenticatedLanding({
   const searchInputRef = useRef<SearchInputRef>(null)
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
-  const [recentSearches, setRecentSearches] = useState<string[]>(() =>
-    initialHistory.slice(0, 10).map((h) => h.query),
-  )
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => initialHistory.slice(0, 10).map((h) => h.query))
   const [bookmarks, setBookmarks] = useState(initialBookmarks)
 
   const [showRateLimitNotification, setShowRateLimitNotification] = useState(false)
@@ -86,18 +82,18 @@ export function AuthenticatedLanding({
   useEffect(() => {
     if (searchState.rateLimitInfo) {
       const { remaining, limit } = searchState.rateLimitInfo
-      
+
       // Show notification when approaching limit
       if (remaining <= 10 && remaining > 0) {
         setShowRateLimitNotification(true)
-        
+
         // Calculate reset time (24 hours from now if not provided)
         const resetTime = new Date()
         resetTime.setHours(resetTime.getHours() + 24)
         setRateLimitResetTime(resetTime)
       } else if (remaining === 0) {
         setShowRateLimitNotification(true)
-        
+
         const resetTime = new Date()
         resetTime.setHours(resetTime.getHours() + 24)
         setRateLimitResetTime(resetTime)
@@ -490,7 +486,7 @@ export function AuthenticatedLanding({
                       name: p.name,
                       role: p.role,
                       avatar: p.avatar,
-                      model: p.model || 'Unknown',
+                      model: p.model || "Unknown",
                     })),
                   })
                 } else if (parsed.type === "persona_chunk") {
@@ -526,16 +522,24 @@ export function AuthenticatedLanding({
 
   const handleSearchOrGenerate = useCallback(
     (query: string, searchMode: SearchMode, attachments?: Attachment[]) => {
-      if (councilMode) {
-        // Handle council search logic here
-        console.log("Council search logic not implemented yet")
+      if (councilMode && selectedCouncilId) {
+        // Use boardroom search when council mode is active
+        const boardType = selectedCouncilId === "quick" ? "startup" : "expert"
+        handleBoardroomSearch(query, boardType)
       } else if (searchState.contentType === "image") {
         handleImageGeneration(query)
       } else {
         handleSearch(query, searchMode, attachments)
       }
     },
-    [councilMode, searchState.contentType, handleImageGeneration, handleSearch],
+    [
+      councilMode,
+      selectedCouncilId,
+      searchState.contentType,
+      handleImageGeneration,
+      handleSearch,
+      handleBoardroomSearch,
+    ],
   )
 
   const handleLogout = useCallback(async () => {
@@ -544,10 +548,10 @@ export function AuthenticatedLanding({
         storage.removeItem("miami_user_cache")
         console.log("[v0] Cleared user cache from localStorage")
       }
-      
+
       const formData = new FormData()
       await fetch("/api/auth/logout", { method: "POST", body: formData })
-      
+
       window.location.href = "/"
     } catch (error) {
       toast.error("Failed to log out")
@@ -599,13 +603,12 @@ export function AuthenticatedLanding({
     }
   }, [])
 
-  const handleSelectCouncil = useCallback((councilId: string | 'quick') => {
+  const handleSelectCouncil = useCallback((councilId: string | "quick") => {
     console.log("[v0] Council selected:", councilId)
     setSelectedCouncilId(councilId)
     setCouncilMode(true)
     setShowCouncilSelector(false)
-    
-    // Auto-focus the search input after selection
+
     setTimeout(() => {
       searchInputRef.current?.focus()
     }, 100)
@@ -622,16 +625,18 @@ export function AuthenticatedLanding({
 
       {showRateLimitNotification && searchState.rateLimitInfo && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
-          <div className={`rounded-lg p-4 shadow-lg border ${
-            searchState.rateLimitInfo.remaining === 0 
-              ? 'bg-red-500/10 border-red-500/50' 
-              : 'bg-yellow-500/10 border-yellow-500/50'
-          }`}>
+          <div
+            className={`rounded-lg p-4 shadow-lg border ${
+              searchState.rateLimitInfo.remaining === 0
+                ? "bg-red-500/10 border-red-500/50"
+                : "bg-yellow-500/10 border-yellow-500/50"
+            }`}
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <p className="text-sm font-medium">
-                  {searchState.rateLimitInfo.remaining === 0 
-                    ? '⚠️ Rate Limit Reached' 
+                  {searchState.rateLimitInfo.remaining === 0
+                    ? "⚠️ Rate Limit Reached"
                     : `⚠️ ${searchState.rateLimitInfo.remaining} queries remaining`}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">

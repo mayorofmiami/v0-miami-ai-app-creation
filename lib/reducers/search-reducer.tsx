@@ -18,7 +18,7 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
           },
         ],
       }
-    
+
     case "START_BOARDROOM":
       return {
         ...state,
@@ -37,7 +37,7 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
           },
         ],
       }
-    
+
     case "START_COUNCIL":
       return {
         ...state,
@@ -57,7 +57,7 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
           },
         ],
       }
-    
+
     case "SET_COUNCIL_SESSION":
       return {
         ...state,
@@ -73,23 +73,23 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
             : msg,
         ),
       }
-    
+
     case "UPDATE_COUNCIL_RESPONSE":
       return {
         ...state,
         messages: state.messages.map((msg, idx) => {
           if (idx === state.messages.length - 1 && msg.type === "council") {
             const existingResponse = msg.responses.find(
-              r => r.advisorArchetype === action.advisorArchetype && r.round === action.round
+              (r) => r.advisorArchetype === action.advisorArchetype && r.round === action.round,
             )
-            
+
             if (existingResponse) {
               return {
                 ...msg,
-                responses: msg.responses.map(r =>
+                responses: msg.responses.map((r) =>
                   r.advisorArchetype === action.advisorArchetype && r.round === action.round
                     ? { ...r, content: r.content + action.content }
-                    : r
+                    : r,
                 ),
               }
             } else {
@@ -111,34 +111,45 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
           return msg
         }),
       }
-    
+
     case "SET_COUNCIL_VERDICT":
       return {
         ...state,
         messages: state.messages.map((msg, idx) =>
           idx === state.messages.length - 1 && msg.type === "council"
             ? { ...msg, verdict: (msg.verdict || "") + action.content }
-            : msg
+            : msg,
         ),
       }
-    // </CHANGE>
-    
+
+    case "SET_BOARDROOM_SESSION":
+      return {
+        ...state,
+        messages: state.messages.map((msg, idx) =>
+          idx === state.messages.length - 1 && msg.type === "boardroom"
+            ? {
+                ...msg,
+                sessionId: action.sessionId,
+                personas: action.personas,
+              }
+            : msg,
+        ),
+      }
+
     case "UPDATE_BOARDROOM_RESPONSE":
       return {
         ...state,
         messages: state.messages.map((msg, idx) => {
           if (idx === state.messages.length - 1 && msg.type === "boardroom") {
-            const existingResponse = msg.responses.find(
-              r => r.persona === action.persona && r.round === action.round
-            )
-            
+            const existingResponse = msg.responses.find((r) => r.persona === action.persona && r.round === action.round)
+
             if (existingResponse) {
               return {
                 ...msg,
-                responses: msg.responses.map(r =>
+                responses: msg.responses.map((r) =>
                   r.persona === action.persona && r.round === action.round
                     ? { ...r, content: r.content + action.content }
-                    : r
+                    : r,
                 ),
               }
             } else {
@@ -158,17 +169,17 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
           return msg
         }),
       }
-    
+
     case "SET_BOARDROOM_SYNTHESIS":
       return {
         ...state,
         messages: state.messages.map((msg, idx) =>
           idx === state.messages.length - 1 && msg.type === "boardroom"
-            ? { ...msg, synthesis: (msg.synthesis || "") + action.synthesis }
-            : msg
+            ? { ...msg, synthesis: (msg.synthesis || "") + action.content }
+            : msg,
         ),
       }
-    
+
     case "START_IMAGE_GENERATION":
       return {
         ...state,
@@ -188,27 +199,21 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
       return {
         ...state,
         messages: state.messages.map((msg, idx) =>
-          idx === state.messages.length - 1 && msg.type === "search"
-            ? { ...msg, response: action.response }
-            : msg
+          idx === state.messages.length - 1 && msg.type === "search" ? { ...msg, response: action.response } : msg,
         ),
       }
     case "SET_CURRENT_CITATIONS":
       return {
         ...state,
         messages: state.messages.map((msg, idx) =>
-          idx === state.messages.length - 1 && msg.type === "search"
-            ? { ...msg, citations: action.citations }
-            : msg
+          idx === state.messages.length - 1 && msg.type === "search" ? { ...msg, citations: action.citations } : msg,
         ),
       }
     case "SET_CURRENT_MODEL_INFO":
       return {
         ...state,
         messages: state.messages.map((msg, idx) =>
-          idx === state.messages.length - 1 && msg.type === "search"
-            ? { ...msg, modelInfo: action.modelInfo }
-            : msg
+          idx === state.messages.length - 1 && msg.type === "search" ? { ...msg, modelInfo: action.modelInfo } : msg,
         ),
       }
     case "SET_CURRENT_RELATED_SEARCHES":
@@ -221,7 +226,7 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
         messages: state.messages.map((msg, idx) =>
           idx === state.messages.length - 1 && msg.type === "image"
             ? { ...msg, generatedImage: action.image, isStreaming: false }
-            : msg
+            : msg,
         ),
       }
     case "SET_RATE_LIMIT":
@@ -231,7 +236,7 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
         ...state,
         isLoading: false,
         messages: state.messages.map((msg, idx) =>
-          idx === state.messages.length - 1 ? { ...msg, isStreaming: false } : msg
+          idx === state.messages.length - 1 ? { ...msg, isStreaming: false } : msg,
         ),
       }
     case "SEARCH_ERROR":
@@ -241,7 +246,7 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
         messages: state.messages.map((msg, idx) =>
           idx === state.messages.length - 1
             ? { ...msg, response: msg.type === "search" ? action.error : undefined, isStreaming: false }
-            : msg
+            : msg,
         ),
       }
     case "CLEAR_SEARCH":
@@ -255,13 +260,13 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
       return { ...state, mode: action.mode }
     case "SET_CONTENT_TYPE":
       return { ...state, contentType: action.contentType }
-    
+
     case "SET_BOARDROOM_MODE":
       return { ...state, boardroomMode: action.enabled }
-    
+
     case "SET_BOARD_TYPE":
       return { ...state, boardType: action.boardType }
-    
+
     case "LOAD_FROM_HISTORY":
       return {
         ...state,
@@ -290,9 +295,7 @@ export function searchReducer(state: SearchState, action: SearchAction): SearchS
       return {
         ...state,
         messages: state.messages.map((msg, idx) =>
-          idx === state.messages.length - 1 && msg.type === "search"
-            ? { ...msg, searchId: action.searchId }
-            : msg
+          idx === state.messages.length - 1 && msg.type === "search" ? { ...msg, searchId: action.searchId } : msg,
         ),
       }
     default:

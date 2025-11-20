@@ -2,11 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback, useMemo } from "react"
-import SearchIcon from "@/components/icons/Search"
 import XIcon from "@/components/icons/X"
-import ImageIcon from "@/components/icons/Image"
-import Settings from "@/components/icons/Settings"
-import Paperclip from "@/components/icons/Paperclip"
 import type { ModelId } from "@/components/model-selector"
 import { AttachmentList } from "@/components/search-input/attachment-list"
 import { SearchSuggestions } from "@/components/search-input/search-suggestions"
@@ -95,7 +91,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
   useEffect(() => {
     const textarea = inputRef.current
     if (textarea) {
-      textarea.style.height = 'auto' // Reset height
+      textarea.style.height = "auto" // Reset height
       const scrollHeight = textarea.scrollHeight
       const maxHeight = 160 // Max height in pixels (about 6 lines)
       textarea.style.height = `${Math.min(scrollHeight, maxHeight)}px`
@@ -144,27 +140,43 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     setShowSuggestions(filteredSuggestions.length > 0)
   }, [filteredSuggestions])
 
+  useEffect(() => {
+    if (isCouncilMode) {
+      setIsMenuOpen(false)
+    }
+  }, [isCouncilMode])
+
+  const placeholderText = useMemo(() => {
+    if (contentType === "image") {
+      return "Describe Your Image"
+    }
+    if (isCouncilMode) {
+      return "The Council is ready..."
+    }
+    return "Ask anything..."
+  }, [contentType, isCouncilMode])
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
-      
+
       const trimmedQuery = query.trim()
-      
+
       // Validate query length
       if (!trimmedQuery) {
         return
       }
-      
+
       if (trimmedQuery.length > 2000) {
         alert("Query too long. Please keep it under 2000 characters.")
         return
       }
-      
+
       if (trimmedQuery.length < 2) {
         alert("Please enter at least 2 characters.")
         return
       }
-      
+
       if (!isLoading) {
         onSearch(trimmedQuery, mode || "quick", attachments.length > 0 ? attachments : undefined)
         setShowSuggestions(false)
@@ -344,9 +356,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     <div ref={wrapperRef} className="w-full relative">
       {/* Rate limit messages - Only show for authenticated users */}
       {user && contentType === "image" && !isLoading && (
-        <p className="text-sm text-muted-foreground text-center mb-3">
-          50 images per day
-        </p>
+        <p className="text-sm text-muted-foreground text-center mb-3">50 images per day</p>
       )}
       {user && contentType === "search" && attachments.length > 0 && !isLoading && (
         <p className="text-sm text-muted-foreground text-center mb-3">
@@ -366,12 +376,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             title="Options"
             aria-label="Open options menu"
           >
-            <svg
-              className="w-5 h-5 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
@@ -383,21 +388,21 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             onFocus={handleFocus}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            placeholder={contentType === "image" ? "Describe Your Image" : "Ask anything..."}
+            placeholder={placeholderText}
             disabled={isLoading}
             rows={1}
             className={`flex-1 px-2 py-1 text-foreground bg-transparent
               transition-all outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base
               relative z-10 resize-none overflow-y-auto border-0 ${
-              isLoading ? "opacity-50 cursor-not-allowed" : ""
-            } placeholder:text-muted-foreground/50`}
-            style={{ 
-              outline: "none", 
-              boxShadow: "none", 
+                isLoading ? "opacity-50 cursor-not-allowed" : ""
+              } placeholder:text-muted-foreground/50`}
+            style={{
+              outline: "none",
+              boxShadow: "none",
               border: "none",
               minHeight: "28px",
               maxHeight: "160px",
-              lineHeight: "1.5"
+              lineHeight: "1.5",
             }}
           />
 
@@ -419,13 +424,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                   className="p-1 rounded-full bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-50"
                   title="Send"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
-                  >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
                   </svg>
                 </button>

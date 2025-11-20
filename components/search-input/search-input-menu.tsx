@@ -49,6 +49,13 @@ export function SearchInputMenu({
   isCouncilMode = false,
   onCouncilModeChange,
 }: SearchInputMenuProps) {
+  const handleModeChange = (newMode: "quick" | "deep") => {
+    if (isCouncilMode && onCouncilModeChange) {
+      onCouncilModeChange(false)
+    }
+    onModeChange(newMode)
+  }
+
   return (
     <div className="w-56 bg-background/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div className="p-2">
@@ -93,8 +100,8 @@ export function SearchInputMenu({
               onClick={() => onCouncilModeChange(!isCouncilMode)}
               className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-sm font-medium ${
                 isCouncilMode
-                  ? 'bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-400 border border-purple-500/30'
-                  : 'hover:bg-muted text-foreground'
+                  ? "bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-400 border border-purple-500/30"
+                  : "hover:bg-muted text-foreground"
               }`}
             >
               <span>🏛️</span>
@@ -111,17 +118,21 @@ export function SearchInputMenu({
           <div className="p-2">
             <div className="flex gap-1.5">
               <button
-                onClick={() => onModeChange("quick")}
+                onClick={() => handleModeChange("quick")}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all text-sm font-medium ${
-                  mode === "quick" ? "bg-miami-aqua/20 text-miami-aqua" : "hover:bg-muted text-foreground"
+                  mode === "quick" && !isCouncilMode
+                    ? "bg-miami-aqua/20 text-miami-aqua"
+                    : "hover:bg-muted text-foreground"
                 }`}
               >
                 Quick
               </button>
               <button
-                onClick={() => onModeChange("deep")}
+                onClick={() => handleModeChange("deep")}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl transition-all text-sm font-medium ${
-                  mode === "deep" ? "bg-miami-pink/20 text-miami-pink" : "hover:bg-muted text-foreground"
+                  mode === "deep" && !isCouncilMode
+                    ? "bg-miami-pink/20 text-miami-pink"
+                    : "hover:bg-muted text-foreground"
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
