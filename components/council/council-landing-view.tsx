@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Clock, Users, Sparkles, History, TrendingUp, Edit } from 'lucide-react'
+import { Plus, Users, Sparkles, History, ArrowRight, Zap, Shield, Heart } from "lucide-react"
 import { CouncilLayout } from "@/components/council/council-layout"
+import { cn } from "@/lib/utils"
 
 interface Council {
   id: string
@@ -34,13 +35,13 @@ export function CouncilLandingView() {
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch('/api/init')
+        const res = await fetch("/api/init")
         if (res.ok) {
           const data = await res.json()
           setUser(data.user)
         }
       } catch (error) {
-        console.error('[v0] Error loading user:', error)
+        console.error("[v0] Error loading user:", error)
       } finally {
         setLoadingUser(false)
       }
@@ -58,13 +59,13 @@ export function CouncilLandingView() {
 
   const fetchCouncils = async () => {
     if (!user?.id) return
-    
+
     try {
       const res = await fetch(`/api/council/councils?userId=${user.id}`)
       const data = await res.json()
       setCouncils(data.councils || [])
     } catch (error) {
-      console.error('[v0] Error fetching councils:', error)
+      console.error("[v0] Error fetching councils:", error)
     } finally {
       setLoadingCouncils(false)
     }
@@ -72,197 +73,213 @@ export function CouncilLandingView() {
 
   return (
     <CouncilLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3 bg-gradient-to-r from-[var(--color-miami-aqua)] to-[var(--color-miami-pink)] bg-clip-text text-transparent">
-            The Council
-          </h1>
-          <p className="text-base text-muted-foreground max-w-3xl">
-            Create and manage your custom AI advisory councils. Each council brings together multiple AI advisors with unique perspectives to help you make better decisions.
-          </p>
-        </div>
+      <div className="relative min-h-screen">
+        {/* Background Elements */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[var(--color-miami-aqua)]/20 via-background to-background pointer-events-none" />
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Button
-            onClick={() => router.push('/council/new')}
-            size="lg"
-            className="bg-[var(--color-miami-aqua)] hover:bg-[var(--color-miami-aqua)]/90 text-black font-semibold gap-2 h-14"
-          >
-            <Plus className="w-5 h-5" />
-            Create New Council
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => router.push('/council/history')}
-            className="gap-2 h-14"
-          >
-            <History className="w-5 h-5" />
-            View Past Debates
-          </Button>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
+          {/* Hero Section */}
+          <div className="text-center mb-16 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--color-miami-aqua)]/10 border border-[var(--color-miami-aqua)]/20 text-[var(--color-miami-aqua)] text-sm font-medium mb-4 animate-fade-in">
+              <Sparkles className="w-4 h-4" />
+              <span>AI Advisory Board</span>
+            </div>
 
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => router.push('/council/predictions')}
-            className="gap-2 h-14"
-          >
-            <TrendingUp className="w-5 h-5" />
-            Track Predictions
-          </Button>
-        </div>
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/50">
+                The
+              </span>{" "}
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[var(--color-miami-aqua)] to-[var(--color-miami-pink)] neon-glow">
+                Council
+              </span>
+            </h1>
 
-        {/* Your Councils Section */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Your Councils</h2>
-            <Badge variant="outline" className="text-sm">
-              {councils.length} {councils.length === 1 ? 'Council' : 'Councils'}
-            </Badge>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Assemble your personal board of AI advisors. Combine unique perspectives to make better decisions, solve
+              complex problems, and see the future.
+            </p>
+
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+              <Button
+                onClick={() => router.push("/council/new")}
+                size="lg"
+                className="bg-[var(--color-miami-aqua)] hover:bg-[var(--color-miami-aqua)]/90 text-black font-bold h-12 px-8 rounded-full shadow-[0_0_20px_rgba(2,216,233,0.3)] hover:shadow-[0_0_30px_rgba(2,216,233,0.5)] transition-all duration-300"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Summon New Council
+              </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => router.push("/council/history")}
+                className="h-12 px-8 rounded-full border-white/10 hover:bg-white/5 hover:border-[var(--color-miami-pink)]/50 transition-all duration-300"
+              >
+                <History className="w-5 h-5 mr-2" />
+                Past Debates
+              </Button>
+            </div>
           </div>
 
-          {loadingCouncils ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="p-6 animate-pulse">
-                  <div className="h-6 bg-muted rounded mb-4" />
-                  <div className="h-4 bg-muted rounded mb-2" />
-                  <div className="h-4 bg-muted rounded w-2/3" />
-                </Card>
-              ))}
+          {/* Your Councils Section */}
+          <div className="mb-20">
+            <div className="flex items-end justify-between mb-8 border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">Your Councils</h2>
+                <p className="text-muted-foreground text-sm">Manage your active advisory boards</p>
+              </div>
+              <Badge variant="secondary" className="bg-white/5 text-white border-white/10">
+                {councils.length} Active
+              </Badge>
             </div>
-          ) : councils.length === 0 ? (
-            <Card className="p-12 text-center border-dashed">
-              <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-xl font-semibold mb-2">No Councils Yet</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Get started by creating your first custom council. Choose from preset templates or build your own from scratch.
-              </p>
-              <Button 
-                onClick={() => router.push('/council/new')} 
-                size="lg"
-                className="gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Create Your First Council
-              </Button>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {councils.map((council) => (
-                <Card 
-                  key={council.id}
-                  className="p-6 hover:border-[var(--color-miami-aqua)]/50 transition-all duration-200 cursor-pointer group hover:shadow-lg"
+
+            {loadingCouncils ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="h-[200px] bg-white/5 border-white/10 animate-pulse rounded-2xl" />
+                ))}
+              </div>
+            ) : councils.length === 0 ? (
+              <Card className="p-12 text-center border-dashed border-white/10 bg-white/5 rounded-3xl backdrop-blur-sm">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[var(--color-miami-aqua)]/10 flex items-center justify-center">
+                  <Users className="w-10 h-10 text-[var(--color-miami-aqua)]" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">No Councils Summoned</h3>
+                <p className="text-muted-foreground mb-8 max-w-md mx-auto text-lg">
+                  You haven't created any councils yet. Start by assembling your first team of AI advisors.
+                </p>
+                <Button
+                  onClick={() => router.push("/council/new")}
+                  size="lg"
+                  className="bg-white text-black hover:bg-white/90 rounded-full font-semibold"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">
+                  Create First Council
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {councils.map((council) => (
+                  <Card
+                    key={council.id}
+                    className="group relative overflow-hidden bg-black/40 border-white/10 hover:border-[var(--color-miami-aqua)]/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(2,216,233,0.1)] rounded-2xl backdrop-blur-md"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-miami-aqua)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    <div className="p-6 relative z-10">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-miami-aqua)]/20 to-[var(--color-miami-aqua)]/5 flex items-center justify-center border border-[var(--color-miami-aqua)]/20 group-hover:scale-110 transition-transform duration-500">
+                          <Users className="w-6 h-6 text-[var(--color-miami-aqua)]" />
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="bg-black/50 border-white/10 text-xs uppercase tracking-wider"
+                        >
+                          {council.type}
+                        </Badge>
+                      </div>
+
+                      <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[var(--color-miami-aqua)] transition-colors">
                         {council.name}
                       </h3>
-                      <Badge variant="outline" className="text-xs">
-                        {council.type}
-                      </Badge>
-                    </div>
-                  </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-muted">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">{council.advisorCount}</span>
-                      <span className="text-muted-foreground">advisor{council.advisorCount !== 1 ? 's' : ''}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(council.updated_at).toLocaleDateString()}
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
+                        <div className="flex items-center gap-1.5">
+                          <Users className="w-4 h-4" />
+                          <span>{council.advisorCount} Advisors</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4" />
+                          <span>{council.uses_count} Uses</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" />
-                        {council.uses_count} use{council.uses_count !== 1 ? 's' : ''}
+
+                      <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                        <span className="text-xs text-muted-foreground">
+                          Updated {new Date(council.updated_at).toLocaleDateString()}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-[var(--color-miami-aqua)] hover:text-[var(--color-miami-aqua)] hover:bg-[var(--color-miami-aqua)]/10 -mr-2"
+                          onClick={() => router.push(`/council/edit/${council.id}`)}
+                        >
+                          Manage <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
                       </div>
                     </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full gap-2 mt-4"
-                      onClick={() => router.push(`/council/edit/${council.id}`)}
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit Council
+          {/* Templates Section */}
+          <div>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-white mb-4">Starter Templates</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Don't know where to start? Choose a pre-configured council template designed for specific
+                decision-making scenarios.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                {
+                  name: "Startup Strategy",
+                  description: "Bold, innovative advisors for rapid growth and disruption.",
+                  icon: Zap,
+                  color: "var(--color-miami-purple)",
+                  gradient: "from-purple-500/20 to-blue-500/5",
+                  border: "group-hover:border-purple-500/50",
+                },
+                {
+                  name: "Crisis Management",
+                  description: "Conservative, experienced advisors for navigating risks.",
+                  icon: Shield,
+                  color: "var(--color-miami-orange)",
+                  gradient: "from-orange-500/20 to-red-500/5",
+                  border: "group-hover:border-orange-500/50",
+                },
+                {
+                  name: "Personal Growth",
+                  description: "Empathetic, wise advisors for life decisions and balance.",
+                  icon: Heart,
+                  color: "var(--color-miami-green)",
+                  gradient: "from-green-500/20 to-emerald-500/5",
+                  border: "group-hover:border-green-500/50",
+                },
+              ].map((template) => (
+                <Card
+                  key={template.name}
+                  className={cn(
+                    "group relative overflow-hidden bg-black/40 border-white/10 transition-all duration-500 hover:-translate-y-1 cursor-pointer rounded-2xl backdrop-blur-md",
+                    template.border,
+                  )}
+                  onClick={() => router.push("/council/new")}
+                >
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${template.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                  />
+
+                  <div className="p-8 relative z-10 flex flex-col h-full">
+                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
+                      <template.icon className="w-7 h-7" style={{ color: template.color }} />
+                    </div>
+
+                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-white transition-colors">
+                      {template.name}
+                    </h3>
+
+                    <p className="text-muted-foreground mb-8 flex-grow leading-relaxed">{template.description}</p>
+
+                    <Button className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 group-hover:border-white/20">
+                      Use Template
                     </Button>
                   </div>
                 </Card>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Preset Templates Section */}
-        <div>
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-2">Preset Templates</h2>
-            <p className="text-sm text-muted-foreground">
-              Start with a pre-configured council, then customize it to your needs
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              {
-                name: "Startup Strategy",
-                description: "Bold, innovative advisors for rapid growth decisions",
-                advisors: ["Visionary", "Amplifier", "Contrarian"],
-                color: "from-purple-500/10 to-purple-600/10",
-                border: "border-purple-500/20"
-              },
-              {
-                name: "Crisis Management",
-                description: "Conservative, cautious advisors for high-risk situations",
-                advisors: ["Guardian", "Realist", "Historian"],
-                color: "from-red-500/10 to-red-600/10",
-                border: "border-red-500/20"
-              },
-              {
-                name: "Life Decisions",
-                description: "Empathetic, thoughtful advisors for personal choices",
-                advisors: ["Counselor", "Mentor", "Sage"],
-                color: "from-green-500/10 to-green-600/10",
-                border: "border-green-500/20"
-              }
-            ].map((preset) => (
-              <Card 
-                key={preset.name}
-                className={`p-6 hover:shadow-lg transition-all duration-200 cursor-pointer group border-2 ${preset.border} bg-gradient-to-br ${preset.color}`}
-                onClick={() => router.push('/council/new')}
-              >
-                <h3 className="font-semibold text-lg mb-2 group-hover:text-[var(--color-miami-aqua)] transition-colors">
-                  {preset.name}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4 min-h-[40px]">
-                  {preset.description}
-                </p>
-                <div className="flex gap-2 flex-wrap mb-4">
-                  {preset.advisors.map((advisor) => (
-                    <Badge key={advisor} variant="secondary" className="text-xs">
-                      {advisor}
-                    </Badge>
-                  ))}
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full gap-2 group-hover:bg-background"
-                >
-                  <Plus className="w-4 h-4" />
-                  Use Template
-                </Button>
-              </Card>
-            ))}
           </div>
         </div>
       </div>

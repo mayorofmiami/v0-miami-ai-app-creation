@@ -2,160 +2,184 @@
 
 import { useState } from "react"
 import type { BoardroomMessage } from "@/types"
-import { PersonaCard } from "./persona-card"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronUp, Users, Sparkles } from "lucide-react"
+import { ChevronDown, ChevronUp, FileText, User, Sparkles } from "lucide-react"
 
 interface BoardroomViewProps {
   message: BoardroomMessage
 }
 
 export function BoardroomView({ message }: BoardroomViewProps) {
-  const [showAllOpinions, setShowAllOpinions] = useState(true)
-  const [votes, setVotes] = useState<Record<string, "agree" | "disagree" | null>>({})
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
 
   const responses = message.responses || []
   const personas = message.personas || []
+  const hasSynthesis = !!message.synthesis
 
   // If no data yet, show loading state
   if (personas.length === 0 && responses.length === 0 && !message.synthesis) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <div className="w-8 h-8 border-4 border-miami-blue border-t-transparent rounded-full animate-spin" />
-        <p className="text-muted-foreground">The council is convening...</p>
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-muted-foreground font-mono text-sm">GENERATING INTELLIGENCE BRIEFING...</p>
       </div>
     )
   }
 
   const opinions = responses.filter((r) => r.round === 1)
-  const hasSynthesis = !!message.synthesis
 
-  const handleVote = (personaName: string, voteType: "agree" | "disagree") => {
-    setVotes((prev) => ({
+  const toggleSection = (id: string) => {
+    setExpandedSections((prev) => ({
       ...prev,
-      [personaName]: prev[personaName] === voteType ? null : voteType,
+      [id]: !prev[id],
     }))
   }
 
-  const getTLDR = (content: string) => {
-    const sentences = content.match(/[^.!?]+[.!?]+/g) || []
-    return sentences.slice(0, 2).join(" ").trim()
+  const parseMarkdown = (text: string) => {
+    // Remove markdown bold syntax
+    return text.replace(/\*\*(.+?)\*\*/g, "$1")
+  }
+
+  const formatSynthesis = (synthesis: string) => {
+    const cleaned = parseMarkdown(synthesis)
+    const sections = cleaned.split("\n\n")
+
+    return sections.map((section, i) => {
+      // Check if it's a bullet list
+      if (section.includes("\n- ") || section.includes("\n• ")) {
+        const lines = section.split("\n")
+        const title = lines[0]
+        const bullets = lines.slice(1).filter((l) => l.trim())
+
+        return (
+          <div key={i} className="mb-6">
+            {title && <p className="font-medium text-lg mb-3">{title}</p>}
+            <ul className="space-y-2 pl-4 border-l-2 border-primary/20">
+              {bullets.map((bullet, j) => (
+                <li key={j} className="leading-relaxed text-base text-muted-foreground">
+                  {bullet.replace(/^[•-]\s*/, "")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+
+      // Regular paragraph
+      return (
+        <p key={i} className="leading-relaxed text-base mb-4 text-foreground/90">
+          {section}
+        </p>
+      )
+    })
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto pb-8">
-      {/* Council Opinions Section */}
-      {opinions.length > 0 && (
-        <div className="space-y-4">
-          <div
-            className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-3 rounded-lg transition-colors"
-            onClick={() => setShowAllOpinions(!showAllOpinions)}
-          >
-            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500 text-white text-sm font-semibold">
-              <Users className="w-4 h-4" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold">Council Opinions</h2>
-              <p className="text-sm text-muted-foreground">
-                {personas.length} council members have shared their perspectives
-              </p>
-            </div>
-            <Button variant="ghost" size="sm">
-              {showAllOpinions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
+    <div className="w-full max-w-4xl mx-auto font-sans">
+      {/* Header */}
+      <div className="mb-8 border-b pb-6">
+        <div className="flex items-center gap-2 mb-2 text-primary font-mono text-xs uppercase tracking-wider">
+          <FileText className="w-4 h-4" />
+          <span>Intelligence Briefing</span>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight">Council Recommendation</h1>
+        <p className="text-muted-foreground mt-2">Synthesized analysis from {personas.length} expert perspectives.</p>
+      </div>
+
+      {/* Executive Summary (Synthesis) */}
+      {hasSynthesis && (
+        <section className="mb-12">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-semibold">Executive Summary</h2>
           </div>
 
-          {showAllOpinions && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {personas.map((persona) => {
-                const response = opinions.find((r) => r.persona === persona.name)
-
-                return (
-                  <PersonaCard
-                    key={persona.name}
-                    name={persona.name}
-                    role={persona.role}
-                    avatar={persona.avatar}
-                    model={persona.model || "Unknown"}
-                    responses={response ? [response] : []}
-                    currentRound={1}
-                    tldr={response?.content ? getTLDR(response.content) : undefined}
-                    vote={votes[persona.name] || null}
-                    onVote={(voteType) => handleVote(persona.name, voteType)}
-                  />
-                )
-              })}
-            </div>
-          )}
-        </div>
+          <div className="bg-card border rounded-lg p-6 md:p-8 shadow-sm">
+            <div className="prose prose-neutral dark:prose-invert max-w-none">{formatSynthesis(message.synthesis)}</div>
+          </div>
+        </section>
       )}
 
-      {/* Chairman's Synthesis */}
-      {hasSynthesis && (
-        <div className="space-y-4">
-          <Card className="p-6 border bg-card">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-                <Sparkles className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold">Final Recommendation</h3>
-                <Badge variant="secondary" className="mt-1">
-                  GPT-4O
-                </Badge>
-              </div>
+      {/* Analyst Notes (Personas) */}
+      {opinions.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-semibold">Analyst Notes</h2>
             </div>
+            <span className="text-sm text-muted-foreground font-mono">{opinions.length} REPORTS FILED</span>
+          </div>
 
-            <div className="space-y-4 text-base leading-relaxed">
-              {message.synthesis.split("\n\n").map((paragraph, i) => {
-                // Check if paragraph looks like a bullet point section
-                if (paragraph.includes("\n- ") || paragraph.includes("\n• ")) {
-                  const lines = paragraph.split("\n")
-                  const title = lines[0]
-                  const bullets = lines.slice(1).filter((l) => l.trim())
+          <div className="grid gap-4">
+            {personas.map((persona, index) => {
+              const response = opinions.find((r) => r.persona === persona.name)
+              const isExpanded = expandedSections[persona.name] ?? false
 
-                  return (
-                    <div key={i} className="space-y-2">
-                      {title && <p className="font-semibold">{title}</p>}
-                      <ul className="space-y-2 list-disc list-inside">
-                        {bullets.map((bullet, j) => (
-                          <li key={j} className="leading-relaxed">
-                            {bullet.replace(/^[•-]\s*/, "")}
-                          </li>
-                        ))}
-                      </ul>
+              if (!response) return null
+
+              return (
+                <div
+                  key={persona.name}
+                  className="border rounded-lg overflow-hidden bg-card transition-all duration-200 hover:border-primary/50"
+                >
+                  <button
+                    onClick={() => toggleSection(persona.name)}
+                    className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border">
+                        {persona.avatar ? (
+                          <img
+                            src={persona.avatar || "/placeholder.svg"}
+                            alt={persona.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xs font-bold">{persona.name.substring(0, 2).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-base">{persona.name}</h3>
+                        <p className="text-xs text-muted-foreground font-mono uppercase tracking-wide">
+                          {persona.role}
+                        </p>
+                      </div>
                     </div>
-                  )
-                }
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground hidden sm:inline-block">
+                        {isExpanded ? "COLLAPSE" : "EXPAND"}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  </button>
 
-                return (
-                  <p key={i} className="leading-relaxed">
-                    {paragraph}
-                  </p>
-                )
-              })}
-            </div>
-
-            {!showAllOpinions && (
-              <div className="mt-6 pt-6 border-t">
-                <Button variant="outline" onClick={() => setShowAllOpinions(true)} className="w-full">
-                  View All Council Opinions
-                </Button>
-              </div>
-            )}
-          </Card>
-        </div>
+                  {isExpanded && (
+                    <div className="p-6 pt-0 border-t bg-muted/10 animate-in slide-in-from-top-2 duration-200">
+                      <div className="pt-4 prose prose-sm dark:prose-invert max-w-none text-muted-foreground leading-relaxed">
+                        {response.content.split("\n").map((paragraph, i) => (
+                          <p key={i} className="mb-3 last:mb-0">
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
       )}
 
       {/* Loading state for synthesis */}
       {!hasSynthesis && opinions.length > 0 && (
-        <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-          <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-          <span className="ml-2">Preparing final recommendation...</span>
+        <div className="mt-8 p-4 border border-dashed rounded-lg bg-muted/30 flex items-center justify-center gap-3 text-muted-foreground font-mono text-sm">
+          <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+          <span>SYNTHESIZING FINAL REPORT...</span>
         </div>
       )}
     </div>

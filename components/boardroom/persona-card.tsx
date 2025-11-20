@@ -1,11 +1,11 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { BoardResponse } from '@/types'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState } from "react"
+import type { BoardResponse } from "@/types"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { ChevronDown, ChevronUp } from "lucide-react"
 
 interface PersonaCardProps {
   name: string
@@ -15,29 +15,15 @@ interface PersonaCardProps {
   responses: BoardResponse[]
   currentRound: number
   tldr?: string
-  vote?: 'agree' | 'disagree' | null
-  onVote?: (voteType: 'agree' | 'disagree') => void
-  // </CHANGE>
 }
 
-export function PersonaCard({ 
-  name, 
-  role, 
-  avatar, 
-  model, 
-  responses, 
-  currentRound,
-  tldr,
-  vote,
-  onVote
-}: PersonaCardProps) {
+export function PersonaCard({ name, role, avatar, model, responses, currentRound, tldr }: PersonaCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  // </CHANGE>
 
   const response = responses.find((r) => r.round === currentRound)
   const isLoading = !response || !response.content
 
-  const modelDisplay = model.split('/')[1]?.replace(/-/g, ' ').toUpperCase() || model
+  const modelDisplay = model.split("/")[1]?.replace(/-/g, " ").toUpperCase() || model
 
   return (
     <Card className="p-4 flex flex-col min-h-[200px] hover:shadow-md transition-shadow">
@@ -62,9 +48,7 @@ export function PersonaCard({
           <div className="space-y-3">
             {tldr && !isExpanded ? (
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-foreground leading-relaxed">
-                  {tldr}
-                </p>
+                <p className="text-sm font-semibold text-foreground leading-relaxed">{tldr}</p>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -77,7 +61,7 @@ export function PersonaCard({
             ) : (
               <div className="space-y-3">
                 <div className="text-sm leading-relaxed space-y-3">
-                  {response.content.split('\n\n').map((paragraph, i) => (
+                  {response.content.split("\n\n").map((paragraph, i) => (
                     <p key={i} className="text-foreground">
                       {paragraph}
                     </p>
@@ -95,35 +79,9 @@ export function PersonaCard({
                 )}
               </div>
             )}
-            {/* </CHANGE> */}
           </div>
         )}
       </div>
-
-      {!isLoading && onVote && (
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-          <span className="text-xs text-muted-foreground mr-auto">Your take:</span>
-          <Button
-            variant={vote === 'agree' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onVote('agree')}
-            className="gap-1 h-8 text-xs"
-          >
-            <ThumbsUp className="w-3 h-3" />
-            Agree
-          </Button>
-          <Button
-            variant={vote === 'disagree' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onVote('disagree')}
-            className="gap-1 h-8 text-xs"
-          >
-            <ThumbsDown className="w-3 h-3" />
-            Disagree
-          </Button>
-        </div>
-      )}
-      {/* </CHANGE> */}
     </Card>
   )
 }
