@@ -1,6 +1,6 @@
 import { put } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
-import { checkRateLimit } from "@/lib/rate-limit"
+import { checkFeatureRateLimit } from "@/lib/unified-rate-limit"
 import { logger } from "@/lib/logger"
 
 function getClientIp(request: NextRequest): string | null {
@@ -67,13 +67,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const rateLimit = await checkRateLimit(userId || "anonymous", "attachment")
+    const ipAddress = getClientIp(request)
+    const rateLimit = await checkFeatureRateLimit(userId, ipAddress, "attachment")
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
         {
           error: `Upload limit exceeded. Please try again later.`,
           remaining: rateLimit.remaining,
+          limit: rateLimit.limit,
           resetAt: rateLimit.resetAt,
         },
         { status: 429 },
@@ -92,6 +94,7 @@ export async function POST(request: NextRequest) {
       type: file.type,
       rateLimit: {
         remaining: rateLimit.remaining,
+        limit: rateLimit.limit,
         resetAt: rateLimit.resetAt,
       },
     })

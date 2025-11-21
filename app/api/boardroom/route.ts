@@ -1,7 +1,7 @@
 import { streamText } from "ai"
 import { createBoardSession, saveBoardResponse, getBoardResponses, completeBoardSession } from "@/lib/boardroom/db"
 import { getPersonas, type BoardType } from "@/lib/boardroom/personas"
-import { checkRateLimit } from "@/lib/rate-limit"
+import { checkFeatureRateLimit } from "@/lib/unified-rate-limit"
 import { neon } from "@neondatabase/serverless"
 import { createThread } from "@/lib/db"
 import { webSearchTool } from "@/lib/tools"
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "Authentication required" }, { status: 401 })
     }
 
-    const rateLimit = await checkRateLimit(userId, "boardroom")
+    const rateLimit = await checkFeatureRateLimit(userId, null, "boardroom")
     if (!rateLimit.allowed) {
       return Response.json(
         {

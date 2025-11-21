@@ -3,11 +3,9 @@ import type { NextRequest } from "next/server"
 import { selectModel } from "@/lib/model-selection"
 import { analyzeQuery } from "@/lib/model-selection"
 import { getCachedResponse, setCachedResponse, trackModelUsage, getClientIp, getOrFetchWebSearch } from "@/lib/redis"
+import { checkFeatureRateLimit } from "@/lib/unified-rate-limit"
 import { updateSearchResponse } from "@/lib/db"
 import { logger } from "@/lib/logger"
-import { sql } from "@/lib/db"
-import { checkRateLimit } from "@/lib/rate-limit"
-import { AVAILABLE_MODELS } from "@/lib/models"
 
 export const maxDuration = 60
 
@@ -84,50 +82,49 @@ export async function POST(request: NextRequest) {
 
     const ipAddress = getClientIp(request)
 
-    const rateLimitCheck = await checkRateLimit(userId || "anonymous", "search")
+    const rateLimitCheck = await checkFeatureRateLimit(userId, ipAddress, "search")
 
     if (!rateLimitCheck.allowed) {
       return Response.json(
         {
-          error: "Rate limit exceeded",
+          error: "Rate limit exceeded. Please try again later.",
+          remaining: rateLimitCheck.remaining,
           resetAt: rateLimitCheck.resetAt,
         },
         { status: 429 },
       )
     }
 
-    // Validate model
-    const model = AVAILABLE_MODELS.find((m) => m.id === selectedModel)
-    if (!model) {
-      return Response.json({ error: "Invalid model" }, { status: 400 })
-    }
-
-    const modelSelection = await selectModel(query, mode, userId, model)
+    const modelSelection = await selectModel(query, mode, userId, selectedModel)
 
     if (!modelSelection || !modelSelection.model) {
       return Response.json({ error: "Failed to select model" }, { status: 500 })
     }
 
-    // Create or use thread
-    let activeThreadId = finalThreadId
-    if (userId && !activeThreadId) {
-      const thread = await sql`
-        INSERT INTO threads (user_id, title, created_at, updated_at)
-        VALUES (${userId}, ${query.slice(0, 100)}, NOW(), NOW())
-        RETURNING id
-      `
-      activeThreadId = thread[0]?.id
+    let savedSearchId = null
+    if (userId && finalThreadId) {
+      try {
+        const { saveSearchToHistory } = await import("@/lib/db")
+        savedSearchId = await saveSearchToHistory(userId, finalThreadId, query, mode, "")
+      } catch (error) {
+        logger.error("Failed to save search to history", error)
+      }
     }
 
-    // Save search to history
-    let searchId: string | null = null
-    if (userId && activeThreadId) {
-      const search = await sql`
-        INSERT INTO search_history (user_id, thread_id, query, response, model, created_at)
-        VALUES (${userId}, ${activeThreadId}, ${query}, '', ${modelSelection.model}, NOW())
-        RETURNING id
-      `
-      searchId = search[0]?.id
+    const modelRateLimit = await checkFeatureRateLimit(
+      userId && typeof userId === "string" && userId.length > 0 ? userId : ipAddress,
+      modelSelection.model,
+    )
+
+    if (!modelRateLimit.allowed) {
+      return Response.json(
+        {
+          error: `Model rate limit exceeded for ${modelSelection.model}. Please try again later.`,
+          remaining: modelRateLimit.remaining,
+          resetAt: modelRateLimit.resetAt,
+        },
+        { status: 429 },
+      )
     }
 
     const hasSerperKey = !!process.env.SERPER_API_KEY
@@ -371,9 +368,9 @@ Provide accurate, concise answers that are both informative and visually appeali
           model: modelSelection.model,
         })
 
-        if (searchId) {
+        if (savedSearchId) {
           try {
-            await updateSearchResponse(searchId, text)
+            await updateSearchResponse(savedSearchId, text)
           } catch (error) {
             logger.error("Failed to update search response", error)
           }

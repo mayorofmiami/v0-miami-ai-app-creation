@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import * as fal from "@fal-ai/serverless-client"
 import { put } from "@vercel/blob"
 import { neon } from "@neondatabase/serverless"
-import { checkRateLimit } from "@/lib/rate-limit"
+import { checkFeatureRateLimit } from "@/lib/unified-rate-limit"
 import { logger } from "@/lib/logger"
 
 fal.config({
@@ -19,7 +19,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
     }
 
-    const rateLimit = await checkRateLimit(userId || "anonymous", "image_generation")
+    const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown"
+
+    const rateLimit = await checkFeatureRateLimit(userId, ipAddress, "image_generation")
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
@@ -29,6 +31,7 @@ export async function POST(request: NextRequest) {
             ? `You've reached your daily limit. Please try again later.`
             : `You've used all your free images today. Sign up for more!`,
           remaining: rateLimit.remaining,
+          limit: rateLimit.limit,
           resetAt: rateLimit.resetAt,
         },
         { status: 429 },
@@ -85,12 +88,12 @@ export async function POST(request: NextRequest) {
         ${blob.url},
         ${model},
         ${resolution},
-        ${userId ? null : request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown"}
+        ${userId ? null : ipAddress}
       )
       RETURNING *
     `
 
-    const updatedRateLimit = await checkRateLimit(userId || "anonymous", "image_generation")
+    const updatedRateLimit = await checkFeatureRateLimit(userId, ipAddress, "image_generation")
 
     return NextResponse.json({
       success: true,
@@ -104,6 +107,7 @@ export async function POST(request: NextRequest) {
       },
       rateLimit: {
         remaining: updatedRateLimit.remaining,
+        limit: updatedRateLimit.limit,
         resetAt: updatedRateLimit.resetAt,
       },
     })
@@ -124,13 +128,15 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get("userId")
+    const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown"
 
-    const rateLimit = await checkRateLimit(userId || "anonymous", "image_generation")
+    const rateLimit = await checkFeatureRateLimit(userId, ipAddress, "image_generation")
 
     return NextResponse.json(
       {
         rateLimit: {
           remaining: rateLimit.remaining,
+          limit: rateLimit.limit,
           resetAt: rateLimit.resetAt,
           allowed: rateLimit.allowed,
         },

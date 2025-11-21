@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth"
-import { checkRateLimit } from "@/lib/rate-limit"
+import { getRateLimitStatus } from "@/lib/unified-rate-limit"
 import { logger } from "@/lib/logger"
 
 export async function GET() {
@@ -9,18 +9,19 @@ export async function GET() {
 
     if (!session?.userId) {
       return NextResponse.json({
-        remaining: 3,
-        limit: 3,
+        remaining: 100,
+        limit: 100,
         tier: "free",
       })
     }
 
-    const status = await checkRateLimit(session.userId, "search")
+    const status = await getRateLimitStatus(session.userId, null, "global")
 
     return NextResponse.json({
       remaining: status.remaining,
+      limit: status.limit,
       resetAt: status.resetAt,
-      tier: "authenticated",
+      tier: status.tier,
     })
   } catch (error) {
     logger.error("Error fetching rate limit status", { error })

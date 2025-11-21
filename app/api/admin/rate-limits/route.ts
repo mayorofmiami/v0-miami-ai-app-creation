@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { sql } from "@/lib/db"
 import { logger } from "@/lib/logger"
-import { clearCache } from "@/lib/rate-limit"
+import { clearConfigCache } from "@/lib/unified-rate-limit"
 
 // GET all rate limit configs
 export async function GET() {
@@ -73,7 +73,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Config not found" }, { status: 404 })
     }
 
-    clearCache()
+    // Clear the cache so new values take effect immediately
+    clearConfigCache()
 
     logger.info("Rate limit config updated", {
       configId: id,
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `
 
-    clearCache()
+    clearConfigCache()
 
     logger.info("Rate limit config created", {
       configKey: config_key,

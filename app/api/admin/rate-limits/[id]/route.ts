@@ -2,10 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { sql } from "@/lib/db"
 import { logger } from "@/lib/logger"
-import { clearCache } from "@/lib/rate-limit"
+import { clearConfigCache } from "@/lib/unified-rate-limit"
 
 // DELETE a rate limit config
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser()
 
@@ -13,7 +13,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await params
 
     const deleted = await sql`
       DELETE FROM rate_limit_configs
@@ -25,7 +25,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: "Config not found" }, { status: 404 })
     }
 
-    clearCache()
+    clearConfigCache()
 
     logger.info("Rate limit config deleted", {
       configId: id,
