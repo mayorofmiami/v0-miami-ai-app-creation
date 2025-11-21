@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Sparkles, Plus, Users } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { logger } from "@/lib/logger"
 
 interface Council {
   id: string
@@ -43,7 +44,7 @@ export function CouncilSelectorDialog({ open, onOpenChange, onSelectCouncil, use
         setCouncils(data.councils || [])
       }
     } catch (error) {
-      console.error("Failed to fetch councils:", error)
+      logger.error("Failed to fetch councils in selector", { error })
     } finally {
       setLoading(false)
     }

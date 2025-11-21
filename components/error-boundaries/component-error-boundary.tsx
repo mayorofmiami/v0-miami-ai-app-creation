@@ -2,6 +2,7 @@
 
 import { Component, type ReactNode } from "react"
 import AlertTriangle from "@/components/icons/AlertTriangle"
+import { logger } from "@/lib/logger"
 
 interface Props {
   children: ReactNode
@@ -31,11 +32,10 @@ export class ComponentErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error(
-      `[v0] Component error${this.props.componentName ? ` in ${this.props.componentName}` : ""}:`,
+    logger.error(`Component error${this.props.componentName ? ` in ${this.props.componentName}` : ""}`, {
       error,
       errorInfo,
-    )
+    })
   }
 
   render() {

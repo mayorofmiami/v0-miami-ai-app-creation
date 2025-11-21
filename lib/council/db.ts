@@ -1,5 +1,12 @@
 import { neon } from "@neondatabase/serverless"
-import type { Council, CouncilAdvisor, CouncilDebate, CouncilDebateResponse, CouncilPrediction, AdvisorArchetype } from "./types"
+import type {
+  Council,
+  CouncilAdvisor,
+  CouncilDebate,
+  CouncilDebateResponse,
+  CouncilPrediction,
+  AdvisorArchetype,
+} from "./types"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -7,32 +14,34 @@ const sql = neon(process.env.DATABASE_URL!)
 export async function createCouncil(
   userId: string,
   name: string,
-  type: 'custom' | 'quick' | 'preset',
-  description?: string
+  type: "custom" | "quick" | "preset",
+  description?: string,
 ): Promise<Council> {
   const result = await sql`
     INSERT INTO councils (user_id, name, description, type)
-    VALUES (${userId}, ${name}, ${description || ''}, ${type})
+    VALUES (${userId}, ${name}, ${description || ""}, ${type})
     RETURNING *
   `
   return result[0] as Council
 }
 
 export async function getUserCouncils(userId: string): Promise<Council[]> {
-  return await sql`
-    SELECT * FROM councils
+  return (await sql`
+    SELECT id, user_id, name, description, type, uses_count, is_public, created_at, updated_at
+    FROM councils
     WHERE user_id = ${userId}
     ORDER BY updated_at DESC
-  ` as Council[]
+  `) as Council[]
 }
 
 export async function getCouncilById(councilId: string): Promise<Council | null> {
   const result = await sql`
-    SELECT * FROM councils
+    SELECT id, user_id, name, description, type, uses_count, is_public, created_at, updated_at
+    FROM councils
     WHERE id = ${councilId}
     LIMIT 1
   `
-  return result[0] as Council || null
+  return (result[0] as Council) || null
 }
 
 export async function incrementCouncilUsage(councilId: string): Promise<void> {
@@ -45,7 +54,9 @@ export async function incrementCouncilUsage(councilId: string): Promise<void> {
 }
 
 // Advisor operations
-export async function createCouncilAdvisor(advisor: Omit<CouncilAdvisor, 'id' | 'created_at'>): Promise<CouncilAdvisor> {
+export async function createCouncilAdvisor(
+  advisor: Omit<CouncilAdvisor, "id" | "created_at">,
+): Promise<CouncilAdvisor> {
   const result = await sql`
     INSERT INTO council_advisors (
       council_id, archetype, display_name, position,
@@ -64,11 +75,14 @@ export async function createCouncilAdvisor(advisor: Omit<CouncilAdvisor, 'id' | 
 }
 
 export async function getCouncilAdvisors(councilId: string): Promise<CouncilAdvisor[]> {
-  return await sql`
-    SELECT * FROM council_advisors
+  return (await sql`
+    SELECT id, council_id, archetype, display_name, position,
+           ethics_score, risk_score, time_horizon_score, ideology_score, experience_score,
+           personality_preset, model, system_prompt, created_at
+    FROM council_advisors
     WHERE council_id = ${councilId}
     ORDER BY position ASC
-  ` as CouncilAdvisor[]
+  `) as CouncilAdvisor[]
 }
 
 // Debate operations
@@ -76,7 +90,7 @@ export async function createDebate(
   userId: string,
   councilId: string | null,
   question: string,
-  threadId?: string
+  threadId?: string,
 ): Promise<CouncilDebate> {
   const result = await sql`
     INSERT INTO council_debates (user_id, council_id, question, thread_id, status)
@@ -92,7 +106,7 @@ export async function saveDebateResponse(
   advisorName: string,
   roundNumber: number,
   content: string,
-  modelUsed: string
+  modelUsed: string,
 ): Promise<void> {
   await sql`
     INSERT INTO council_debate_responses (
@@ -104,17 +118,19 @@ export async function saveDebateResponse(
 
 export async function getDebateResponses(debateId: string, roundNumber?: number): Promise<CouncilDebateResponse[]> {
   if (roundNumber) {
-    return await sql`
-      SELECT * FROM council_debate_responses
+    return (await sql`
+      SELECT id, debate_id, advisor_archetype, advisor_name, round_number, content, model_used, created_at
+      FROM council_debate_responses
       WHERE debate_id = ${debateId} AND round_number = ${roundNumber}
       ORDER BY created_at ASC
-    ` as CouncilDebateResponse[]
+    `) as CouncilDebateResponse[]
   }
-  return await sql`
-    SELECT * FROM council_debate_responses
+  return (await sql`
+    SELECT id, debate_id, advisor_archetype, advisor_name, round_number, content, model_used, created_at
+    FROM council_debate_responses
     WHERE debate_id = ${debateId}
     ORDER BY round_number ASC, created_at ASC
-  ` as CouncilDebateResponse[]
+  `) as CouncilDebateResponse[]
 }
 
 export async function completeDebate(debateId: string, verdict: string): Promise<void> {
@@ -127,8 +143,8 @@ export async function completeDebate(debateId: string, verdict: string): Promise
   `
 }
 
-export async function getUserDebates(userId: string, limit: number = 50): Promise<any[]> {
-  return await sql`
+export async function getUserDebates(userId: string, limit = 50): Promise<any[]> {
+  return (await sql`
     SELECT 
       d.*,
       c.name as council_name,
@@ -139,13 +155,14 @@ export async function getUserDebates(userId: string, limit: number = 50): Promis
     WHERE d.user_id = ${userId}
     ORDER BY d.created_at DESC
     LIMIT ${limit}
-  ` as any[]
+  `) as any[]
 }
 
 export async function getDebateDetails(debateId: string): Promise<any> {
   const debate = await sql`
     SELECT 
-      d.*,
+      d.id, d.user_id, d.council_id, d.question, d.status, d.verdict,
+      d.thread_id, d.created_at, d.completed_at,
       c.name as council_name,
       c.type as council_type
     FROM council_debates d
@@ -153,25 +170,27 @@ export async function getDebateDetails(debateId: string): Promise<any> {
     WHERE d.id = ${debateId}
     LIMIT 1
   `
-  
+
   if (!debate[0]) return null
-  
+
   const responses = await getDebateResponses(debateId)
   const predictions = await sql`
-    SELECT * FROM council_predictions
+    SELECT id, debate_id, advisor_archetype, advisor_name, prediction_text,
+           confidence_score, outcome, due_date, created_at
+    FROM council_predictions
     WHERE debate_id = ${debateId}
     ORDER BY created_at ASC
   `
-  
+
   return {
     ...debate[0],
     responses,
-    predictions
+    predictions,
   }
 }
 
 export async function searchUserDebates(userId: string, searchTerm: string): Promise<any[]> {
-  return await sql`
+  return (await sql`
     SELECT 
       d.*,
       c.name as council_name,
@@ -180,10 +199,10 @@ export async function searchUserDebates(userId: string, searchTerm: string): Pro
     FROM council_debates d
     LEFT JOIN councils c ON d.council_id = c.id
     WHERE d.user_id = ${userId} 
-      AND (d.question ILIKE ${'%' + searchTerm + '%'} OR d.verdict ILIKE ${'%' + searchTerm + '%'})
+      AND (d.question ILIKE ${"%" + searchTerm + "%"} OR d.verdict ILIKE ${"%" + searchTerm + "%"})
     ORDER BY d.created_at DESC
     LIMIT 50
-  ` as any[]
+  `) as any[]
 }
 
 export async function toggleDebateVisibility(debateId: string, isPublic: boolean): Promise<void> {
@@ -203,7 +222,7 @@ export async function savePrediction(
   advisorName: string,
   predictionText: string,
   confidenceScore: number,
-  dueDate: Date
+  dueDate: Date,
 ): Promise<CouncilPrediction> {
   const result = await sql`
     INSERT INTO council_predictions (
@@ -215,27 +234,35 @@ export async function savePrediction(
   return result[0] as CouncilPrediction
 }
 
-export async function getUserPredictions(userId: string, status: 'pending' | 'all' = 'pending'): Promise<CouncilPrediction[]> {
-  if (status === 'pending') {
-    return await sql`
-      SELECT p.* FROM council_predictions p
+export async function getUserPredictions(
+  userId: string,
+  status: "pending" | "all" = "pending",
+): Promise<CouncilPrediction[]> {
+  if (status === "pending") {
+    return (await sql`
+      SELECT p.id, p.debate_id, p.advisor_archetype, p.advisor_name, p.prediction_text,
+             p.confidence_score, p.outcome, p.due_date, p.created_at
+      FROM council_predictions p
       JOIN council_debates d ON p.debate_id = d.id
       WHERE d.user_id = ${userId} AND p.outcome = 'pending'
       ORDER BY p.due_date ASC
-    ` as CouncilPrediction[]
+    `) as CouncilPrediction[]
   }
-  return await sql`
-    SELECT p.* FROM council_predictions p
+  return (await sql`
+    SELECT p.id, p.debate_id, p.advisor_archetype, p.advisor_name, p.prediction_text,
+           p.confidence_score, p.outcome, p.due_date, p.created_at
+    FROM council_predictions p
     JOIN council_debates d ON p.debate_id = d.id
     WHERE d.user_id = ${userId}
     ORDER BY p.due_date DESC
-  ` as CouncilPrediction[]
+  `) as CouncilPrediction[]
 }
 
 // Archetype operations
 export async function getAllArchetypes(): Promise<AdvisorArchetype[]> {
-  return await sql`
-    SELECT * FROM advisor_archetypes
+  return (await sql`
+    SELECT archetype_key, display_name, description, category, icon, base_prompt, created_at
+    FROM advisor_archetypes
     ORDER BY 
       CASE category
         WHEN 'executive' THEN 1
@@ -245,22 +272,24 @@ export async function getAllArchetypes(): Promise<AdvisorArchetype[]> {
         WHEN 'wild_card' THEN 5
       END,
       display_name ASC
-  ` as AdvisorArchetype[]
+  `) as AdvisorArchetype[]
 }
 
 export async function getArchetypesByCategory(category: string): Promise<AdvisorArchetype[]> {
-  return await sql`
-    SELECT * FROM advisor_archetypes
+  return (await sql`
+    SELECT archetype_key, display_name, description, category, icon, base_prompt, created_at
+    FROM advisor_archetypes
     WHERE category = ${category}
     ORDER BY display_name ASC
-  ` as AdvisorArchetype[]
+  `) as AdvisorArchetype[]
 }
 
 export async function getArchetypeByKey(key: string): Promise<AdvisorArchetype | null> {
   const result = await sql`
-    SELECT * FROM advisor_archetypes
+    SELECT archetype_key, display_name, description, category, icon, base_prompt, created_at
+    FROM advisor_archetypes
     WHERE archetype_key = ${key}
     LIMIT 1
   `
-  return result[0] as AdvisorArchetype || null
+  return (result[0] as AdvisorArchetype) || null
 }

@@ -1,19 +1,31 @@
 "use client"
 
 import type React from "react"
-
+import dynamic from "next/dynamic"
 import { useEffect, useState } from "react"
 import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import Shield from "@/components/icons/Shield"
 import Save from "@/components/icons/Save"
 import Eye from "@/components/icons/Eye"
 import Link from "next/link"
 import { useRouter, useParams } from "next/navigation"
-import { RichTextEditor } from "@/components/blog/rich-text-editor"
+
+const RichTextEditor = dynamic(
+  () => import("@/components/blog/rich-text-editor").then((m) => ({ default: m.RichTextEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="border border-input rounded-lg p-8 flex items-center justify-center min-h-[400px]">
+        <Spinner className="w-8 h-8" />
+      </div>
+    ),
+  },
+)
 
 export default function EditBlogPostPage() {
   const [title, setTitle] = useState("")

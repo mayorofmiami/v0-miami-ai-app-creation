@@ -52,7 +52,6 @@ export function useSearchCache(options: UseSearchCacheOptions = {}) {
 
         return cached
       } catch (error) {
-        console.error("[v0] Cache read error:", error)
         setCacheStatus("miss")
         return null
       }
@@ -67,9 +66,7 @@ export function useSearchCache(options: UseSearchCacheOptions = {}) {
       try {
         await cacheSearchResult(query, mode, response, citations)
         setLastCacheTime(Date.now())
-      } catch (error) {
-        console.error("[v0] Cache write error:", error)
-      }
+      } catch (error) {}
     },
     [enabled],
   )
@@ -136,7 +133,7 @@ export function useSearchWithCache(options: UseSearchWithCacheOptions = {}) {
             .then((result) => {
               cache.setCached(query, mode, result.response, result.citations)
             })
-            .catch((error) => console.error("[v0] Background refresh error:", error))
+            .catch((error) => {})
             .finally(() => setIsRefreshing(false))
         }
 

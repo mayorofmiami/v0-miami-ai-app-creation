@@ -37,7 +37,6 @@ export function CollectionsModal({ open, onClose, userId, searchId }: Collection
       const data = await res.json()
       setCollections(data.collections || [])
     } catch (error) {
-      console.error("[v0] Failed to load collections:", error)
       toast.error("Failed to load collections")
     }
   }
@@ -64,7 +63,6 @@ export function CollectionsModal({ open, onClose, userId, searchId }: Collection
       setIsCreating(false)
       loadCollections()
     } catch (error) {
-      console.error("[v0] Failed to create collection:", error)
       toast.error("Failed to create collection")
     } finally {
       setLoading(false)
@@ -87,7 +85,6 @@ export function CollectionsModal({ open, onClose, userId, searchId }: Collection
       toast.success("Added to collection")
       onClose()
     } catch (error) {
-      console.error("[v0] Failed to add to collection:", error)
       toast.error("Failed to add to collection")
     } finally {
       setLoading(false)
@@ -108,7 +105,6 @@ export function CollectionsModal({ open, onClose, userId, searchId }: Collection
       toast.success("Collection deleted")
       loadCollections()
     } catch (error) {
-      console.error("[v0] Failed to delete collection:", error)
       toast.error("Failed to delete collection")
     } finally {
       setLoading(false)

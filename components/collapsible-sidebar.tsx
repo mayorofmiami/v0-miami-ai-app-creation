@@ -84,7 +84,6 @@ export function CollapsibleSidebar({
           setThreads(data.threads || [])
         }
       } catch (error) {
-        console.error("Failed to fetch threads:", error)
       } finally {
         setIsLoadingThreads(false)
       }
@@ -108,7 +107,6 @@ export function CollapsibleSidebar({
           setBookmarks(data.bookmarks || [])
         }
       } catch (error) {
-        console.error("Failed to fetch bookmarks:", error)
       } finally {
         setIsLoadingBookmarks(false)
       }

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Search, Clock, MessageSquare, ExternalLink, Share2, RotateCcw } from "lucide-react"
 import { CouncilLayout } from "@/components/council/council-layout"
+import { logger } from "@/lib/logger"
 
 interface Debate {
   id: string
@@ -51,7 +52,7 @@ export function DebateHistoryView() {
           setUser(data.user)
         }
       } catch (error) {
-        console.error("[v0] Error loading user:", error)
+        logger.error("Error loading user in debate history", { error })
       }
     }
     loadUser()
@@ -75,7 +76,7 @@ export function DebateHistoryView() {
       const data = await res.json()
       setDebates(data.debates || [])
     } catch (error) {
-      console.error("[v0] Error fetching debates:", error)
+      logger.error("Error fetching debates", { error })
     } finally {
       setIsLoading(false)
     }
@@ -108,7 +109,7 @@ export function DebateHistoryView() {
       setSelectedDebate(data.debate)
       setIsDetailOpen(true)
     } catch (error) {
-      console.error("[v0] Error fetching debate details:", error)
+      logger.error("Error fetching debate details", { error })
     }
   }
 
@@ -126,7 +127,7 @@ export function DebateHistoryView() {
       await navigator.clipboard.writeText(shareUrl)
       alert("Share link copied to clipboard!")
     } catch (error) {
-      console.error("[v0] Error copying link:", error)
+      logger.error("Error copying debate link", { error })
     }
   }
 

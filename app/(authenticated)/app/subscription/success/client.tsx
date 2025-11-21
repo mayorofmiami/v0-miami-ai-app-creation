@@ -30,7 +30,6 @@ export default function SubscriptionSuccessPageClient() {
           setStatus("error")
         }
       } catch (error) {
-        console.error("[v0] Failed to verify checkout:", error)
         setStatus("error")
       }
     }
@@ -62,7 +61,7 @@ export default function SubscriptionSuccessPageClient() {
               <p className="text-muted-foreground text-balance">
                 Your subscription is now active. Enjoy unlimited searches and Deep Research mode.
               </p>
-              {/* <CHANGE> Updated link to /app instead of / */}
+              {/* Updated link to /app instead of / */}
               <Link href="/app">
                 <Button className="bg-miami-aqua hover:bg-miami-aqua/80 text-miami-dark">Start Searching</Button>
               </Link>

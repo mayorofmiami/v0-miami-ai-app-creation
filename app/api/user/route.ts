@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 export async function GET() {
   try {
-    console.log("[v0] /api/user GET request - checking authentication")
-
     const user = await getCurrentUser()
-
-    if (user) {
-      console.log("[v0] User authenticated:", user.email, "role:", user.role)
-    } else {
-      console.log("[v0] No authenticated user found")
-    }
 
     return NextResponse.json(
       {
@@ -24,10 +17,15 @@ export async function GET() {
             }
           : null,
       },
-      { status: 200 },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        },
+      },
     )
   } catch (error) {
-    console.error("[v0] /api/user error:", error)
+    logger.error("/api/user error", { error })
     return NextResponse.json({ error: "Failed to get user", user: null }, { status: 500 })
   }
 }

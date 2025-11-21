@@ -1,4 +1,5 @@
 import { getSearchHistory } from "@/lib/db"
+import { logger } from "@/lib/logger"
 
 export async function GET(req: Request) {
   try {
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
       },
     )
   } catch (error) {
-    console.error("[v0] History API error:", error)
+    logger.error("History API error", { error })
     return Response.json({ error: "Failed to fetch history" }, { status: 500 })
   }
 }

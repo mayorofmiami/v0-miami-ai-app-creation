@@ -1,12 +1,29 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { logger } from "@/lib/logger"
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const sessionCookie = request.cookies.get("session")
   const hasSession = !!sessionCookie?.value
 
-  // Public routes that don't require authentication
+  if (pathname.startsWith("/admin")) {
+    if (!hasSession) {
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+
+    // Verify admin role from session token
+    try {
+      const sessionValue = sessionCookie.value
+      // Parse JWT or session token to check role
+      // For now, we'll check against the database in the admin pages
+      // This middleware just ensures they're authenticated
+    } catch (error) {
+      logger.error("Admin middleware error", error)
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+  }
+
   const isPublicRoute =
     pathname === "/" ||
     pathname.startsWith("/login") ||
@@ -18,28 +35,20 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/share/") ||
     pathname.startsWith("/shared/")
 
-  // Protected authenticated routes
   const isAuthRoute = pathname.startsWith("/app")
 
-  // Admin routes
-  const isAdminRoute = pathname.startsWith("/admin")
-
-  // If authenticated user tries to access public auth pages, redirect to app
   if (hasSession && (pathname === "/" || pathname === "/login" || pathname === "/signup")) {
     return NextResponse.redirect(new URL("/app", request.url))
   }
 
-  // If unauthenticated user tries to access protected routes, redirect to login
-  if (!hasSession && (isAuthRoute || isAdminRoute)) {
+  if (!hasSession && isAuthRoute) {
     const redirectUrl = new URL("/login", request.url)
-    // Preserve the intended destination for post-login redirect
     if (pathname !== "/app") {
       redirectUrl.searchParams.set("redirect", pathname)
     }
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Set security headers
   const response = NextResponse.next()
   response.headers.set("X-DNS-Prefetch-Control", "on")
   response.headers.set("X-Frame-Options", "SAMEORIGIN")
@@ -54,14 +63,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 }

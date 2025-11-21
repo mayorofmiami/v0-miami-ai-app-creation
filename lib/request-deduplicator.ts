@@ -36,7 +36,6 @@ class RequestDeduplicator {
 
       // If request is still valid (not timed out), return existing promise
       if (age < this.timeout) {
-        console.log("[v0] Request deduplicated:", key)
         return existing.promise
       }
 

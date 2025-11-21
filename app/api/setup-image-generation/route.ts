@@ -1,13 +1,13 @@
 import { neon } from "@neondatabase/serverless"
 import { NextResponse } from "next/server"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET() {
   try {
-    console.log("[v0] Creating generated_images table...")
+    logger.info("Creating generated_images table...")
 
-    // Create the generated_images table
     await sql`
       CREATE TABLE IF NOT EXISTS generated_images (
         id SERIAL PRIMARY KEY,
@@ -21,9 +21,8 @@ export async function GET() {
       )
     `
 
-    console.log("[v0] Creating indexes...")
+    logger.info("Creating indexes...")
 
-    // Create indexes
     await sql`
       CREATE INDEX IF NOT EXISTS idx_generated_images_user_id 
       ON generated_images(user_id)
@@ -39,14 +38,14 @@ export async function GET() {
       ON generated_images(ip_address)
     `
 
-    console.log("[v0] Setup completed successfully!")
+    logger.info("Setup completed successfully!")
 
     return NextResponse.json({
       success: true,
       message: "Image generation database setup completed successfully",
     })
   } catch (error: any) {
-    console.error("[v0] Setup error:", error)
+    logger.error("Setup error:", error)
     return NextResponse.json(
       {
         success: false,

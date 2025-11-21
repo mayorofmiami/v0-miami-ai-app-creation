@@ -93,7 +93,6 @@ export function useAttachments({
           preview: data.type.startsWith("image/") ? data.url : undefined,
         }
       } catch (error) {
-        console.error("Upload error:", error)
         toast.error("Upload failed", "Failed to upload file")
         return null
       }

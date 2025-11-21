@@ -25,36 +25,28 @@ interface BookmarksSidebarProps {
   onClose: () => void
   onSelectBookmark: (query: string) => void
   isOpen: boolean
+  initialBookmarks?: Bookmark[]
 }
 
-export function BookmarksSidebar({ userId, onClose, onSelectBookmark, isOpen }: BookmarksSidebarProps) {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
-  const [filteredBookmarks, setFilteredBookmarks] = useState<Bookmark[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+export function BookmarksSidebar({
+  userId,
+  onClose,
+  onSelectBookmark,
+  isOpen,
+  initialBookmarks = [],
+}: BookmarksSidebarProps) {
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>(initialBookmarks)
+  const [filteredBookmarks, setFilteredBookmarks] = useState<Bookmark[]>(initialBookmarks)
+  const [isLoading, setIsLoading] = useState(false)
   const [searchFilter, setSearchFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const itemsPerPage = 10
 
   useEffect(() => {
-    if (!isOpen || !userId) return
-
-    async function fetchBookmarks() {
-      setIsLoading(true)
-      try {
-        const res = await fetch("/api/bookmarks")
-        const data = await res.json()
-        setBookmarks(data.bookmarks || [])
-        setFilteredBookmarks(data.bookmarks || [])
-      } catch (error) {
-        console.error("Failed to fetch bookmarks:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchBookmarks()
-  }, [userId, isOpen])
+    setBookmarks(initialBookmarks)
+    setFilteredBookmarks(initialBookmarks)
+  }, [initialBookmarks])
 
   useEffect(() => {
     if (searchFilter.trim()) {
@@ -123,7 +115,6 @@ export function BookmarksSidebar({ userId, onClose, onSelectBookmark, isOpen }: 
         alert(data.error || "Failed to remove bookmark")
       }
     } catch (error) {
-      console.error("Failed to remove bookmark:", error)
       alert("Failed to remove bookmark")
     } finally {
       setDeletingId(null)

@@ -4,6 +4,7 @@ import { Component, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import AlertTriangle from "@/components/icons/AlertTriangle"
 import Home from "@/components/icons/Home"
+import { logger } from "@/lib/logger"
 
 interface Props {
   children: ReactNode
@@ -31,7 +32,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error("[v0] Route error:", error, errorInfo)
+    logger.error("Route error caught", { error, errorInfo })
   }
 
   render() {

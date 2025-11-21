@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth"
 import { getAdminActions } from "@/lib/admin-logger"
+import { logger } from "@/lib/logger"
 
 export async function GET(req: Request) {
   try {
@@ -12,15 +13,22 @@ export async function GET(req: Request) {
 
     const actions = await getAdminActions(limit, offset)
 
-    return Response.json({
-      actions,
-      pagination: {
-        page,
-        limit,
+    return Response.json(
+      {
+        actions,
+        pagination: {
+          page,
+          limit,
+        },
       },
-    })
+      {
+        headers: {
+          "Cache-Control": "private, max-age=15, stale-while-revalidate=30",
+        },
+      },
+    )
   } catch (error) {
-    console.error("[v0] Admin activity error:", error)
+    logger.error("Admin activity error", error)
     return Response.json({ error: "Failed to fetch activity" }, { status: 500 })
   }
 }

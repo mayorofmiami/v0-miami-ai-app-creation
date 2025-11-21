@@ -1,4 +1,5 @@
 import { generateText } from "ai"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: Request) {
   try {
@@ -28,7 +29,7 @@ Title:`,
 
     return Response.json({ title })
   } catch (error) {
-    console.error("Error generating thread title:", error)
+    logger.error("Error generating thread title:", error)
     return Response.json({ error: "Failed to generate title" }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
 import "server-only"
 import { sql } from "./db"
+import { logger } from "./logger"
 
 let isInitialized = false
 let initializationPromise: Promise<void> | null = null
@@ -26,9 +27,8 @@ export async function initializeDatabase(): Promise<void> {
         throw new Error("DATABASE_URL is not configured")
       }
 
-      console.log("[v0] Initializing database tables...")
+      logger.info("[v0] Initializing database tables...")
 
-      // Test database connection first with a simple query
       try {
         await sql`SELECT 1 as test`
       } catch (connError: any) {
@@ -234,17 +234,17 @@ export async function initializeDatabase(): Promise<void> {
         $$ LANGUAGE plpgsql
       `
 
-      console.log("[v0] Database tables initialized successfully")
+      logger.info("[v0] Database tables initialized successfully")
       isInitialized = true
     } catch (error: any) {
-      console.error("[v0] Database initialization error:", error?.message || error)
+      logger.error("[v0] Database initialization error:", error?.message || error)
       // If tables already exist, this is not a fatal error
       if (error?.message?.includes("already exists") || error?.message?.includes("duplicate column")) {
-        console.log("[v0] Some tables already exist, continuing...")
+        logger.info("[v0] Some tables already exist, continuing...")
         isInitialized = true
       } else {
         // For connection errors or other critical issues, don't set initialized
-        console.error("[v0] Critical initialization error, will retry on next request")
+        logger.error("[v0] Critical initialization error, will retry on next request")
       }
     } finally {
       initializationPromise = null

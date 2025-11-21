@@ -1,117 +1,41 @@
 import { streamText } from "ai"
-import { checkRateLimit, incrementRateLimit, createSearchHistory, updateSearchResponse } from "@/lib/db"
-import { getModelById } from "@/lib/model-selection"
-import { initializeDatabase } from "@/lib/db-init"
-import { getCachedResponse, setCachedResponse } from "@/lib/cache"
-import { checkRateLimit as checkModelRateLimit, MODEL_RATE_LIMITS } from "@/lib/rate-limiter"
-import { trackModelUsage } from "@/lib/cost-tracker"
-import { searchRequestSchema, validateRequest } from "@/lib/validation"
-import { getSession } from "@/lib/auth"
+import type { NextRequest } from "next/server"
+import { selectModel } from "@/lib/model-selection"
+import { analyzeQuery } from "@/lib/model-selection"
+import { getCachedResponse, setCachedResponse, trackModelUsage, getClientIp, getOrFetchWebSearch } from "@/lib/redis"
+import { updateSearchResponse } from "@/lib/db"
+import { logger } from "@/lib/logger"
+import { sql } from "@/lib/db"
+import { checkRateLimit } from "@/lib/rate-limit"
+import { AVAILABLE_MODELS } from "@/lib/models"
 
-export const maxDuration = 30
-
-function getClientIp(request: Request): string | null {
-  const forwarded = request.headers.get("x-forwarded-for")
-  if (forwarded) {
-    return forwarded.split(",")[0].trim()
-  }
-
-  const realIp = request.headers.get("x-real-ip")
-  if (realIp) {
-    return realIp
-  }
-
-  return "unknown"
-}
+export const maxDuration = 60
 
 function isValidCachedResponse(answer: string): boolean {
-  const deflectionPhrases = [
-    "I can't provide future information",
-    "I cannot provide future information",
-    "I can't provide details on events",
-    "I cannot provide details on events",
-    "you can use my web search capability",
-    "Would you like me to search",
-    "beyond my current knowledge",
-    "beyond my knowledge cutoff",
-    "due to my knowledge cutoff",
-    "my knowledge cutoff",
-    "knowledge is current through",
-    "let me know if you'd like more details",
-    "let me know if you would like",
-  ]
-
-  const lowerAnswer = answer.toLowerCase()
-  return !deflectionPhrases.some((phrase) => lowerAnswer.includes(phrase.toLowerCase()))
+  if (!answer || answer.trim().length < 50) return false
+  if (answer.includes("error") && answer.length < 200) return false
+  if (answer.includes("failed") && answer.length < 200) return false
+  return true
 }
 
-function isTimeSensitiveQuery(query: string): boolean {
-  const lowerQuery = query.toLowerCase()
+async function getUserInfo(request: NextRequest) {}
 
-  // Check for specific years (2024, 2025, etc.)
-  const yearPattern = /\b(202[4-9]|20[3-9]\d)\b/
-  if (yearPattern.test(query)) return true
-
-  // Check for time-sensitive keywords
-  const timeSensitiveKeywords = [
-    "recent",
-    "latest",
-    "current",
-    "new",
-    "today",
-    "this year",
-    "now",
-    "upcoming",
-    "future",
-    "raised funding",
-    "just announced",
-    "breaking",
-    "update",
-    "news",
-    "trending",
-    "this month",
-    "this week",
-  ]
-
-  return timeSensitiveKeywords.some((keyword) => lowerQuery.includes(keyword))
-}
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    await initializeDatabase()
-
-    const session = await getSession()
-    const sessionUserId = session?.userId || null
-
     const body = await request.json()
+    const {
+      query,
+      mode = "concise",
+      conversationHistory = [],
+      userId,
+      threadId,
+      selectedModel,
+      attachments = [],
+    } = body
 
-    console.log("[v0] Received request body:", JSON.stringify(body, null, 2))
-    console.log("[v0] selectedModel from body:", body.selectedModel)
+    const safeAttachments = Array.isArray(attachments) ? attachments : []
 
-    const validation = validateRequest(searchRequestSchema, body)
-
-    if (!validation.success) {
-      console.error("[v0] Validation failed:", validation.error)
-      console.error("[v0] Failed body:", JSON.stringify(body, null, 2))
-
-      return new Response(
-        JSON.stringify({
-          error: validation.error,
-          code: "VALIDATION_ERROR",
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      )
-    }
-
-    const { query, mode, selectedModel, attachments, conversationHistory, threadId } = validation.data
-    const userId = sessionUserId // Use server-side session userId
-
-    console.log(
-      `[v0] Starting search - query: "${query}", mode: ${mode}, userId: ${userId || "none"}, threadId: ${threadId || "none"}`,
-    )
+    const hasConversationHistory = conversationHistory && conversationHistory.length > 0
 
     let finalThreadId = threadId
 
@@ -124,165 +48,94 @@ export async function POST(request: Request) {
           const newThread = await createThread(userId, smartTitle)
           if (newThread) {
             finalThreadId = newThread.id
-            console.log(`[v0] Created new thread: ${finalThreadId} with title: "${smartTitle}"`)
+            logger.info("Created new thread", { threadId: finalThreadId, title: smartTitle })
           }
         } catch (error) {
-          console.error("Failed to create thread:", error)
+          logger.error("Failed to create thread", error)
         }
       }
     }
 
-    const hasConversationHistory = conversationHistory && conversationHistory.length > 0
-    const isTimeSensitive = isTimeSensitiveQuery(query)
-
-    console.log(
-      `[v0] Checking cache - isTimeSensitive: ${isTimeSensitive}, query: ${query}, mode: ${mode}, hasHistory: ${hasConversationHistory}`,
-    )
+    const { isTimeSensitive } = analyzeQuery(query)
 
     const cached = !isTimeSensitive && !hasConversationHistory ? await getCachedResponse(query, mode) : null
-    console.log(
-      `[v0] Cache check result:`,
-      cached ? "FOUND" : hasConversationHistory ? "SKIPPED (has conversation history)" : "NOT FOUND",
-    )
 
     if (cached && cached.answer && cached.answer.trim().length > 0 && isValidCachedResponse(cached.answer)) {
-      console.log(`[v0] Returning cached response, answer length: ${cached.answer.length}`)
-      const encoder = new TextEncoder()
-      const stream = new ReadableStream({
-        async start(controller) {
-          try {
-            const citationsData = JSON.stringify({
-              type: "citations",
-              content: cached.sources || [],
-            })
-            controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`))
+      logger.debug("Returning cached response", { queryLength: query.length, answerLength: cached.answer.length })
 
-            const modelData = JSON.stringify({
-              type: "model",
-              content: {
-                model: cached.model || "openai/gpt-4o",
-                reason: "Cached response",
-                autoSelected: false,
-              },
-            })
-            controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
+      let savedSearchId = null
+      if (userId && finalThreadId) {
+        try {
+          const { saveSearchToHistory } = await import("@/lib/db")
+          savedSearchId = await saveSearchToHistory(userId, finalThreadId, query, mode, cached.answer)
+        } catch (error) {
+          logger.error("Failed to save cached search to history", error)
+        }
+      }
 
-            const chunkSize = 150
-            for (let i = 0; i < cached.answer.length; i += chunkSize) {
-              const chunk = cached.answer.slice(i, i + chunkSize)
-              const textData = JSON.stringify({
-                type: "text",
-                content: chunk,
-              })
-              controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
-              await new Promise((resolve) => setTimeout(resolve, 17))
-            }
-
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"))
-            controller.close()
-          } catch (error) {
-            console.error("Error in cached stream:", error)
-            try {
-              controller.error(error)
-            } catch (e) {
-              // Controller already closed, ignore
-            }
-          }
-        },
+      return Response.json({
+        cached: true,
+        answer: cached.answer,
+        sources: cached.sources || [],
+        model: cached.model || "unknown",
+        searchId: savedSearchId,
       })
-
-      return new Response(stream, {
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-          ...(finalThreadId ? { "X-Thread-Id": finalThreadId } : {}),
-        },
-      })
-    } else if (cached) {
-      console.log(`[v0] Cache exists but invalid, proceeding with fresh search`)
     }
 
-    console.log(`[v0] Proceeding with fresh search, checking rate limits...`)
-
     const ipAddress = getClientIp(request)
-    const rateLimitCheck = await checkRateLimit(
-      userId && typeof userId === "string" && userId.length > 0 ? userId : null,
-      ipAddress,
-    )
 
-    console.log(`[v0] Rate limit check - allowed: ${rateLimitCheck.allowed}, remaining: ${rateLimitCheck.remaining}`)
+    const rateLimitCheck = await checkRateLimit(userId || "anonymous", "search")
 
     if (!rateLimitCheck.allowed) {
       return Response.json(
         {
-          error: rateLimitCheck.reason || "Rate limit exceeded",
-          remaining: rateLimitCheck.remaining,
-          limit: rateLimitCheck.limit,
+          error: "Rate limit exceeded",
+          resetAt: rateLimitCheck.resetAt,
         },
         { status: 429 },
       )
     }
 
-    let modelSelection
-    if (attachments && attachments.length > 0) {
-      const hasImages = attachments.some((a: any) => a.type.startsWith("image/"))
-      if (hasImages) {
-        modelSelection = {
-          model: userId ? "openai/gpt-4o" : "openai/gpt-4o-mini",
-          reason: userId ? "Premium vision model for image analysis" : "Vision model for image analysis",
-          autoSelected: true,
-        }
-      } else {
-        modelSelection = {
-          model: "openai/gpt-4o",
-          reason: "Document analysis",
-          autoSelected: true,
-        }
-      }
-    } else if (selectedModel) {
-      const model = getModelById(selectedModel)
-      modelSelection = {
-        model,
-        reason: "Manually selected model",
-        autoSelected: false,
-      }
-    } else {
-      modelSelection = {
-        model: userId ? "openai/gpt-4o" : "openai/gpt-4o-mini",
-        reason: userId
-          ? "Optimized for web search - high quality with current information"
-          : "Fast and efficient model for quick searches",
-        autoSelected: true,
-      }
+    // Validate model
+    const model = AVAILABLE_MODELS.find((m) => m.id === selectedModel)
+    if (!model) {
+      return Response.json({ error: "Invalid model" }, { status: 400 })
     }
 
-    if (userId) {
-      const modelRateLimit = await checkModelRateLimit(userId, modelSelection.model, "free")
-      console.log(
-        `[v0] Model rate limit check - model: ${modelSelection.model}, allowed: ${modelRateLimit.allowed}, remaining: ${modelRateLimit.remaining}`,
-      )
-      if (!modelRateLimit.allowed) {
-        return Response.json(
-          {
-            error: `Model rate limit exceeded for ${modelSelection.model}. You can use this model ${MODEL_RATE_LIMITS[modelSelection.model]?.maxRequests || 5} times per hour. Please try a different model or wait for the limit to reset.`,
-            remaining: modelRateLimit.remaining,
-            resetAt: modelRateLimit.resetAt,
-          },
-          { status: 429 },
-        )
-      }
+    const modelSelection = await selectModel(query, mode, userId, model)
+
+    if (!modelSelection || !modelSelection.model) {
+      return Response.json({ error: "Failed to select model" }, { status: 500 })
+    }
+
+    // Create or use thread
+    let activeThreadId = finalThreadId
+    if (userId && !activeThreadId) {
+      const thread = await sql`
+        INSERT INTO threads (user_id, title, created_at, updated_at)
+        VALUES (${userId}, ${query.slice(0, 100)}, NOW(), NOW())
+        RETURNING id
+      `
+      activeThreadId = thread[0]?.id
+    }
+
+    // Save search to history
+    let searchId: string | null = null
+    if (userId && activeThreadId) {
+      const search = await sql`
+        INSERT INTO search_history (user_id, thread_id, query, response, model, created_at)
+        VALUES (${userId}, ${activeThreadId}, ${query}, '', ${modelSelection.model}, NOW())
+        RETURNING id
+      `
+      searchId = search[0]?.id
     }
 
     const hasSerperKey = !!process.env.SERPER_API_KEY
 
     let webSearchResults = null
-    if (hasSerperKey && !attachments?.length) {
+    if (hasSerperKey && !safeAttachments.length) {
       try {
-        const { getOrFetchWebSearch } = await import("@/lib/redis")
-
         webSearchResults = await getOrFetchWebSearch(query, async () => {
-          console.log("[v0] Fetching fresh web search results from Serper")
           const searchResponse = await fetch("https://google.serper.dev/search", {
             method: "POST",
             headers: {
@@ -305,16 +158,15 @@ export async function POST(request: Request) {
           }
           return []
         })
-
-        console.log(`[v0] Using ${webSearchResults.length} web search results (cached or fresh)`)
       } catch (error) {
-        console.error("Web search failed:", error)
+        logger.error("Web search error", error)
+        webSearchResults = null
       }
     }
 
-    const systemInstruction =
+    const systemMessage =
       mode === "deep"
-        ? `You are Miami.ai, an advanced AI assistant with ${hasSerperKey ? "real-time web search capabilities" : "comprehensive knowledge"}${attachments && attachments.length > 0 ? " and vision capabilities" : ""}.
+        ? `You are Miami.ai, an advanced AI assistant with ${hasSerperKey ? "real-time web search capabilities" : "comprehensive knowledge"}${safeAttachments && safeAttachments.length > 0 ? " and vision capabilities" : ""}.
 
 **Knowledge & Search:**
 ${
@@ -331,7 +183,7 @@ ${
 }
 
 ${
-  attachments && attachments.length > 0
+  safeAttachments && safeAttachments.length > 0
     ? `**Vision & Document Analysis:**
 - Analyze images in detail, describing what you see
 - Extract text from images when relevant
@@ -370,7 +222,7 @@ Use rich markdown formatting to create visually appealing, easy-to-scan response
 - You can cite multiple sources like [Source 1, Source 2]
 
 Provide comprehensive, detailed answers with in-depth analysis while maintaining excellent readability.`
-        : `You are Miami.ai, a fast and knowledgeable AI assistant${hasSerperKey ? " with real-time web search capabilities" : ""}${attachments && attachments.length > 0 ? " and vision capabilities" : ""}.
+        : `You are Miami.ai, a fast and knowledgeable AI assistant${hasSerperKey ? " with real-time web search capabilities" : ""}${safeAttachments && safeAttachments.length > 0 ? " and vision capabilities" : ""}.
 
 **Your Capabilities:**
 ${
@@ -390,7 +242,7 @@ ${
 }
 
 ${
-  attachments && attachments.length > 0
+  safeAttachments && safeAttachments.length > 0
     ? `**Vision & Document Analysis:**
 - Analyze images and describe what you see
 - Extract relevant information from visual content
@@ -427,27 +279,53 @@ ${hasSerperKey && webSearchResults ? "\n**IMPORTANT:** Web search results have b
 
 Provide accurate, concise answers that are both informative and visually appealing.`
 
-    try {
-      console.log(`[v0] Creating AI stream with model: ${modelSelection.model}`)
+    let messages
+    if (conversationHistory && conversationHistory.length > 0) {
+      const recentHistory = conversationHistory.slice(-10)
+      messages = [...recentHistory]
 
-      let messages
-      if (conversationHistory && conversationHistory.length > 0) {
-        const recentHistory = conversationHistory.slice(-10)
-        messages = [...recentHistory]
+      if (webSearchResults && webSearchResults.length > 0) {
+        const searchContext = webSearchResults
+          .map(
+            (result: any, index: number) => `[${index + 1}] ${result.title}\n${result.content}\nSource: ${result.url}`,
+          )
+          .join("\n\n")
+        const enhancedQuery = `${query}\n\n---\nWeb Search Results:\n${searchContext}`
+        messages.push({ role: "user" as const, content: enhancedQuery })
+      } else if (safeAttachments && safeAttachments.length > 0) {
+        const imageAttachments = safeAttachments.filter((a: any) => a.type.startsWith("image/"))
+        if (imageAttachments.length > 0) {
+          messages.push({
+            role: "user" as const,
+            content: [
+              { type: "text" as const, text: query },
+              ...imageAttachments.map((img: any) => ({
+                type: "image" as const,
+                image: img.url,
+              })),
+            ],
+          })
+        } else {
+          messages.push({ role: "user" as const, content: query })
+        }
+      } else {
+        messages.push({ role: "user" as const, content: query })
+      }
+    } else {
+      if (webSearchResults && webSearchResults.length > 0) {
+        const searchContext = webSearchResults
+          .map(
+            (result: any, index: number) => `[${index + 1}] ${result.title}\n${result.content}\nSource: ${result.url}`,
+          )
+          .join("\n\n")
 
-        if (webSearchResults && webSearchResults.length > 0) {
-          const searchContext = webSearchResults
-            .map(
-              (result: any, index: number) =>
-                `[${index + 1}] ${result.title}\n${result.content}\nSource: ${result.url}`,
-            )
-            .join("\n\n")
-          const enhancedQuery = `${query}\n\n---\nWeb Search Results:\n${searchContext}`
-          messages.push({ role: "user" as const, content: enhancedQuery })
-        } else if (attachments && attachments.length > 0) {
-          const imageAttachments = attachments.filter((a: any) => a.type.startsWith("image/"))
-          if (imageAttachments.length > 0) {
-            messages.push({
+        const enhancedQuery = `${query}\n\n---\nWeb Search Results:\n${searchContext}`
+        messages = [{ role: "user" as const, content: enhancedQuery }]
+      } else if (safeAttachments && safeAttachments.length > 0) {
+        const imageAttachments = safeAttachments.filter((a: any) => a.type.startsWith("image/"))
+        if (imageAttachments.length > 0) {
+          messages = [
+            {
               role: "user" as const,
               content: [
                 { type: "text" as const, text: query },
@@ -456,253 +334,140 @@ Provide accurate, concise answers that are both informative and visually appeali
                   image: img.url,
                 })),
               ],
-            })
-          } else {
-            messages.push({ role: "user" as const, content: query })
-          }
-        } else {
-          messages.push({ role: "user" as const, content: query })
-        }
-      } else {
-        if (webSearchResults && webSearchResults.length > 0) {
-          const searchContext = webSearchResults
-            .map(
-              (result: any, index: number) =>
-                `[${index + 1}] ${result.title}\n${result.content}\nSource: ${result.url}`,
-            )
-            .join("\n\n")
-
-          const enhancedQuery = `${query}\n\n---\nWeb Search Results:\n${searchContext}`
-          messages = [{ role: "user" as const, content: enhancedQuery }]
-        } else if (attachments && attachments.length > 0) {
-          const imageAttachments = attachments.filter((a: any) => a.type.startsWith("image/"))
-          if (imageAttachments.length > 0) {
-            messages = [
-              {
-                role: "user" as const,
-                content: [
-                  { type: "text" as const, text: query },
-                  ...imageAttachments.map((img: any) => ({
-                    type: "image" as const,
-                    image: img.url,
-                  })),
-                ],
-              },
-            ]
-          } else {
-            messages = [{ role: "user" as const, content: query }]
-          }
+            },
+          ]
         } else {
           messages = [{ role: "user" as const, content: query }]
         }
+      } else {
+        messages = [{ role: "user" as const, content: query }]
       }
-
-      let savedSearchId: string | null = null
-      if (
-        userId &&
-        typeof userId === "string" &&
-        userId.length > 0 &&
-        finalThreadId &&
-        !finalThreadId.startsWith("local-thread-")
-      ) {
-        try {
-          const positionInThread = conversationHistory ? Math.floor(conversationHistory.length / 2) + 1 : 1
-          const sources = webSearchResults ? webSearchResults.map((r: any) => ({ title: r.title, url: r.url })) : []
-
-          // Create initial search record with placeholder response
-          const savedSearch = await createSearchHistory(
-            userId,
-            query,
-            "", // Empty response initially
-            sources,
-            mode,
-            modelSelection.model,
-            modelSelection.autoSelected,
-            modelSelection.reason,
-            finalThreadId,
-            positionInThread,
-          )
-
-          savedSearchId = savedSearch.id
-          console.log(
-            `[v0] Created search record with id: ${savedSearchId}, threadId: ${finalThreadId}, position: ${positionInThread}`,
-          )
-        } catch (error) {
-          console.error("Failed to create initial search record:", error)
-        }
-      } else if (finalThreadId?.startsWith("local-thread-")) {
-        console.log(`[v0] Skipping search history save - local thread ID: ${finalThreadId}`)
-      }
-
-      const result = streamText({
-        model: modelSelection.model,
-        system: systemInstruction,
-        messages,
-        maxTokens: mode === "deep" ? 2000 : 800,
-        temperature: mode === "deep" ? 0.7 : 0.5,
-        onFinish: async ({ text, usage }) => {
-          if (usage) {
-            await trackModelUsage(
-              userId || null,
-              modelSelection.model,
-              usage.promptTokens || 0,
-              usage.completionTokens || 0,
-            )
-          }
-
-          const sources = webSearchResults ? webSearchResults.map((r: any) => ({ title: r.title, url: r.url })) : []
-
-          await setCachedResponse(query, mode, {
-            answer: text,
-            sources,
-            model: modelSelection.model,
-          })
-
-          if (savedSearchId) {
-            try {
-              await updateSearchResponse(savedSearchId, text)
-              console.log(`[v0] Updated search ${savedSearchId} with final response`)
-            } catch (error) {
-              console.error("Failed to update search response:", error)
-            }
-          }
-
-          await incrementRateLimit(
-            userId && typeof userId === "string" && userId.length > 0 ? userId : null,
-            getClientIp(request),
-          )
-        },
-      })
-
-      console.log("[v0] StreamText result obtained, creating custom stream")
-
-      const encoder = new TextEncoder()
-
-      const customStream = new ReadableStream({
-        async start(controller) {
-          try {
-            console.log("[v0] Starting custom stream controller")
-
-            if (!modelSelection) {
-              throw new Error("Model selection is undefined")
-            }
-
-            if (webSearchResults && webSearchResults.length > 0) {
-              const citationsData = JSON.stringify({
-                type: "citations",
-                content: webSearchResults.map((r: any) => ({
-                  title: r.title,
-                  url: r.url,
-                  snippet: r.content,
-                })),
-              })
-              controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`))
-              console.log(`[v0] Sent ${webSearchResults.length} citations to client`)
-            }
-
-            const modelData = JSON.stringify({
-              type: "model",
-              content: {
-                model: modelSelection.model,
-                reason: modelSelection.reason,
-                autoSelected: modelSelection.autoSelected,
-              },
-            })
-            controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
-            console.log("[v0] Sent model data to client")
-
-            let chunkCount = 0
-            let totalText = ""
-
-            console.log("[v0] Starting to read text stream...")
-            console.log(`[v0] Tools enabled: ${!!undefined}, mode: ${mode}`)
-
-            try {
-              console.log("[v0] Reading from textStream (handles tools automatically)")
-              for await (const textChunk of result.textStream) {
-                chunkCount++
-                totalText += textChunk
-
-                if (chunkCount % 10 === 0) {
-                  console.log(`[v0] Processed ${chunkCount} chunks, total length: ${totalText.length}`)
-                }
-
-                const textData = JSON.stringify({
-                  type: "text",
-                  content: textChunk,
-                })
-                controller.enqueue(encoder.encode(`data: ${textData}\n\n`))
-              }
-
-              console.log(
-                `[v0] Finished streaming. Total chunks: ${chunkCount}, total text length: ${totalText.length}`,
-              )
-            } catch (streamError) {
-              const errorMessage = streamError instanceof Error ? streamError.message : String(streamError)
-              const isNetworkError = errorMessage.includes("network error") || errorMessage.includes("aborted")
-
-              // If we got chunks and it's a network error, it's likely just the stream closing normally
-              if (chunkCount > 0 && isNetworkError) {
-                console.log(`[v0] Stream completed after ${chunkCount} chunks (${totalText.length} characters)`)
-              } else {
-                // This is a real error
-                console.error("[v0] ERROR reading text stream:", streamError)
-                console.error("[v0] Stream error details:", {
-                  name: streamError instanceof Error ? streamError.name : "unknown",
-                  message: errorMessage,
-                })
-
-                // If no chunks received, this is a real problem
-                if (chunkCount === 0) {
-                  throw streamError
-                }
-              }
-            }
-
-            controller.enqueue(encoder.encode("data: [DONE]\n\n"))
-            console.log("[v0] Stream complete, sent [DONE]")
-            controller.close()
-          } catch (error) {
-            console.error("[v0] Error in stream controller:", error)
-            try {
-              controller.error(error)
-            } catch (e) {
-              console.error("[v0] Failed to send error to controller:", e)
-            }
-          }
-        },
-      })
-
-      return new Response(customStream, {
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-          "X-RateLimit-Remaining": rateLimitCheck.remaining.toString(),
-          "X-RateLimit-Limit": rateLimitCheck.limit.toString(),
-          ...(finalThreadId ? { "X-Thread-Id": finalThreadId } : {}),
-          ...(savedSearchId ? { "X-Search-Id": savedSearchId } : {}),
-        },
-      })
-    } catch (error: any) {
-      console.error("Error creating AI response:", error)
-
-      if (error.message && error.message.includes("rate_limit_exceeded")) {
-        return Response.json(
-          {
-            error:
-              "AI Gateway rate limit exceeded. Please try again in a few moments or upgrade to Pro for higher limits.",
-            type: "ai_gateway_rate_limit",
-          },
-          { status: 429 },
-        )
-      }
-
-      throw new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
+
+    const maxTokens = mode === "deep" ? 2000 : 800
+    const formattedMessages = messages
+
+    const result = streamText({
+      model: modelSelection.model,
+      system: systemMessage,
+      messages: formattedMessages,
+      maxTokens: maxTokens,
+      temperature: 0.7,
+      onFinish: async ({ text, usage }) => {
+        if (usage) {
+          await trackModelUsage(
+            userId || null,
+            modelSelection.model,
+            usage.promptTokens || 0,
+            usage.completionTokens || 0,
+          )
+        }
+
+        const sources = webSearchResults ? webSearchResults.map((r: any) => ({ title: r.title, url: r.url })) : []
+
+        await setCachedResponse(query, mode, {
+          answer: text,
+          sources,
+          model: modelSelection.model,
+        })
+
+        if (searchId) {
+          try {
+            await updateSearchResponse(searchId, text)
+          } catch (error) {
+            logger.error("Failed to update search response", error)
+          }
+        }
+      },
+    })
+
+    const encoder = new TextEncoder()
+
+    const customStream = new ReadableStream({
+      async start(controller) {
+        try {
+          if (!modelSelection) {
+            throw new Error("Model selection is undefined")
+          }
+
+          if (webSearchResults && webSearchResults.length > 0) {
+            const citationsData = JSON.stringify({
+              type: "citations",
+              content: webSearchResults.map((r: any) => ({
+                title: r.title,
+                url: r.url,
+                snippet: r.content,
+              })),
+            })
+            controller.enqueue(encoder.encode(`data: ${citationsData}\n\n`))
+          }
+
+          const modelData = JSON.stringify({
+            type: "model",
+            content: {
+              model: modelSelection.model,
+              reason: modelSelection.reason,
+              autoSelected: modelSelection.autoSelected,
+            },
+          })
+          controller.enqueue(encoder.encode(`data: ${modelData}\n\n`))
+
+          let chunkCount = 0
+          let totalText = ""
+
+          try {
+            for await (const textChunk of result.textStream) {
+              chunkCount++
+              totalText += textChunk
+
+              const messageData = JSON.stringify({
+                type: "text",
+                content: textChunk,
+              })
+              controller.enqueue(encoder.encode(`data: ${messageData}\n\n`))
+            }
+
+            if (chunkCount === 0) {
+              logger.error("No chunks received from AI model")
+              const errorData = JSON.stringify({
+                type: "error",
+                content: "Failed to get response from AI model. Please try again.",
+              })
+              controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+            }
+          } catch (streamError) {
+            const errorMessage = streamError instanceof Error ? streamError.message : String(streamError)
+            const isNetworkError = errorMessage.includes("network error") || errorMessage.includes("aborted")
+
+            logger.error("Stream error", streamError, { chunkCount, totalTextLength: totalText.length })
+
+            if (chunkCount === 0 && !isNetworkError) {
+              const errorData = JSON.stringify({
+                type: "error",
+                content: "Unable to connect to AI model. Please try again or contact support if this persists.",
+              })
+              controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+            }
+          }
+
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"))
+          controller.close()
+        } catch (error) {
+          logger.error("Stream controller error", error)
+          controller.error(error)
+        }
+      },
+    })
+
+    return new Response(customStream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    })
   } catch (error) {
-    console.error("Search API error:", error)
-    const errorMessage = error instanceof Error ? error.message : "Internal server error"
-    return Response.json({ error: errorMessage }, { status: 500 })
+    logger.error("Search streaming error", error)
+    return Response.json({ error: error instanceof Error ? error.message : "Search failed" }, { status: 500 })
   }
 }

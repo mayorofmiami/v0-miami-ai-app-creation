@@ -320,7 +320,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
           setAttachments((prev) => [...prev, attachment])
         }
       } catch (error) {
-        console.error("Upload error:", error)
         alert("Failed to upload file")
       } finally {
         setIsUploading(false)
@@ -376,7 +375,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             title="Options"
             aria-label="Open options menu"
           >
-            <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
@@ -391,11 +390,11 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
             placeholder={placeholderText}
             disabled={isLoading}
             rows={1}
-            className={`flex-1 px-2 py-1 text-foreground bg-transparent
+            className={`flex-1 px-2 py-1 text-white bg-transparent
               transition-all outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base
               relative z-10 resize-none overflow-y-auto border-0 ${
                 isLoading ? "opacity-50 cursor-not-allowed" : ""
-              } placeholder:text-muted-foreground/50`}
+              } placeholder:text-white/50`}
             style={{
               outline: "none",
               boxShadow: "none",
@@ -421,7 +420,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="p-1 rounded-full bg-foreground text-background hover:bg-foreground/90 transition-all disabled:opacity-50"
+                  className="p-1 rounded-full bg-white text-black hover:bg-white/90 transition-all disabled:opacity-50"
                   title="Send"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

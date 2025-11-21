@@ -7,5 +7,9 @@ export const metadata = {
 }
 
 export default function HomePage() {
-  return <UnauthenticatedLanding />
+  return (
+    <div className="dark">
+      <UnauthenticatedLanding />
+    </div>
+  )
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getSession } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -20,16 +21,35 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
 
     const post = await sql`
-      SELECT * FROM blog_posts WHERE id = ${params.id}
+      SELECT 
+        id, 
+        title, 
+        slug, 
+        excerpt, 
+        content, 
+        author_id, 
+        status, 
+        published_at, 
+        created_at, 
+        updated_at 
+      FROM blog_posts 
+      WHERE id = ${params.id}
     `
 
     if (post.length === 0) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ post: post[0] })
+    return NextResponse.json(
+      { post: post[0] },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        },
+      },
+    )
   } catch (error) {
-    console.error("Error fetching blog post:", error)
+    logger.error("Error fetching blog post", error)
     return NextResponse.json({ error: "Failed to fetch post" }, { status: 500 })
   }
 }
@@ -90,7 +110,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     return NextResponse.json({ post: result[0] })
   } catch (error) {
-    console.error("Error updating blog post:", error)
+    logger.error("Error updating blog post", error)
     return NextResponse.json({ error: "Failed to update post" }, { status: 500 })
   }
 }
@@ -116,7 +136,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error deleting blog post:", error)
+    logger.error("Error deleting blog post", error)
     return NextResponse.json({ error: "Failed to delete post" }, { status: 500 })
   }
 }

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { resetPassword } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Reset password error:", error)
+    logger.error("Reset password error", { error })
     return NextResponse.json({ error: "Failed to reset password" }, { status: 500 })
   }
 }

@@ -1,6 +1,7 @@
 import { headers } from "next/headers"
 import { updateSubscription } from "@/lib/db"
 import { validateEvent } from "@polar-sh/sdk/webhooks"
+import { logger } from "@/lib/logger"
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -13,14 +14,14 @@ export async function POST(req: Request) {
   try {
     event = await validateEvent(body, headersList, webhookSecret)
   } catch (err) {
-    console.error("[v0] Webhook signature verification failed:", err)
+    logger.error("Webhook signature verification failed:", err)
     return Response.json({ error: "Invalid signature" }, { status: 400 })
   }
 
   try {
     switch (event.type) {
       case "checkout.created": {
-        console.log("[v0] Checkout created:", event.data.id)
+        logger.info("Checkout created:", event.data.id)
         break
       }
 
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
           const userId = checkout.metadata?.userId
 
           if (!userId) {
-            console.error("[v0] No userId in checkout metadata")
+            logger.error("No userId in checkout metadata")
             break
           }
 
@@ -44,14 +45,14 @@ export async function POST(req: Request) {
             status: "active",
           })
 
-          console.log("[v0] Subscription created for user:", userId)
+          logger.info("Subscription created for user:", userId)
         }
         break
       }
 
       case "subscription.created": {
         const subscription = event.data
-        console.log("[v0] Subscription created:", subscription.id)
+        logger.info("Subscription created:", subscription.id)
         break
       }
 
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
         const status =
           subscription.status === "active" ? "active" : subscription.status === "canceled" ? "canceled" : "past_due"
 
-        console.log("[v0] Subscription updated for customer:", customerId, "Status:", status)
+        logger.info("Subscription updated for customer:", customerId, "Status:", status)
         break
       }
 
@@ -71,27 +72,27 @@ export async function POST(req: Request) {
         const subscription = event.data
         const customerId = subscription.customerId
 
-        console.log("[v0] Subscription canceled for customer:", customerId)
+        logger.info("Subscription canceled for customer:", customerId)
         break
       }
 
       case "customer.created": {
-        console.log("[v0] Customer created:", event.data.id)
+        logger.info("Customer created:", event.data.id)
         break
       }
 
       case "customer.updated": {
-        console.log("[v0] Customer updated:", event.data.id)
+        logger.info("Customer updated:", event.data.id)
         break
       }
 
       default:
-        console.log("[v0] Unhandled event type:", event.type)
+        logger.info("Unhandled event type:", event.type)
     }
 
     return Response.json({ received: true })
   } catch (error) {
-    console.error("[v0] Webhook handler error:", error)
+    logger.error("Webhook handler error:", error)
     return Response.json({ error: "Webhook handler failed" }, { status: 500 })
   }
 }

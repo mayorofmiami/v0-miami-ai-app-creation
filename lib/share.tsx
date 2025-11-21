@@ -1,6 +1,7 @@
 import { redis } from "@/lib/redis"
 import { nanoid } from "nanoid"
 import { getSearchById } from "@/lib/db"
+import { logger } from "./logger"
 
 export interface ShareData {
   query: string
@@ -11,7 +12,12 @@ export interface ShareData {
   views: number
 }
 
-export async function createDirectShareLink(query: string, response: string, citations?: Array<{ title: string; url: string; snippet: string }>, userId?: string) {
+export async function createDirectShareLink(
+  query: string,
+  response: string,
+  citations?: Array<{ title: string; url: string; snippet: string }>,
+  userId?: string,
+) {
   try {
     const shareId = nanoid(10)
     const shareData: ShareData = {
@@ -26,10 +32,10 @@ export async function createDirectShareLink(query: string, response: string, cit
     // Store in Redis with 30-day expiry
     await redis.setex(`share:${shareId}`, 60 * 60 * 24 * 30, JSON.stringify(shareData))
 
-    console.log("[v0] Created direct share link:", shareId)
+    logger.log("Created direct share link:", shareId)
     return { success: true, shareToken: shareId }
   } catch (error) {
-    console.error("[v0] Create direct share link error:", error)
+    logger.error("Create direct share link error:", error)
     return { success: false, error: "Failed to create share link" }
   }
 }
@@ -67,7 +73,7 @@ export async function getSharedSearch(shareId: string) {
 
     return { success: false, error: "Share not found" }
   } catch (error) {
-    console.error("[v0] Get shared search error:", error)
+    logger.error("Get shared search error:", error)
     return { success: false, error: "Failed to retrieve share" }
   }
 }
@@ -94,7 +100,7 @@ export async function createShareLink(searchId: string) {
 
     return { success: true, shareToken: shareId }
   } catch (error) {
-    console.error("[v0] Create share link error:", error)
+    logger.error("Create share link error:", error)
     return { success: false, error: "Failed to create share link" }
   }
 }

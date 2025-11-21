@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless"
 import { getSession } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 export async function GET(request: Request) {
   try {
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
       },
     )
   } catch (error) {
-    console.error("[v0] Rate limit reset error:", error)
+    logger.error("Rate limit reset error:", error)
     return Response.json(
       { error: "Failed to reset rate limit", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
       userId,
     })
   } catch (error) {
-    console.error("[v0] Rate limit reset error:", error)
+    logger.error("Rate limit reset error:", error)
     return Response.json(
       { error: "Failed to reset rate limit", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },

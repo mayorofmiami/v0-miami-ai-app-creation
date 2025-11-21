@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis"
+import { logger } from "./logger"
 
 // Initialize Redis client
 const redis = new Redis({
@@ -27,26 +28,28 @@ export function getCacheKey(query: string, mode: "quick" | "deep"): string {
 export async function getCachedResponse(query: string, mode: "quick" | "deep"): Promise<CachedResponse | null> {
   try {
     const key = getCacheKey(query, mode)
-    console.log(`[v0] Attempting to get cache for key: ${key}`)
+    logger.debug("Attempting to get cache", { key })
     const cached = await redis.get<CachedResponse>(key)
-    console.log(`[v0] Cache result:`, cached ? `Found (answer length: ${cached.answer?.length})` : "Not found")
+    logger.debug("Cache result", {
+      found: !!cached,
+      answerLength: cached?.answer?.length,
+    })
 
     if (cached && cached.timestamp) {
-      // Check if cache is still valid (24 hours)
       const age = Date.now() - cached.timestamp
       const maxAge = 24 * 60 * 60 * 1000 // 24 hours
 
       if (age < maxAge) {
-        console.log(`[v0] Cache hit for query: ${query}`)
+        logger.info("Cache hit", { query })
         return cached
       } else {
-        console.log(`[v0] Cache expired for query: ${query}`)
+        logger.info("Cache expired", { query })
       }
     }
 
     return null
   } catch (error) {
-    console.error("[v0] Cache get error:", error)
+    logger.error("Cache get error", { error })
     return null
   }
 }
@@ -64,11 +67,10 @@ export async function setCachedResponse(
       timestamp: Date.now(),
     }
 
-    // Set with 24 hour expiration
     await redis.setex(key, 24 * 60 * 60, cached)
-    console.log(`[v0] Saved response to cache for query: ${query}`)
+    logger.info("Saved response to cache", { query })
   } catch (error) {
-    console.error("[v0] Cache set error:", error)
+    logger.error("Cache set error", { error })
   }
 }
 
@@ -78,6 +80,6 @@ export async function clearCache(query: string, mode: "quick" | "deep"): Promise
     const key = getCacheKey(query, mode)
     await redis.del(key)
   } catch (error) {
-    console.error("[v0] Cache clear error:", error)
+    logger.error("Cache clear error", { error })
   }
 }

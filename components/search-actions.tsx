@@ -62,8 +62,6 @@ export function SearchActions({
         toast.error("Failed to create share link")
       }
     } catch (error) {
-      console.error("[v0] Share error:", error)
-      toast.error("Failed to create share link")
     } finally {
       setSharing(false)
     }
@@ -90,10 +88,7 @@ export function SearchActions({
       } else {
         toast.error("Failed to update bookmark")
       }
-    } catch (error) {
-      console.error("[v0] Bookmark error:", error)
-      toast.error("Failed to update bookmark")
-    }
+    } catch (error) {}
   }
 
   const handleExportMarkdown = () => {

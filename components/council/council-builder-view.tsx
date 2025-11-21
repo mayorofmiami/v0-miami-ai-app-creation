@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import { ArrowLeft, Plus, X, Sparkles } from "lucide-react"
 import { CouncilLayout } from "@/components/council/council-layout"
+import { logger } from "@/lib/logger"
 
 interface Archetype {
   id: string
@@ -63,7 +64,7 @@ export function CouncilBuilderView() {
           setUser(data.user)
         }
       } catch (error) {
-        console.error("[v0] Error loading user:", error)
+        logger.error("Error loading user in council builder", { error })
       }
     }
     loadUser()
@@ -79,7 +80,7 @@ export function CouncilBuilderView() {
       const data = await res.json()
       setArchetypes(data.archetypes || [])
     } catch (error) {
-      console.error("[v0] Error fetching archetypes:", error)
+      logger.error("Error fetching archetypes", { error })
     }
   }
 
@@ -147,7 +148,7 @@ export function CouncilBuilderView() {
         router.push(`/app/council/chat/${data.council.id}`)
       }
     } catch (error) {
-      console.error("[v0] Error creating council:", error)
+      logger.error("Error creating council", { error })
     } finally {
       setIsLoading(false)
     }

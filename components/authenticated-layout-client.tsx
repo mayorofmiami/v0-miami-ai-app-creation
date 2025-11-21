@@ -33,7 +33,6 @@ export function AuthenticatedLayoutClient({ children }: AuthenticatedLayoutClien
           router.push("/login")
         }
       } catch (error) {
-        console.error("[v0] Failed to fetch user:", error)
         router.push("/login")
       } finally {
         setIsLoadingUser(false)
@@ -62,7 +61,7 @@ export function AuthenticatedLayoutClient({ children }: AuthenticatedLayoutClien
         router.refresh()
       }
     } catch (error) {
-      console.error("Logout error:", error)
+      // Logout error is not critical
     }
   }, [router])
 

@@ -1,9 +1,8 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter } from 'next/font/google'
+import { Inter } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
-import { ThemeProvider } from "next-themes"
 import { PrefetchProvider } from "@/components/prefetch-provider"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
@@ -77,7 +76,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
@@ -88,20 +87,18 @@ export default function RootLayout({
         <a href="#main-content" className="skip-to-main">
           Skip to main content
         </a>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <PrefetchProvider />
-          {children}
-          <OfflineIndicator />
-          <Toaster
-            position="top-center"
-            offset="24px"
-            toastOptions={{
-              className: "mt-20",
-            }}
-          />
-          <Analytics />
-          <SpeedInsights />
-        </ThemeProvider>
+        <PrefetchProvider />
+        {children}
+        <OfflineIndicator />
+        <Toaster
+          position="top-center"
+          offset="24px"
+          toastOptions={{
+            className: "mt-20",
+          }}
+        />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

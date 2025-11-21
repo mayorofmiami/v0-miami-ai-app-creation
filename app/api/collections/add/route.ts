@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { addSearchToCollection } from "@/lib/collections"
 import { getCurrentUser } from "@/lib/auth"
 import { neon } from "@neondatabase/serverless"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     await addSearchToCollection(collectionId, searchId)
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Add to collection error:", error)
+    logger.error("Add to collection error", error)
     return NextResponse.json({ error: "Failed to add to collection" }, { status: 500 })
   }
 }

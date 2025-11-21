@@ -1,5 +1,8 @@
 import { Redis } from "@upstash/redis"
 import type { Citation } from "@/types"
+import { logger } from "./logger"
+import type { NextRequest } from "next/server"
+import { neon } from "@neondatabase/serverless"
 
 // Initialize Redis client with Upstash
 export const redis = new Redis({
@@ -27,7 +30,7 @@ export async function cacheSearchResult(query: string, mode: string, response: s
     const key = CACHE_KEYS.search(query, mode)
     await redis.setex(key, CACHE_TTL.search, JSON.stringify({ response, citations, cachedAt: Date.now() }))
   } catch (error) {
-    console.error("[v0] Cache set error:", error)
+    logger.error("Cache set error", { error })
   }
 }
 
@@ -45,12 +48,16 @@ export async function getCachedSearchResult(query: string, mode: string) {
     }
     return null
   } catch (error) {
-    console.error("[v0] Cache get error:", error)
+    logger.error("Cache get error", { error })
     return null
   }
 }
 
-// Rate limiting
+/**
+ * @deprecated Use checkGlobalRateLimit from @/lib/unified-rate-limit instead
+ * This function is kept for backward compatibility but will be removed in future versions.
+ * The new unified rate limiting system provides database-backed configuration through the admin panel.
+ */
 export async function checkRateLimit(userId: string, limit = 100): Promise<{ allowed: boolean; remaining: number }> {
   try {
     const key = CACHE_KEYS.rateLimit(userId)
@@ -70,7 +77,7 @@ export async function checkRateLimit(userId: string, limit = 100): Promise<{ all
     await redis.incr(key)
     return { allowed: true, remaining: limit - count - 1 }
   } catch (error) {
-    console.error("[v0] Rate limit error:", error)
+    logger.error("Rate limit error", { error })
     return { allowed: true, remaining: limit }
   }
 }
@@ -81,7 +88,7 @@ export async function clearUserCache(userId: string) {
     const key = CACHE_KEYS.userSearches(userId)
     await redis.del(key)
   } catch (error) {
-    console.error("[v0] Cache clear error:", error)
+    logger.error("Cache clear error", { error })
   }
 }
 
@@ -91,7 +98,7 @@ export async function getOrFetchWebSearch(query: string, fetcher: () => Promise<
     const cached = await redis.get(key)
 
     if (cached) {
-      console.log("[v0] Using cached web search results")
+      logger.info("Using cached web search results", { query })
       if (typeof cached === "string") {
         return JSON.parse(cached)
       }
@@ -106,8 +113,71 @@ export async function getOrFetchWebSearch(query: string, fetcher: () => Promise<
 
     return results
   } catch (error) {
-    console.error("[v0] Web search cache error:", error)
-    // Fallback to fetching without cache
+    logger.error("Web search cache error", { error })
     return fetcher()
   }
+}
+
+export async function getCachedResponse(query: string, mode: string) {
+  try {
+    const key = `search:${mode}:${query}`
+    const cached = await redis.get(key)
+    if (cached) {
+      if (typeof cached === "string") {
+        return JSON.parse(cached)
+      }
+      return cached
+    }
+    return null
+  } catch (error) {
+    logger.error("Cache get error", { error })
+    return null
+  }
+}
+
+export async function setCachedResponse(
+  query: string,
+  mode: string,
+  data: { answer: string; sources: any[]; model: string },
+) {
+  try {
+    const key = `search:${mode}:${query}`
+    await redis.setex(key, 60 * 60 * 24, JSON.stringify({ ...data, cachedAt: Date.now() }))
+  } catch (error) {
+    logger.error("Cache set error", { error })
+  }
+}
+
+export async function trackModelUsage(userId: string | null, model: string, inputTokens: number, outputTokens: number) {
+  if (!userId) return
+
+  try {
+    const sql = neon(process.env.DATABASE_URL!)
+
+    // Simple cost estimation (approximate)
+    const costPerMillionInput = 0.5 // $0.50 per million tokens (average)
+    const costPerMillionOutput = 1.5 // $1.50 per million tokens (average)
+    const cost = (inputTokens / 1_000_000) * costPerMillionInput + (outputTokens / 1_000_000) * costPerMillionOutput
+
+    await sql`
+      INSERT INTO model_usage (user_id, model, input_tokens, output_tokens, cost, created_at)
+      VALUES (${userId}, ${model}, ${inputTokens}, ${outputTokens}, ${cost}, NOW())
+    `
+  } catch (error) {
+    logger.error("Failed to track model usage", { error })
+  }
+}
+
+export function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for")
+  if (forwarded) {
+    return forwarded.split(",")[0].trim()
+  }
+
+  const realIp = request.headers.get("x-real-ip")
+  if (realIp) {
+    return realIp
+  }
+
+  return "unknown"
 }

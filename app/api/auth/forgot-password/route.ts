@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { createPasswordResetToken } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,12 +15,12 @@ export async function POST(request: NextRequest) {
     if (result.success && result.token) {
       // In production, send an email with the reset link
       // For now, we'll just return success (security best practice: don't reveal if email exists)
-      console.log(`[v0] Password reset link: ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${result.token}`)
+      logger.info("Password reset token generated", { email })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Forgot password error:", error)
+    logger.error("Forgot password error", error)
     return NextResponse.json({ error: "Failed to process request" }, { status: 500 })
   }
 }

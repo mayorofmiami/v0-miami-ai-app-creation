@@ -2,6 +2,7 @@ import { google, type GoogleUser } from "@/lib/oauth"
 import { createOrUpdateOAuthUser, createSession } from "@/lib/auth"
 import { cookies } from "next/headers"
 import { OAuth2RequestError } from "arctic"
+import { logger } from "@/lib/logger"
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url)
@@ -42,15 +43,13 @@ export async function GET(request: Request): Promise<Response> {
     // Create session
     await createSession(result.userId)
 
-    console.log("[v0] OAuth session created, redirecting to /app")
-
     // Clear OAuth cookies
     cookieStore.delete("google_oauth_state")
     cookieStore.delete("google_code_verifier")
 
     return Response.redirect(new URL("/app", request.url))
   } catch (error) {
-    console.error("[v0] Google OAuth callback error:", error)
+    logger.error("Google OAuth callback error:", error)
 
     if (error instanceof OAuth2RequestError) {
       return new Response("Invalid authorization code", { status: 400 })

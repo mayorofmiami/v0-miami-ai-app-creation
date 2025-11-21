@@ -6,7 +6,7 @@ import AlertTriangle from "@/components/icons/AlertTriangle"
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error("[v0] Global error:", error)
+    // global error boundaries should use external error tracking
   }, [error])
 
   return (

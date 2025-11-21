@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react"
+import { ArrowLeft, Clock, CheckCircle, XCircle, AlertCircle, Loader2 } from "lucide-react"
 import { CouncilLayout } from "@/components/council/council-layout"
+import { logger } from "@/lib/logger"
 
 interface Prediction {
   id: string
@@ -30,6 +31,7 @@ export function PredictionsView() {
   const [user, setUser] = useState<User | null>(null)
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isFetchingPredictions, setIsFetchingPredictions] = useState(false)
 
   useEffect(() => {
     async function loadUser() {
@@ -40,7 +42,7 @@ export function PredictionsView() {
           setUser(data.user)
         }
       } catch (error) {
-        console.error("[v0] Error loading user:", error)
+        logger.error("Error loading user in predictions view", { error })
       } finally {
         setIsLoading(false)
       }
@@ -57,14 +59,15 @@ export function PredictionsView() {
   const fetchPredictions = async () => {
     if (!user?.id) return
 
+    setIsFetchingPredictions(true)
     try {
       const res = await fetch(`/api/council/predictions?userId=${user.id}&status=all`)
       const data = await res.json()
       setPredictions(data.predictions || [])
     } catch (error) {
-      console.error("[v0] Error fetching predictions:", error)
+      logger.error("Error fetching predictions", { error })
     } finally {
-      setIsLoading(false)
+      setIsFetchingPredictions(false)
     }
   }
 
@@ -104,14 +107,20 @@ export function PredictionsView() {
             <h1 className="text-3xl font-bold">Predictions</h1>
             <p className="text-muted-foreground">Track your Council's predictions and verify outcomes</p>
           </div>
+          {isFetchingPredictions && <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />}
         </div>
 
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-6 animate-pulse">
-                <div className="h-6 bg-muted rounded mb-2" />
-                <div className="h-4 bg-muted rounded w-2/3" />
+              <Card key={i} className="p-6">
+                <div className="flex gap-4 animate-pulse">
+                  <div className="w-5 h-5 bg-muted rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-6 bg-muted rounded w-1/3" />
+                    <div className="h-4 bg-muted rounded w-2/3" />
+                  </div>
+                </div>
               </Card>
             ))}
           </div>

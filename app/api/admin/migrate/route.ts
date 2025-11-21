@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless"
 import { NextResponse } from "next/server"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -105,7 +106,7 @@ export async function GET() {
         "Migration completed successfully! OAuth support, model_usage table, and blog_posts table have been created.",
     })
   } catch (error: any) {
-    console.error("Migration error:", error)
+    logger.error("Migration error:", error)
     return NextResponse.json(
       {
         success: false,

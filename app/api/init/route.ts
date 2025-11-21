@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
 import { getSearchHistory, getModelPreference } from "@/lib/db"
 import { initializeDatabase } from "@/lib/db-init"
+import { logger } from "@/lib/logger"
 
 export async function GET() {
   try {
@@ -20,14 +21,13 @@ export async function GET() {
           status: 200,
           headers: {
             "Cache-Control": "private, no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
+            Pragma: "no-cache",
+            Expires: "0",
           },
         },
       )
     }
 
-    // Fetch all data in parallel for better performance
     const [history, modelPreference] = await Promise.all([getSearchHistory(user.id, 50), getModelPreference(user.id)])
 
     return NextResponse.json(
@@ -45,13 +45,13 @@ export async function GET() {
         status: 200,
         headers: {
           "Cache-Control": "private, no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       },
     )
   } catch (error) {
-    console.error("[v0] /api/init error:", error)
+    logger.error("/api/init error", { error })
     return NextResponse.json(
       {
         error: "Failed to initialize",

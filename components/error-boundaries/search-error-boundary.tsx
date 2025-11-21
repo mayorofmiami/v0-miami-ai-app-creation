@@ -4,6 +4,7 @@ import { Component, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import AlertTriangle from "@/components/icons/AlertTriangle"
 import RefreshCw from "@/components/icons/RefreshCw"
+import { logger } from "@/lib/logger"
 
 interface Props {
   children: ReactNode
@@ -34,7 +35,7 @@ export class SearchErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error("[v0] Search error:", error, errorInfo)
+    logger.error("Search error caught", { error, errorInfo })
     this.setState((prev) => ({ errorCount: prev.errorCount + 1 }))
   }
 

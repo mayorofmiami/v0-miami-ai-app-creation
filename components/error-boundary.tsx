@@ -3,6 +3,7 @@
 import { Component, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import AlertTriangle from "@/components/icons/AlertTriangle"
+import { logger } from "@/lib/logger"
 
 interface Props {
   children: ReactNode
@@ -25,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error("[v0] Error boundary caught:", error, errorInfo)
+    logger.error("Error boundary caught error", { error, errorInfo })
   }
 
   render() {

@@ -9,6 +9,7 @@ interface RelatedSearchesProps {
   onSearchClick: (search: string) => void
   renderButtonOnly?: boolean
   renderContentOnly?: boolean
+  isVisible?: boolean // Added isVisible prop to control rendering
 }
 
 export const RelatedSearches = memo(function RelatedSearches({
@@ -16,6 +17,7 @@ export const RelatedSearches = memo(function RelatedSearches({
   onSearchClick,
   renderButtonOnly = false,
   renderContentOnly = false,
+  isVisible = true, // Default isVisible to true
 }: RelatedSearchesProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -46,7 +48,6 @@ export const RelatedSearches = memo(function RelatedSearches({
       setSearches(data.searches || [])
       setIsExpanded(true)
     } catch (err) {
-      console.error("Error fetching related searches:", err)
       setError("Failed to load suggestions")
     } finally {
       setIsLoading(false)
@@ -100,6 +101,10 @@ export const RelatedSearches = memo(function RelatedSearches({
     } else {
       fetchRelatedSearches()
     }
+  }
+
+  if (!isVisible) {
+    return null
   }
 
   if (renderButtonOnly) {
@@ -186,8 +191,8 @@ export const RelatedSearches = memo(function RelatedSearches({
 export const RelatedSearchesInline = memo(function RelatedSearchesInline({
   query,
   onSearchClick,
-  isVisible = true, // Added isVisible prop to control rendering
-}: RelatedSearchesProps & { isVisible?: boolean }) {
+  isVisible = true, // Default isVisible to true
+}: RelatedSearchesProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [searches, setSearches] = useState<string[]>([])
@@ -217,7 +222,6 @@ export const RelatedSearchesInline = memo(function RelatedSearchesInline({
       setSearches(data.searches || [])
       setIsExpanded(true)
     } catch (err) {
-      console.error("Error fetching related searches:", err)
       setError("Failed to load suggestions")
     } finally {
       setIsLoading(false)

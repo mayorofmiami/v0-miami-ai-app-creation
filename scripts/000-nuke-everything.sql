@@ -1,0 +1,33 @@
+-- DROP ALL EXISTING TABLES
+-- This completely wipes the database to start fresh
+
+DROP TABLE IF EXISTS admin_actions CASCADE;
+DROP TABLE IF EXISTS advisor_archetypes CASCADE;
+DROP TABLE IF EXISTS blog_posts CASCADE;
+DROP TABLE IF EXISTS board_responses CASCADE;
+DROP TABLE IF EXISTS board_sessions CASCADE;
+DROP TABLE IF EXISTS board_votes CASCADE;
+DROP TABLE IF EXISTS bookmarks CASCADE;
+DROP TABLE IF EXISTS collection_searches CASCADE;
+DROP TABLE IF EXISTS collections CASCADE;
+DROP TABLE IF EXISTS council_advisors CASCADE;
+DROP TABLE IF EXISTS council_debate_responses CASCADE;
+DROP TABLE IF EXISTS council_debates CASCADE;
+DROP TABLE IF EXISTS council_predictions CASCADE;
+DROP TABLE IF EXISTS council_votes CASCADE;
+DROP TABLE IF EXISTS councils CASCADE;
+DROP TABLE IF EXISTS generated_images CASCADE;
+DROP TABLE IF EXISTS model_preferences CASCADE;
+DROP TABLE IF EXISTS model_usage CASCADE;
+DROP TABLE IF EXISTS news_items CASCADE;
+DROP TABLE IF EXISTS rate_limit_configs CASCADE;
+DROP TABLE IF EXISTS rate_limits CASCADE;
+DROP TABLE IF EXISTS search_history CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS shared_searches CASCADE;
+DROP TABLE IF EXISTS subscriptions CASCADE;
+DROP TABLE IF EXISTS threads CASCADE;
+DROP TABLE IF EXISTS usage_tracking CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+-- All tables dropped. Starting with clean slate.

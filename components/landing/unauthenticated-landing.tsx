@@ -1,553 +1,284 @@
 "use client"
 
-import { useState, useRef, useCallback, useReducer, useEffect } from "react"
+import { useReducer, useCallback, useState, useRef, useEffect } from "react"
+import { searchReducer, initialSearchState } from "@/lib/reducers/search-reducer"
 import { SearchInput } from "@/components/search-input"
-import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
-import type { ModelId } from "@/components/model-selector"
-import type { SearchHistory } from "@/lib/db"
-import { toast } from "@/lib/toast"
-import type { SearchInputRef } from "@/components/search-input"
-import type { Attachment } from "@/types"
-import type { SearchState, SearchAction, SearchMode, ContentType } from "@/types"
-import { handleSearchError } from "@/lib/error-handling"
-import { handleImageError } from "@/lib/error-handling"
-import { storage, STORAGE_KEYS, threadStorage } from "@/lib/local-storage"
-import { logger } from "@/lib/logger"
-import { ConversationView } from "@/components/search-page/conversation-view"
-import { SearchFormContainer } from "@/components/search-page/search-form-container"
-import Link from "next/link"
+import { SearchResponse } from "@/components/search-response"
+import { ExampleQueries } from "@/components/example-queries"
+import { ModelSelector } from "@/components/model-selector"
+import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
-import { FancyGlowingButton } from "@/components/fancy-glowing-button"
-import { SignupBenefitsCard } from "@/components/signup-benefits-card"
-import { PageHeader } from "@/components/page-header"
-import { searchReducer } from "@/lib/reducers/search-reducer"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Sparkles } from "lucide-react"
+import type { ModelId } from "@/types"
+import Link from "next/link"
 
-const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
+const FREE_SEARCH_LIMIT = 3
 
 export function UnauthenticatedLanding() {
-  const [shouldLoadVideo, setShouldLoadVideo] = useState(false)
-  const [connectionType, setConnectionType] = useState<'fast' | 'medium' | 'slow'>('medium')
-  const [videoLoaded, setVideoLoaded] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
-
-  const [searchState, dispatchSearch] = useReducer(searchReducer, {
-    mode: "quick",
-    contentType: "search",
-    isLoading: false,
-    messages: [],
-    hasSearched: false,
-    rateLimitInfo: null,
-    imageRateLimit: null,
+  const [state, dispatch] = useReducer(searchReducer, {
+    ...initialSearchState,
+    selectedModel: "openai/gpt-4o-mini" as ModelId,
   })
 
-  const [currentThreadId, setCurrentThreadId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return threadStorage.getCurrentThreadId()
-    }
-    return null
-  })
-
-  const [selectedModel, setSelectedModel] = useState<ModelId>(NON_AUTH_DEFAULT_MODEL)
-
+  const [searchCount, setSearchCount] = useState(0)
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const searchInputRef = useRef<SearchInputRef>(null)
-  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
-  const [recentSearches, setRecentSearches] = useState<string[]>([])
-
+  // Load search count from localStorage
   useEffect(() => {
-    storage.setItem(STORAGE_KEYS.RECENT_SEARCHES, recentSearches)
-  }, [recentSearches])
-
-  const handleToggleMode = useCallback(() => {
-    dispatchSearch({ type: "SET_MODE", mode: searchState.mode === "quick" ? "deep" : "quick" })
-  }, [searchState.mode])
-
-  const handleCancelSearch = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      abortControllerRef.current = null
-      dispatchSearch({ type: "SEARCH_ERROR", error: "" })
-      dispatchSearch({ type: "SEARCH_COMPLETE" })
+    const stored = localStorage.getItem("freeSearchCount")
+    if (stored) {
+      setSearchCount(Number.parseInt(stored, 10))
     }
-  }
-
-  const handleFocusSearch = useCallback(() => {
-    searchInputRef.current?.focus()
   }, [])
 
-  const handleClearSearch = () => {
-    dispatchSearch({ type: "CLEAR_SEARCH" })
-  }
-
   const handleSearch = useCallback(
-    async (query: string, searchMode: SearchMode, attachments?: Attachment[]) => {
-      if (searchState.isLoading) {
+    async (query: string) => {
+      if (!query.trim() || state.isLoading) return
+
+      // Check if user has exceeded free searches
+      if (searchCount >= FREE_SEARCH_LIMIT) {
+        setShowAuthPrompt(true)
         return
       }
 
+      // Cancel previous request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
 
       abortControllerRef.current = new AbortController()
 
-      let effectiveThreadId = currentThreadId
-      if (!effectiveThreadId) {
-        effectiveThreadId = `local-thread-${Date.now()}`
-        setCurrentThreadId(effectiveThreadId)
-        threadStorage.setCurrentThreadId(effectiveThreadId)
+      // Add user message immediately
+      dispatch({
+        type: "ADD_MESSAGE",
+        payload: {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: query,
+          timestamp: new Date(),
+        },
+      })
 
-        const newThread = {
-          id: effectiveThreadId,
-          title: query.slice(0, 50),
-          queries: [],
-          lastMessageAt: Date.now(),
-          messageCount: 0,
-        }
-        threadStorage.addThread(newThread)
-      }
-
-      dispatchSearch({ type: "START_SEARCH", query, mode: searchMode })
+      dispatch({
+        type: "START_SEARCH",
+        payload: { query, model: state.selectedModel },
+      })
 
       try {
-        const body: any = { query, mode: searchMode }
-
-        if (selectedModel !== "auto") {
-          body.selectedModel = selectedModel
-        }
-
-        if (attachments && attachments.length > 0) {
-          body.attachments = attachments
-        }
-
-        if (searchState.messages.length > 0 && currentThreadId) {
-          body.conversationHistory = searchState.messages
-            .slice(-5)
-            .map((msg) => ({
-              role: msg.type === "search" ? "user" : "assistant",
-              content: msg.type === "search" ? msg.query : msg.response || "",
-            }))
-            .filter((msg) => msg.content.trim().length > 0)
-        }
-
-        const res = await fetch("/api/search", {
+        const response = await fetch("/api/search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            query,
+            model: state.selectedModel,
+            mode: "search",
+          }),
           signal: abortControllerRef.current.signal,
         })
 
-        if (res.status === 429) {
-          const errorData = await res.json()
-          const errorMessage = handleSearchError({
-            error: errorData,
-            user: null,
-            status: res.status,
-          })
-          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
-          return
+        if (!response.ok) {
+          throw new Error(`Search failed: ${response.statusText}`)
         }
 
-        if (!res.ok) {
-          const errorData = await res.json()
-          const errorMessage = handleSearchError({
-            error: errorData,
-            user: null,
-            status: res.status,
-          })
-          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
-          return
-        }
-
-        if (effectiveThreadId) {
-          const thread = threadStorage.getThread(effectiveThreadId)
-          if (thread) {
-            threadStorage.updateThread(effectiveThreadId, {
-              queries: [...thread.queries, query],
-              lastMessageAt: Date.now(),
-              messageCount: thread.messageCount + 1,
-            })
-          }
-
-          if (thread && thread.messageCount === 0) {
-            generateThreadTitle(effectiveThreadId, query)
-          }
-        }
-
-        const remaining = res.headers.get("X-RateLimit-Remaining")
-        const limit = res.headers.get("X-RateLimit-Limit")
-        if (remaining && limit) {
-          dispatchSearch({
-            type: "SET_RATE_LIMIT",
-            rateLimitInfo: { remaining: Number.parseInt(remaining), limit: Number.parseInt(limit) },
-          })
-        }
-
-        const reader = res.body?.getReader()
+        const reader = response.body?.getReader()
         const decoder = new TextDecoder()
-
-        if (!reader) {
-          throw new Error("No response body")
-        }
-
-        let accumulatedResponse = ""
+        let accumulatedText = ""
 
         while (true) {
-          const { done, value } = await reader.read()
+          const { done, value } = await reader!.read()
           if (done) break
 
-          const chunk = decoder.decode(value)
-          const lines = chunk.split("\n")
+          accumulatedText += decoder.decode(value, { stream: true })
 
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6)
-              if (data === "[DONE]") continue
-
-              try {
-                const parsed = JSON.parse(data)
-
-                if (parsed.type === "text") {
-                  accumulatedResponse += parsed.content
-                  dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: accumulatedResponse })
-                } else if (parsed.type === "citations") {
-                  dispatchSearch({ type: "SET_CURRENT_CITATIONS", citations: parsed.content || parsed.citations || [] })
-                } else if (parsed.type === "model") {
-                  dispatchSearch({
-                    type: "SET_CURRENT_MODEL_INFO",
-                    modelInfo: {
-                      model: parsed.content?.model || parsed.model,
-                      reason: parsed.content?.reason || parsed.reason,
-                      autoSelected: parsed.content?.autoSelected ?? parsed.autoSelected ?? true,
-                    },
-                  })
-                }
-              } catch (e) {
-                // Ignore parse errors
-              }
-            }
-          }
+          // Update streaming message
+          dispatch({
+            type: "UPDATE_CURRENT_MESSAGE",
+            payload: accumulatedText,
+          })
         }
 
-        dispatchSearch({ type: "SEARCH_COMPLETE" })
+        // Increment search count
+        const newCount = searchCount + 1
+        setSearchCount(newCount)
+        localStorage.setItem("freeSearchCount", newCount.toString())
 
-        const searchId = res.headers.get("X-Search-Id")
-        if (searchId) {
-          dispatchSearch({ type: "SET_SEARCH_ID", searchId })
+        // Show auth prompt if this was the last free search
+        if (newCount >= FREE_SEARCH_LIMIT) {
+          setTimeout(() => setShowAuthPrompt(true), 1000)
         }
 
-        if (searchMode === "deep") {
-          dispatchSearch({ type: "SET_MODE", mode: "quick" })
-        }
-
-        searchInputRef.current?.clear()
-
-        setRecentSearches((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 10))
+        dispatch({ type: "SET_LOADING", payload: false })
       } catch (error: any) {
         if (error.name === "AbortError") {
           return
         }
 
-        toast.error("Search failed", error.message || "Please try again")
-        dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, something went wrong. Please try again." })
-      } finally {
-        abortControllerRef.current = null
-      }
-    },
-    [selectedModel, searchState.isLoading, currentThreadId, searchState.messages],
-  )
-
-  const handleImageGeneration = useCallback(
-    async (prompt: string) => {
-      if (searchState.isLoading) {
-        return
-      }
-
-      dispatchSearch({ type: "START_IMAGE_GENERATION", prompt })
-
-      try {
-        const body: any = { prompt }
-
-        const res = await fetch("/api/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+        dispatch({
+          type: "SET_ERROR",
+          payload: error.message || "Search failed",
         })
-
-        if (!res.ok) {
-          const errorData = await res.json()
-          const errorMessage = handleImageError({
-            error: errorData,
-            status: res.status,
-          })
-          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
-          return
-        }
-
-        const data = await res.json()
-
-        dispatchSearch({
-          type: "SET_GENERATED_IMAGE",
-          image: data.image,
-          rateLimit: data.rateLimit,
-        })
-
-        toast.success("Image generated successfully!")
-        searchInputRef.current?.clear()
-      } catch (error: any) {
-        toast.error("Image generation failed", error.message || "Please try again")
-        dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, image generation failed. Please try again." })
       }
     },
-    [searchState.isLoading],
+    [state.selectedModel, state.isLoading, searchCount],
   )
 
-  const handleSearchOrGenerate = useCallback(
-    (query: string, searchMode: SearchMode, attachments?: Attachment[]) => {
-      if (searchState.contentType === "image") {
-        handleImageGeneration(query)
-      } else {
-        handleSearch(query, searchMode, attachments)
-      }
-    },
-    [searchState.contentType, handleImageGeneration, handleSearch],
-  )
-
-  const handleModelChange = async (newModel: ModelId) => {
-    setSelectedModel(newModel)
-    if (typeof window !== "undefined") {
-      storage.setItem(STORAGE_KEYS.MODEL_PREFERENCE, newModel)
-    }
-  }
-
-  const lastMessage = searchState.messages.length > 0 ? searchState.messages[searchState.messages.length - 1] : null
-
-  const handleRegenerate = useCallback(() => {
-    if (lastMessage) {
-      handleSearch(lastMessage.query, searchState.mode)
-    }
-  }, [lastMessage, handleSearch, searchState.mode])
-
-  const handleContentTypeChange = useCallback((type: ContentType) => {
-    dispatchSearch({ type: "SET_CONTENT_TYPE", contentType: type })
+  const handleModelChange = useCallback((model: ModelId) => {
+    dispatch({ type: "SET_MODEL", payload: model })
   }, [])
 
-  const generateThreadTitle = async (threadId: string, query: string) => {
-    try {
-      const response = await fetch("/api/generate-thread-title", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-      })
-
-      if (response.ok) {
-        const { title } = await response.json()
-        threadStorage.updateThread(threadId, { title })
-      }
-    } catch (error) {
-      console.error("Failed to generate thread title:", error)
+  const handleStop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      dispatch({ type: "SET_LOADING", payload: false })
     }
-  }
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-
-    const detectConnection = () => {
-      if ('connection' in navigator) {
-        const conn = (navigator as any).connection
-        const effectiveType = conn?.effectiveType || 'unknown'
-        const saveData = conn?.saveData || false
-
-        if (saveData) {
-          setConnectionType('slow')
-          setShouldLoadVideo(false)
-          return
-        }
-
-        if (effectiveType === '4g' || effectiveType === 'wifi') {
-          setConnectionType('fast')
-          setShouldLoadVideo(true)
-        } else if (effectiveType === '3g') {
-          setConnectionType('medium')
-          setTimeout(() => setShouldLoadVideo(true), 2000)
-        } else {
-          setConnectionType('slow')
-          setShouldLoadVideo(false)
-        }
-      } else {
-        setConnectionType('medium')
-        setTimeout(() => setShouldLoadVideo(true), 2000)
-      }
-    }
-
-    detectConnection()
-
-    if ('connection' in navigator) {
-      const conn = (navigator as any).connection
-      conn?.addEventListener('change', detectConnection)
-      return () => {
-        conn?.removeEventListener('change', detectConnection)
-        window.removeEventListener('resize', checkMobile)
-      }
-    }
-
-    return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  const remainingSearches = Math.max(0, FREE_SEARCH_LIMIT - searchCount)
 
   return (
     <>
-      <KeyboardShortcuts
-        onSearch={handleFocusSearch}
-        onClear={handleClearSearch}
-        onToggleMode={handleToggleMode}
-        onToggleHistory={() => {}}
-        onNewChat={handleClearSearch}
-        onToggleBookmarks={() => {}}
-      />
+      <div className="flex flex-col h-screen bg-background">
+        {/* Header */}
+        <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex h-14 items-center justify-between px-4">
+            <div className="flex items-center gap-3">
+              <Logo />
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                Miami.AI
+              </h1>
+            </div>
 
-      <div className="min-h-screen flex flex-col">
-        {searchState.hasSearched && (
-          <div className="fixed inset-x-0 top-0 h-26 md:h-32 bg-gradient-to-b from-background via-background to-transparent pointer-events-none z-40" />
-        )}
+            <div className="flex items-center gap-3">
+              <ModelSelector value={state.selectedModel} onChange={handleModelChange} />
+              <Link href="/handler/signin">
+                <Button variant="default" size="sm" className="gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Sign In
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </header>
 
-        <PageHeader
-          hasSearched={searchState.hasSearched}
-          isAuthenticated={false}
-          isSidebarCollapsed={true}
-          isDrawerOpen={false}
-          onOpenChange={() => {}}
-          isAdmin={false}
-          recentSearches={[]}
-          user={null}
-          isLoadingUser={false}
-          theme="dark"
-          setTheme={() => {}}
-          handleNewChat={handleClearSearch}
-          handleToggleHistory={() => {}}
-          handleToggleBookmarks={() => {}}
-          handleSearch={() => {}}
-          searchMode={searchState.mode}
-        />
-
-        <main className={`flex-1 ${searchState.hasSearched ? "container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 pb-36 md:pb-32 pt-20 md:pt-24" : ""}`}>
-          {!searchState.hasSearched ? (
-            <div className="relative flex flex-col items-center justify-center min-h-screen px-4 overflow-hidden">
-              <div 
-                className="absolute inset-0 w-full h-full object-cover -z-10 bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${isMobile ? '/videos/miami-mobile-poster.jpg' : '/videos/miami-desktop-poster.jpg'})`,
-                  opacity: videoLoaded ? 0 : 1,
-                  transition: 'opacity 1s ease-in-out'
-                }}
-              />
-
-              {shouldLoadVideo && (
-                <video
-                  key={isMobile ? 'mobile' : 'desktop'}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload="auto"
-                  onLoadedData={() => setVideoLoaded(true)}
-                  className="absolute inset-0 w-full h-full object-cover -z-10"
-                  style={{
-                    opacity: videoLoaded ? 1 : 0,
-                    transition: 'opacity 1s ease-in-out'
-                  }}
-                >
-                  {isMobile ? (
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/night-miami-traffic-mobile.mp4-2-CWh1oOGYX82ztWbL9gvoFINdR9BTpn.mp4" type="video/mp4" />
-                  ) : (
-                    <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/night-miami-traffic-desktop.mp4-HELLerchqRDbqyiaIMCAzMl4GYVaAX.mp4" type="video/mp4" />
-                  )}
-                </video>
-              )}
-
-              {!videoLoaded && connectionType === 'slow' && (
-                <div className="absolute inset-0 bg-gradient-to-br from-miami-blue/30 via-miami-purple/20 to-miami-aqua/30 -z-20" />
-              )}
-              
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-900/30 via-gray-800/20 to-black/40 -z-20" />
-
-              <div className="absolute top-12 z-10">
-                <Logo className="w-48" />
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-8">
+            {!state.hasSearched ? (
+              <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
+                <div className="text-center space-y-4">
+                  <h2 className="text-5xl font-bold tracking-tight">Search with AI</h2>
+                  <p className="text-xl text-muted-foreground max-w-2xl">
+                    Get instant, intelligent answers powered by multiple AI models. Try {remainingSearches} free{" "}
+                    {remainingSearches === 1 ? "search" : "searches"} before signing up.
+                  </p>
+                </div>
+                <ExampleQueries onQueryClick={handleSearch} />
               </div>
+            ) : (
+              <div className="space-y-6">
+                {state.messages.map((message) => (
+                  <SearchResponse key={message.id} message={message} />
+                ))}
+                {state.isLoading && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                    <span>Searching...</span>
+                  </div>
+                )}
+                {state.error && (
+                  <div className="p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20">
+                    {state.error}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
 
-              <div className="w-full max-w-2xl z-10">
+        {/* Search Input - Fixed at bottom */}
+        <div className="border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="max-w-3xl mx-auto p-4">
+            {remainingSearches > 0 ? (
+              <>
                 <SearchInput
-                  ref={searchInputRef}
-                  onSearch={handleSearchOrGenerate}
-                  isLoading={searchState.isLoading}
-                  mode={searchState.mode}
-                  onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-                  onCancel={handleCancelSearch}
-                  recentSearches={recentSearches}
-                  user={null}
-                  selectedModel={selectedModel}
+                  onSearch={handleSearch}
+                  isLoading={state.isLoading}
+                  onStop={handleStop}
+                  selectedModel={state.selectedModel}
                   onModelChange={handleModelChange}
-                  onHistoryClick={() => {}}
-                  contentType={searchState.contentType}
-                  onContentTypeChange={handleContentTypeChange}
                 />
-              </div>
-
-              <div className="absolute bottom-12 z-10 flex flex-col items-center gap-4">
-                <Link href="/login">
-                  <FancyGlowingButton>
-                    LOGIN / SIGN UP
-                  </FancyGlowingButton>
+                <p className="text-xs text-center text-muted-foreground mt-2">
+                  {remainingSearches} free {remainingSearches === 1 ? "search" : "searches"} remaining
+                </p>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-3">You've used all your free searches</p>
+                <Link href="/handler/signup">
+                  <Button size="lg" className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Sign Up for Unlimited Searches
+                  </Button>
                 </Link>
               </div>
-            </div>
-          ) : (
-            <>
-              <ConversationView
-                messages={searchState.messages}
-                messageRefs={messageRefs}
-                user={null}
-                searchMode={searchState.mode}
-                onRegenerate={handleRegenerate}
-                onRelatedSearchClick={(search) => handleSearch(search, searchState.mode)}
-                onImageRegenerate={handleImageGeneration}
-              />
-
-              {lastMessage && !lastMessage.isStreaming && (
-                <div className="mt-12 mb-24 flex flex-col items-center">
-                  <SignupBenefitsCard />
-                </div>
-              )}
-            </>
-          )}
-        </main>
-
-        {searchState.hasSearched && (
-          <SearchFormContainer
-            searchInputRef={searchInputRef}
-            onSearch={handleSearchOrGenerate}
-            isLoading={searchState.isLoading}
-            mode={searchState.mode}
-            onModeChange={(mode) => dispatchSearch({ type: "SET_MODE", mode })}
-            onCancel={handleCancelSearch}
-            recentSearches={recentSearches}
-            user={null}
-            selectedModel={selectedModel}
-            onModelChange={handleModelChange}
-            onHistoryClick={() => {}}
-            contentType={searchState.contentType}
-            onContentTypeChange={handleContentTypeChange}
-            rateLimitInfo={searchState.rateLimitInfo}
-            imageRateLimit={searchState.imageRateLimit}
-            isSidebarCollapsed={true}
-            hasSearched={searchState.hasSearched}
-          />
-        )}
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Auth Prompt Dialog */}
+      <Dialog open={showAuthPrompt} onOpenChange={setShowAuthPrompt}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Love what you see?</DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              You've used all {FREE_SEARCH_LIMIT} free searches. Sign up to get:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium">Unlimited searches</h4>
+                <p className="text-sm text-muted-foreground">Search as much as you want with no daily limits</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium">Advanced AI models</h4>
+                <p className="text-sm text-muted-foreground">Access GPT-4, Claude, Gemini, and more</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium">Search history & bookmarks</h4>
+                <p className="text-sm text-muted-foreground">Save and organize your searches</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setShowAuthPrompt(false)} className="flex-1">
+              Maybe Later
+            </Button>
+            <Link href="/handler/signup" className="flex-1">
+              <Button className="w-full gap-2">
+                <Sparkles className="h-4 w-4" />
+                Sign Up Free
+              </Button>
+            </Link>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

@@ -94,6 +94,7 @@ export interface ModelSelection {
   reason: string
   confidence: number
   analysis: QueryAnalysis
+  autoSelected?: boolean // Added optional flag to indicate if model was auto-selected
 }
 
 /**
@@ -223,7 +224,54 @@ function scoreModel(model: AIModel, analysis: QueryAnalysis, mode: "quick" | "de
 /**
  * Select the best model for a given query
  */
-export function selectModel(query: string, mode: "quick" | "deep"): ModelSelection {
+export async function selectModel(
+  query: string,
+  mode: "quick" | "deep",
+  userId?: string | null,
+  userSelectedModel?: string | null,
+): Promise<ModelSelection> {
+  // If user has explicitly selected a model, use it
+  if (userSelectedModel && userSelectedModel in AVAILABLE_MODELS) {
+    const model = userSelectedModel as AIModel
+    const modelInfo = AVAILABLE_MODELS[model]
+    const analysis = analyzeQuery(query)
+
+    return {
+      model,
+      modelInfo,
+      reason: `Using your selected model: ${modelInfo.name}`,
+      confidence: 1,
+      analysis,
+      autoSelected: false,
+    }
+  }
+
+  // Check if user has a saved model preference
+  if (userId) {
+    try {
+      const { getModelPreference } = await import("@/lib/db")
+      const preference = await getModelPreference(userId)
+
+      if (preference && preference in AVAILABLE_MODELS) {
+        const model = preference as AIModel
+        const modelInfo = AVAILABLE_MODELS[model]
+        const analysis = analyzeQuery(query)
+
+        return {
+          model,
+          modelInfo,
+          reason: `Using your preferred model: ${modelInfo.name}`,
+          confidence: 1,
+          analysis,
+          autoSelected: false,
+        }
+      }
+    } catch (error) {
+      // If preference lookup fails, continue with auto-selection
+    }
+  }
+
+  // Auto-select based on query analysis
   const analysis = analyzeQuery(query)
 
   // Score all models
@@ -256,6 +304,7 @@ export function selectModel(query: string, mode: "quick" | "deep"): ModelSelecti
     reason,
     confidence,
     analysis,
+    autoSelected: true,
   }
 }
 

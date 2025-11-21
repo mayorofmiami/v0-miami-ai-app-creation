@@ -1,5 +1,6 @@
 import { getThreadMessages, deleteThread } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
@@ -20,7 +21,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       },
     )
   } catch (error) {
-    console.error("[v0] Thread API error:", error)
+    logger.error("Thread API error", { error })
     return Response.json({ error: "Failed to fetch thread" }, { status: 500 })
   }
 }
@@ -47,7 +48,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
     return Response.json({ success: true })
   } catch (error) {
-    console.error("[v0] Delete thread API error:", error)
+    logger.error("Delete thread API error", { error })
     return Response.json({ error: "Failed to delete thread" }, { status: 500 })
   }
 }

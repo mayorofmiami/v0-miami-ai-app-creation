@@ -1,5 +1,6 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import type React from "react"
 import { useEffect, useState } from "react"
 import { StatCard } from "@/components/stat-card"
@@ -18,6 +19,11 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+
+const RateLimitManager = dynamic(() => import("@/components/admin/rate-limit-manager"), {
+  loading: () => <div className="p-8 text-center text-muted-foreground">Loading rate limit manager...</div>,
+  ssr: false,
+})
 
 interface AdminStats {
   totalUsers: number
@@ -106,7 +112,7 @@ export default function AdminDashboard() {
         setAdminActions(data.actions)
       }
     } catch (err) {
-      console.error("Failed to fetch admin actions:", err)
+      setError(err instanceof Error ? err.message : "Failed to load admin actions")
     }
   }
 
@@ -118,7 +124,7 @@ export default function AdminDashboard() {
         setUsers(data.users)
       }
     } catch (err) {
-      console.error("Failed to fetch users:", err)
+      setError(err instanceof Error ? err.message : "Failed to load users")
     }
   }
 
@@ -186,6 +192,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="activity">Activity Log</TabsTrigger>
+            <TabsTrigger value="rate-limits" asChild>
+              <Link href="/admin/rate-limits">Rate Limits</Link>
+            </TabsTrigger>
             <TabsTrigger value="blog" asChild>
               <Link href="/admin/blog">Blog</Link>
             </TabsTrigger>
@@ -447,6 +456,13 @@ export default function AdminDashboard() {
                   ))
                 )}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Rate Limits tab */}
+          <TabsContent value="rate-limits" className="space-y-6">
+            <div className="bg-muted/50 border border-border rounded-xl p-6">
+              <RateLimitManager />
             </div>
           </TabsContent>
         </Tabs>

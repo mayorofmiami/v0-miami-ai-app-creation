@@ -79,3 +79,5 @@ export function getRecommendedModel(
 
   return "openai/gpt-4o-mini" // Free users get mini for complex quick queries
 }
+
+export { analyzeQuery } from "@/lib/model-selection"

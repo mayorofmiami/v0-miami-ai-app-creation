@@ -52,7 +52,6 @@ export function HistorySidebar({ userId, onClose, onSelectThread, localThreads =
         setThreads(data.threads || [])
         setFilteredThreads(data.threads || [])
       } catch (error) {
-        console.error("Failed to fetch threads:", error)
       } finally {
         setIsLoading(false)
       }
@@ -110,7 +109,6 @@ export function HistorySidebar({ userId, onClose, onSelectThread, localThreads =
         alert(data.error || "Failed to delete conversation")
       }
     } catch (error) {
-      console.error("Failed to delete thread:", error)
       alert("Failed to delete conversation")
     } finally {
       setDeletingId(null)

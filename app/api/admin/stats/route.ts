@@ -2,6 +2,7 @@ import { neon } from "@neondatabase/serverless"
 import { requireAdmin } from "@/lib/auth"
 import { logAdminAction } from "@/lib/admin-logger"
 import { getModelUsageStats } from "@/lib/cost-tracker"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -93,24 +94,31 @@ export async function GET(req: Request) {
     const totalCost = modelUsageStats.reduce((sum: number, stat: any) => sum + Number(stat.total_cost || 0), 0)
     const estimatedCost = totalCost.toFixed(2)
 
-    return Response.json({
-      stats: {
-        totalUsers,
-        totalSearches,
-        proSubscribers,
-        searchesToday,
-        searchesByMode,
-        estimatedCost,
-        revenue: (proSubscribers * 9.99).toFixed(2),
-        dailyTrends: trendsResult,
-        topQueries: topQueriesResult,
-        userGrowth: userGrowthResult,
-        modelUsage: modelUsageStats,
+    return Response.json(
+      {
+        stats: {
+          totalUsers,
+          totalSearches,
+          proSubscribers,
+          searchesToday,
+          searchesByMode,
+          estimatedCost,
+          revenue: (proSubscribers * 9.99).toFixed(2),
+          dailyTrends: trendsResult,
+          topQueries: topQueriesResult,
+          userGrowth: userGrowthResult,
+          modelUsage: modelUsageStats,
+        },
+        recentSearches,
       },
-      recentSearches,
-    })
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        },
+      },
+    )
   } catch (error) {
-    console.error("[v0] Admin stats error:", error)
+    logger.error("Admin stats error", error)
     return Response.json({ error: "Failed to fetch stats" }, { status: 500 })
   }
 }

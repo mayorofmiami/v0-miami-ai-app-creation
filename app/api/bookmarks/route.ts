@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { addBookmark, removeBookmark, getBookmarks } from "@/lib/bookmarks"
 import { getCurrentUser } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser()
@@ -10,7 +11,15 @@ export async function GET(req: NextRequest) {
   }
 
   const bookmarks = await getBookmarks(user.id)
-  return NextResponse.json({ bookmarks })
+
+  return NextResponse.json(
+    { bookmarks },
+    {
+      headers: {
+        "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+      },
+    },
+  )
 }
 
 export async function POST(req: NextRequest) {
@@ -35,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Bookmark API error:", error)
+    logger.error("Bookmark API error", error)
     return NextResponse.json({ error: "Failed to add bookmark" }, { status: 500 })
   }
 }
@@ -62,7 +71,7 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Bookmark API error:", error)
+    logger.error("Bookmark API error", error)
     return NextResponse.json({ error: "Failed to remove bookmark" }, { status: 500 })
   }
 }

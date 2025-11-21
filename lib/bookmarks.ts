@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless"
+import { logger } from "./logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -12,7 +13,7 @@ export async function addBookmark(userId: string, searchId: string) {
     `
     return { success: true }
   } catch (error) {
-    console.error("[v0] Add bookmark error:", error)
+    logger.error("Add bookmark error:", error)
     return { success: false, error: "Failed to add bookmark" }
   }
 }
@@ -25,7 +26,7 @@ export async function removeBookmark(userId: string, searchId: string) {
     `
     return { success: true }
   } catch (error) {
-    console.error("[v0] Remove bookmark error:", error)
+    logger.error("Remove bookmark error:", error)
     return { success: false, error: "Failed to remove bookmark" }
   }
 }
@@ -48,7 +49,7 @@ export async function getBookmarks(userId: string) {
     `
     return result
   } catch (error) {
-    console.error("[v0] Get bookmarks error:", error)
+    logger.error("Get bookmarks error:", error)
     return []
   }
 }
@@ -61,7 +62,7 @@ export async function isBookmarked(userId: string, searchId: string): Promise<bo
     `
     return result.length > 0
   } catch (error) {
-    console.error("[v0] Check bookmark error:", error)
+    logger.error("Check bookmark error:", error)
     return false
   }
 }

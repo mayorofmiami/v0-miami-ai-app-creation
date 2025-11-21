@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { selectModel, getModelById, AVAILABLE_MODELS } from "@/lib/model-selection"
 import { getModelPreference } from "@/lib/db"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Query and mode are required" }, { status: 400 })
     }
 
-    // If manual selection is provided, use it
     if (manualSelection) {
       const model = getModelById(manualSelection)
       const modelInfo = AVAILABLE_MODELS[model]
@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Check user's model preference if authenticated
     if (userId) {
       const preference = await getModelPreference(userId)
 
@@ -43,7 +42,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Auto-select based on query analysis
     const selection = selectModel(query, mode)
 
     return NextResponse.json({
@@ -55,13 +53,12 @@ export async function POST(request: NextRequest) {
       analysis: selection.analysis,
     })
   } catch (error) {
-    console.error("[v0] Error selecting model:", error)
+    logger.error("Error selecting model", { error })
     return NextResponse.json({ error: "Failed to select model" }, { status: 500 })
   }
 }
 
 export async function GET() {
-  // Return available models
   return NextResponse.json({
     models: Object.values(AVAILABLE_MODELS),
   })

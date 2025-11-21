@@ -49,7 +49,6 @@ export const ImageResult = memo(function ImageResult({
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (error) {
-      console.error("[v0] Download error:", error)
     } finally {
       setIsDownloading(false)
     }
@@ -117,7 +116,7 @@ export const ImageResult = memo(function ImageResult({
             </div>
           </div>
         )}
-        
+
         <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-muted/20">
           <div className="relative aspect-square w-full">
             <Image
@@ -159,9 +158,9 @@ export const ImageResult = memo(function ImageResult({
           </Button>
 
           {onRegenerate && (
-            <Button 
-              onClick={handleRegenerate} 
-              variant="outline" 
+            <Button
+              onClick={handleRegenerate}
+              variant="outline"
               className="flex-1 bg-transparent"
               disabled={isRegenerating}
             >

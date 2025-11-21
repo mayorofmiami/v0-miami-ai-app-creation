@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Users, Sparkles, History, ArrowRight, Zap, Shield, Heart } from "lucide-react"
 import { CouncilLayout } from "@/components/council/council-layout"
 import { cn } from "@/lib/utils"
+import { logger } from "@/lib/logger"
 
 interface Council {
   id: string
@@ -41,7 +42,7 @@ export function CouncilLandingView() {
           setUser(data.user)
         }
       } catch (error) {
-        console.error("[v0] Error loading user:", error)
+        logger.error("Error loading user in council landing", { error })
       } finally {
         setLoadingUser(false)
       }
@@ -65,7 +66,7 @@ export function CouncilLandingView() {
       const data = await res.json()
       setCouncils(data.councils || [])
     } catch (error) {
-      console.error("[v0] Error fetching councils:", error)
+      logger.error("Error fetching councils", { error })
     } finally {
       setLoadingCouncils(false)
     }

@@ -72,7 +72,6 @@ export function RichTextEditor({ initialContent, onChange }: RichTextEditorProps
           editor.chain().focus().setImage({ src: data.url }).run()
         }
       } catch (err) {
-        console.error("Failed to upload image:", err)
         alert("Failed to upload image. Please try again.")
       }
     }

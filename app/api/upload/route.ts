@@ -1,6 +1,7 @@
 import { put } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
-import { checkAttachmentRateLimit, incrementAttachmentRateLimit } from "@/lib/rate-limit"
+import { checkRateLimit } from "@/lib/rate-limit"
+import { logger } from "@/lib/logger"
 
 function getClientIp(request: NextRequest): string | null {
   const forwarded = request.headers.get("x-forwarded-for")
@@ -40,9 +41,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').substring(0, 255)
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_").substring(0, 255)
 
-    const maxSize = isAuthenticated ? 20 * 1024 * 1024 : 5 * 1024 * 1024 // 20MB for auth, 5MB for free
+    const maxSize = isAuthenticated ? 20 * 1024 * 1024 : 5 * 1024 * 1024
     if (file.size > maxSize) {
       return NextResponse.json(
         {
@@ -52,37 +53,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith("image/")) {
       try {
         const arrayBuffer = await file.arrayBuffer()
-        
-        // Validate it's not an empty file
+
         if (arrayBuffer.byteLength === 0) {
-          return NextResponse.json(
-            { error: "Invalid image file - file is empty" },
-            { status: 400 },
-          )
+          return NextResponse.json({ error: "Invalid image file - file is empty" }, { status: 400 })
         }
-        
-        // Recreate file with sanitized name
+
         file = new File([arrayBuffer], sanitizedFileName, { type: file.type })
       } catch (error) {
-        return NextResponse.json(
-          { error: "Invalid image file or corrupted data" },
-          { status: 400 },
-        )
+        return NextResponse.json({ error: "Invalid image file or corrupted data" }, { status: 400 })
       }
     }
 
-    const ipAddress = getClientIp(request)
-    const rateLimit = await checkAttachmentRateLimit(userId, ipAddress)
+    const rateLimit = await checkRateLimit(userId || "anonymous", "attachment")
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
         {
-          error: `Rate limit exceeded. ${isAuthenticated ? "50" : "5"} attachments per day. Resets at ${rateLimit.resetAt.toLocaleString()}`,
+          error: `Upload limit exceeded. Please try again later.`,
           remaining: rateLimit.remaining,
-          limit: rateLimit.limit,
           resetAt: rateLimit.resetAt,
         },
         { status: 429 },
@@ -94,21 +85,18 @@ export async function POST(request: NextRequest) {
       addRandomSuffix: true,
     })
 
-    await incrementAttachmentRateLimit(userId, ipAddress)
-
     return NextResponse.json({
       url: blob.url,
       filename: sanitizedFileName,
       size: file.size,
       type: file.type,
       rateLimit: {
-        remaining: rateLimit.remaining - 1,
-        limit: rateLimit.limit,
+        remaining: rateLimit.remaining,
         resetAt: rateLimit.resetAt,
       },
     })
   } catch (error) {
-    console.error("Upload error:", error)
+    logger.error("Upload error", { error })
     return NextResponse.json({ error: "Upload failed" }, { status: 500 })
   }
 }

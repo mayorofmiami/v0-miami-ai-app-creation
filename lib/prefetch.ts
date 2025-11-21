@@ -21,7 +21,5 @@ export async function prefetchInitData() {
       method: "GET",
       credentials: "include",
     })
-  } catch (error) {
-    console.error("[v0] Failed to prefetch init data:", error)
-  }
+  } catch (error) {}
 }

@@ -6,6 +6,7 @@ import ArrowLeft from "@/components/icons/ArrowLeft"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { notFound } from "next/navigation"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -34,7 +35,7 @@ async function getPost(slug: string): Promise<BlogPost | null> {
     `
     return (posts[0] as BlogPost) || null
   } catch (error) {
-    console.error("Error fetching blog post:", error)
+    logger.error("Error fetching blog post:", error)
     return null
   }
 }

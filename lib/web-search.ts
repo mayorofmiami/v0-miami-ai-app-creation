@@ -1,4 +1,5 @@
 import "server-only"
+import { logger } from "./logger"
 
 export interface SearchResult {
   title: string
@@ -13,7 +14,7 @@ export async function searchWeb(query: string, maxResults = 5): Promise<SearchRe
   const apiKey = process.env.SERPER_API_KEY
 
   if (!apiKey) {
-    console.error("[v0] SERPER_API_KEY not found in environment variables")
+    logger.error("SERPER_API_KEY not found in environment variables")
     throw new Error("SERPER_API_KEY is required for search functionality")
   }
 
@@ -32,7 +33,7 @@ export async function searchWeb(query: string, maxResults = 5): Promise<SearchRe
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("[v0] Serper API error:", response.status, errorText)
+      logger.error("Serper API error:", response.status, errorText)
       throw new Error(`Serper API returned status ${response.status}`)
     }
 
@@ -50,7 +51,7 @@ export async function searchWeb(query: string, maxResults = 5): Promise<SearchRe
 
     return results
   } catch (error) {
-    console.error("[v0] Serper search error:", error)
+    logger.error("Serper search error:", error)
     throw new Error(`Failed to perform web search: ${error instanceof Error ? error.message : "Unknown error"}`)
   }
 }

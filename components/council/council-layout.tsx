@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { logger } from "@/lib/logger"
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -66,7 +66,7 @@ export function CouncilLayout({ children }: CouncilLayoutProps) {
           }
         }
       } catch (error) {
-        console.error("[v0] Error loading user:", error)
+        logger.error("Error loading user in council layout", { error })
       } finally {
         setIsLoadingUser(false)
       }
@@ -91,7 +91,7 @@ export function CouncilLayout({ children }: CouncilLayoutProps) {
 
       window.location.href = "/"
     } catch (error) {
-      console.error("[v0] Error logging out:", error)
+      logger.error("Error logging out from council", { error })
     }
   }, [])
 
@@ -100,10 +100,6 @@ export function CouncilLayout({ children }: CouncilLayoutProps) {
   }, [router])
 
   const isAdmin = user?.role === "owner" || user?.role === "admin"
-
-  // If isLoadingUser is true (no cache), we render a minimal loading state or just the structure.
-  // But since we want to avoid flash, we render the structure even if loading,
-  // and let the sidebar handle the "loading user" state internally if needed.
 
   if (isLoadingUser && !user) {
     return <div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>

@@ -6,9 +6,7 @@ import AlertTriangle from "@/components/icons/AlertTriangle"
 import Link from "next/link"
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {
-    console.error("[v0] Page error:", error)
-  }, [error])
+  useEffect(() => {}, [error])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

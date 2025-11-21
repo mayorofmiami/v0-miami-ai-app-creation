@@ -52,13 +52,15 @@ export async function saveBoardResponse(
 export async function getBoardResponses(sessionId: string, roundNumber?: number): Promise<BoardResponse[]> {
   if (roundNumber) {
     return (await sql`
-      SELECT * FROM board_responses
+      SELECT id, session_id, persona_name, persona_model, round_number, content, created_at
+      FROM board_responses
       WHERE session_id = ${sessionId} AND round_number = ${roundNumber}
       ORDER BY created_at ASC
     `) as BoardResponse[]
   }
   return (await sql`
-    SELECT * FROM board_responses
+    SELECT id, session_id, persona_name, persona_model, round_number, content, created_at
+    FROM board_responses
     WHERE session_id = ${sessionId}
     ORDER BY round_number ASC, created_at ASC
   `) as BoardResponse[]

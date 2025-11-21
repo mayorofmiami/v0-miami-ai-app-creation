@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getUserCollections, createCollection, deleteCollection } from "@/lib/collections"
 import { getCurrentUser } from "@/lib/auth"
 import { neon } from "@neondatabase/serverless"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -14,9 +15,17 @@ export async function GET(req: NextRequest) {
     }
 
     const collections = await getUserCollections(user.id)
-    return NextResponse.json({ collections })
+
+    return NextResponse.json(
+      { collections },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+        },
+      },
+    )
   } catch (error) {
-    console.error("[v0] Collections API error:", error)
+    logger.error("Collections API error", error)
     return NextResponse.json({ error: "Failed to fetch collections" }, { status: 500 })
   }
 }
@@ -38,7 +47,7 @@ export async function POST(req: NextRequest) {
     const collection = await createCollection(user.id, name, description)
     return NextResponse.json({ collection })
   } catch (error) {
-    console.error("[v0] Create collection error:", error)
+    logger.error("Create collection error", error)
     return NextResponse.json({ error: "Failed to create collection" }, { status: 500 })
   }
 }
@@ -71,7 +80,7 @@ export async function DELETE(req: NextRequest) {
     await deleteCollection(collectionId)
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Delete collection error:", error)
+    logger.error("Delete collection error", error)
     return NextResponse.json({ error: "Failed to delete collection" }, { status: 500 })
   }
 }

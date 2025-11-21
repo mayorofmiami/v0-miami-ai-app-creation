@@ -1,5 +1,7 @@
 import "server-only"
 import { neon } from "@neondatabase/serverless"
+import { logger } from "@/lib/logger"
+import crypto from "crypto"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -42,9 +44,9 @@ export async function logAdminAction(action: AdminAction): Promise<void> {
       )
     `
 
-    console.log("[v0] Admin action logged:", action.actionType)
+    logger.info("Admin action logged:", action.actionType)
   } catch (error) {
-    console.error("[v0] Failed to log admin action:", error)
+    logger.error("Failed to log admin action:", error)
   }
 }
 
@@ -63,7 +65,7 @@ export async function getAdminActions(limit = 50, offset = 0) {
 
     return actions
   } catch (error) {
-    console.error("[v0] Failed to fetch admin actions:", error)
+    logger.error("Failed to fetch admin actions:", error)
     return []
   }
 }

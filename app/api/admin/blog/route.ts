@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getSession } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -21,16 +22,32 @@ export async function GET() {
 
     const posts = await sql`
       SELECT 
-        bp.*,
+        bp.id,
+        bp.title,
+        bp.slug,
+        bp.excerpt,
+        bp.content,
+        bp.author_id,
+        bp.status,
+        bp.published_at,
+        bp.created_at,
+        bp.updated_at,
         u.name as author_name
       FROM blog_posts bp
       LEFT JOIN users u ON bp.author_id = u.id
       ORDER BY bp.created_at DESC
     `
 
-    return NextResponse.json({ posts })
+    return NextResponse.json(
+      { posts },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        },
+      },
+    )
   } catch (error) {
-    console.error("Error fetching blog posts:", error)
+    logger.error("Error fetching blog posts", error)
     const errorMessage = error instanceof Error ? error.message : "Failed to fetch posts"
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
@@ -75,7 +92,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ post: result[0] })
   } catch (error) {
-    console.error("Error creating blog post:", error)
+    logger.error("Error creating blog post", error)
     return NextResponse.json({ error: "Failed to create post" }, { status: 500 })
   }
 }

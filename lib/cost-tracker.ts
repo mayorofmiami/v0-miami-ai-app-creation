@@ -1,6 +1,5 @@
-import { neon } from "@neondatabase/serverless"
-
-const sql = neon(process.env.DATABASE_URL!)
+import { logger } from "./logger"
+import { sql } from "@neondatabase/serverless"
 
 // Model costs per 1M tokens (input / output)
 export const MODEL_COSTS = {
@@ -47,14 +46,14 @@ async function checkTableExists(): Promise<boolean> {
     tableExists = result[0]?.exists || false
 
     if (!tableExists) {
-      console.warn(
-        "[v0] model_usage table does not exist. Run scripts/008-add-model-usage-tracking.sql to enable cost tracking.",
+      logger.warn(
+        "model_usage table does not exist. Run scripts/008-add-model-usage-tracking.sql to enable cost tracking.",
       )
     }
 
     return tableExists
   } catch (error) {
-    console.error("[v0] Failed to check if model_usage table exists:", error)
+    logger.error("Failed to check if model_usage table exists:", error)
     tableExists = false
     return false
   }
@@ -80,7 +79,7 @@ export async function trackModelUsage(
       VALUES (${userId}, ${model}, ${inputTokens}, ${outputTokens}, ${cost}, NOW())
     `
   } catch (error) {
-    console.error("[v0] Failed to track model usage:", error)
+    logger.error("Failed to track model usage:", error)
     // Don't throw - tracking failures shouldn't break searches
   }
 }
@@ -107,7 +106,7 @@ export async function getModelUsageStats(days = 30) {
 
     return stats
   } catch (error) {
-    console.error("[v0] Failed to get model usage stats:", error)
+    logger.error("Failed to get model usage stats:", error)
     return []
   }
 }

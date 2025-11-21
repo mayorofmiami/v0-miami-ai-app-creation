@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless"
 import { requireAdmin } from "@/lib/auth"
 import { logAdminAction } from "@/lib/admin-logger"
+import { logger } from "@/lib/logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -71,17 +72,24 @@ export async function GET(req: Request) {
 
     const total = Number(totalResult[0]?.count || 0)
 
-    return Response.json({
-      users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+    return Response.json(
+      {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
       },
-    })
+      {
+        headers: {
+          "Cache-Control": "private, max-age=20, stale-while-revalidate=40",
+        },
+      },
+    )
   } catch (error) {
-    console.error("[v0] Admin users error:", error)
+    logger.error("Admin users error", error)
     return Response.json({ error: "Failed to fetch users" }, { status: 500 })
   }
 }

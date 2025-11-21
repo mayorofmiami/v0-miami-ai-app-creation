@@ -2,6 +2,7 @@ import "server-only"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { sql } from "./db"
+import { logger } from "./logger"
 
 export interface User {
   id: string
@@ -74,7 +75,7 @@ export async function createSession(userId: string): Promise<string> {
     expires: expiresAt,
   })
 
-  console.log("[v0] Session created for user:", userId, "sessionId:", sessionId)
+  logger.info("Session created", { userId, sessionId })
 
   return sessionId
 }
@@ -97,7 +98,7 @@ export async function getSession(): Promise<{ userId: string } | null> {
 
     return { userId: result[0].user_id }
   } catch (error) {
-    console.error("[v0] getSession error:", error)
+    logger.error("Failed to get session", { error })
     return null
   }
 }
@@ -121,7 +122,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
     return result[0] as User
   } catch (error) {
-    console.error("[v0] getCurrentUser error:", error)
+    logger.error("Failed to get current user", { error })
     return null
   }
 }
@@ -140,7 +141,7 @@ export async function logout() {
 
   if (sessionId) {
     await sql`DELETE FROM sessions WHERE id = ${sessionId}`
-    console.log("[v0] Deleted session from database:", sessionId)
+    logger.info("Session deleted from database", { sessionId })
   }
 
   cookieStore.set("session", "", {
@@ -152,7 +153,7 @@ export async function logout() {
     maxAge: 0,
   })
 
-  console.log("[v0] Session cookie cleared")
+  logger.info("Session cookie cleared")
 }
 
 export async function signUp(
@@ -161,14 +162,14 @@ export async function signUp(
   name: string,
 ): Promise<{ success: boolean; error?: string; userId?: string }> {
   try {
-    console.log("[v0] Sign up attempt for email:", email)
+    logger.info("Sign up attempt", { email })
 
     const existing = await sql`
       SELECT id FROM users WHERE email = ${email}
     `
 
     if (existing.length > 0) {
-      console.log("[v0] Sign up failed: Email already exists")
+      logger.warn("Sign up failed - email exists", { email })
       return { success: false, error: "Email already exists" }
     }
 
@@ -183,10 +184,10 @@ export async function signUp(
       RETURNING id
     `
 
-    console.log("[v0] Sign up successful for user:", result[0].id)
+    logger.info("Sign up successful", { userId: result[0].id })
     return { success: true, userId: result[0].id }
   } catch (error) {
-    console.error("[v0] Sign up error:", error)
+    logger.error("Sign up error", { error })
     return { success: false, error: "Failed to create account" }
   }
 }
@@ -218,7 +219,7 @@ export async function signIn(
 
     return { success: true, userId: user.id }
   } catch (error) {
-    console.error("[v0] Sign in error:", error)
+    logger.error("Sign in error", { error })
     return { success: false, error: "Failed to sign in" }
   }
 }
@@ -242,9 +243,8 @@ export async function createOrUpdateOAuthUser(
   avatarUrl?: string,
 ): Promise<{ success: boolean; error?: string; userId?: string }> {
   try {
-    console.log("[v0] OAuth user creation attempt:", { provider, email, name })
+    logger.info("OAuth user creation attempt", { provider, email })
 
-    // Check if user exists with this OAuth provider
     const existingOAuth = await sql`
       SELECT id FROM users 
       WHERE oauth_provider = ${provider} 
@@ -252,8 +252,7 @@ export async function createOrUpdateOAuthUser(
     `
 
     if (existingOAuth.length > 0) {
-      console.log("[v0] Found existing OAuth user, updating info")
-      // User exists, update their info
+      logger.info("Found existing OAuth user, updating info", { userId: existingOAuth[0].id })
       await sql`
         UPDATE users 
         SET name = ${name}, 
@@ -264,14 +263,12 @@ export async function createOrUpdateOAuthUser(
       return { success: true, userId: existingOAuth[0].id }
     }
 
-    // Check if user exists with this email (link accounts)
     const existingEmail = await sql`
       SELECT id FROM users WHERE email = ${email}
     `
 
     if (existingEmail.length > 0) {
-      console.log("[v0] Found existing email user, linking OAuth account")
-      // Link OAuth to existing account
+      logger.info("Found existing email user, linking OAuth account", { userId: existingEmail[0].id })
       await sql`
         UPDATE users 
         SET oauth_provider = ${provider},
@@ -280,12 +277,11 @@ export async function createOrUpdateOAuthUser(
             name = COALESCE(name, ${name})
         WHERE id = ${existingEmail[0].id}
       `
-      console.log("[v0] Successfully linked OAuth to existing account")
+      logger.info("Successfully linked OAuth to existing account", { userId: existingEmail[0].id })
       return { success: true, userId: existingEmail[0].id }
     }
 
-    console.log("[v0] Creating new OAuth user")
-    // Create new user
+    logger.info("Creating new OAuth user", { provider, email })
     const userId = crypto.randomUUID()
     const role = email === "spencer@miami.ai" ? "owner" : "user"
 
@@ -312,10 +308,10 @@ export async function createOrUpdateOAuthUser(
       )
     `
 
-    console.log("[v0] Successfully created new OAuth user")
+    logger.info("Successfully created new OAuth user", { userId })
     return { success: true, userId }
   } catch (error) {
-    console.error("[v0] OAuth user creation error:", error)
+    logger.error("OAuth user creation error", { error })
     return { success: false, error: error instanceof Error ? error.message : "Failed to create or update user" }
   }
 }
@@ -329,7 +325,6 @@ export async function createPasswordResetToken(
     `
 
     if (user.length === 0) {
-      // Don't reveal if email exists
       return { success: true }
     }
 
@@ -343,7 +338,7 @@ export async function createPasswordResetToken(
 
     return { success: true, token }
   } catch (error) {
-    console.error("[v0] Password reset token creation error:", error)
+    logger.error("Password reset token creation error", { error })
     return { success: false, error: "Failed to create reset token" }
   }
 }
@@ -372,19 +367,17 @@ export async function resetPassword(token: string, newPassword: string): Promise
       WHERE id = ${resetToken.user_id}
     `
 
-    // Delete used token
     await sql`
       DELETE FROM password_reset_tokens WHERE token = ${token}
     `
 
-    // Invalidate all existing sessions for security
     await sql`
       DELETE FROM sessions WHERE user_id = ${resetToken.user_id}
     `
 
     return { success: true }
   } catch (error) {
-    console.error("[v0] Password reset error:", error)
+    logger.error("Password reset error", { error })
     return { success: false, error: "Failed to reset password" }
   }
 }

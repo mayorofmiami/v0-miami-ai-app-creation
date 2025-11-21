@@ -19,16 +19,16 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -45,14 +45,8 @@
 }
 
 .dark {
-  /* Improved foreground contrast for better readability */
-  --foreground: oklch(0.98 0 0); /* Slightly brighter */
-  --muted-foreground: oklch(0.72 0 0); /* More contrast */
-
-  /* Improved border visibility in dark mode */
-  --border: oklch(0.28 0 0); /* Slightly lighter */
-
   --background: oklch(0.145 0 0);
+  --foreground: oklch(0.98 0 0);
   --card: oklch(0.145 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
@@ -62,10 +56,12 @@
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.72 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.28 0 0);
   --input: oklch(0.269 0 0);
   --ring: oklch(0.439 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
@@ -90,72 +86,6 @@
   --font-sans: "Geist", "Geist Fallback";
   --font-mono: "Geist Mono", "Geist Mono Fallback";
 
-  /* Added new semantic tokens for the briefing document style */
-  --color-briefing-bg: var(--background);
-  --color-briefing-card: var(--card);
-  --color-briefing-border: var(--border);
-  --color-briefing-text: var(--foreground);
-  --color-briefing-muted: var(--muted-foreground);
-  --color-briefing-accent: var(--primary);
-
-  /* Miami Vice color palette */
-  --color-miami-pink: #ffb6c1;
-  --color-miami-aqua: #02d8e9;
-  --color-miami-dark: #111111;
-  --color-miami-darker: #0a0a0a;
-
-  /* Added extended Miami color palette for feature actions */
-  --color-miami-purple: #b794f6;
-  --color-miami-blue: #60a5fa;
-  --color-miami-green: #34d399;
-  --color-miami-yellow: #fbbf24;
-  --color-miami-orange: #fb923c;
-
-  /* Design tokens */
-  --color-background: var(--color-miami-dark);
-  --color-foreground: #ffffff;
-  --color-primary: var(--color-miami-aqua);
-  --color-secondary: var(--color-miami-pink);
-  --color-accent: var(--color-miami-aqua);
-  --color-muted: #333333;
-  --color-muted-foreground: #a0a0a0;
-  --color-border: #2a2a2a;
-
-  /* Fluid typography scale - responsive between breakpoints */
-  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.8125rem);
-  --text-sm: clamp(0.875rem, 0.825rem + 0.25vw, 0.9375rem);
-  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);
-  --text-lg: clamp(1.125rem, 1.05rem + 0.375vw, 1.1875rem);
-  --text-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.375rem);
-  --text-2xl: clamp(1.5rem, 1.35rem + 0.75vw, 1.75rem);
-  --text-3xl: clamp(1.875rem, 1.65rem + 1.125vw, 2.25rem);
-  --text-4xl: clamp(2.25rem, 1.95rem + 1.5vw, 2.75rem);
-
-  --radius: 0.75rem;
-
-  /* Mobile-optimized spacing scale */
-  --spacing-touch-target: 44px;
-  --spacing-comfortable: 20px;
-  --spacing-section: 32px;
-
-  /* Mobile-optimized typography scale */
-  --text-xs-mobile: 0.8125rem;
-  --text-sm-mobile: 0.9375rem;
-  --text-base-mobile: 1.0625rem;
-  --text-lg-mobile: 1.1875rem;
-  --text-xl-mobile: 1.375rem;
-
-  /* Motion design system - consistent animation timings */
-  --duration-instant: 0ms;
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-slow: 350ms;
-  --duration-slower: 500ms;
-
-  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
-  --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -175,15 +105,16 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -196,7 +127,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
@@ -265,10 +196,9 @@ html {
 }
 
 * {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow,
-    transform, filter, backdrop-filter;
-  transition-timing-function: var(--easing-standard);
-  transition-duration: var(--duration-fast);
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
 @keyframes fade-in {
@@ -278,6 +208,10 @@ html {
   to {
     opacity: 1;
   }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-in-out;
 }
 
 @keyframes slide-in-from-bottom {
@@ -385,8 +319,8 @@ html {
 }
 
 *:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring);
-  outline-offset: var(--focus-ring-offset);
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
   border-radius: calc(var(--radius) * 0.5);
 }
 
@@ -409,6 +343,19 @@ html {
 }
 
 @media (max-width: 768px) {
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    min-height: 44px;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   .neon-glow {
     text-shadow: 0 0 4px var(--color-miami-aqua), 0 0 8px var(--color-miami-aqua);
   }
@@ -465,6 +412,14 @@ html {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
   /* Use instant duration token for reduced motion */
   *,
   *::before,
