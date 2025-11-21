@@ -38,8 +38,6 @@ export function SearchContainer({
     hasSearched: false,
     rateLimitInfo: null,
     imageRateLimit: null,
-    boardroomMode: false,
-    boardType: "startup",
   })
 
   const abortControllerRef = useRef<AbortController | null>(null)

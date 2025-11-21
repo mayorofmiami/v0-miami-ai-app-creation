@@ -8,8 +8,6 @@ import { SkeletonSearch } from "@/components/skeleton-search"
 import { ResponseActions } from "@/components/response-actions"
 import { ModelBadge } from "@/components/model-badge"
 import Palmtree from "@/components/icons/Palmtree"
-import { BoardroomView } from "@/components/boardroom/boardroom-view"
-import { CouncilChatView } from "@/components/council/council-chat-view"
 import type { ConversationMessage, User, SearchMode } from "@/types"
 
 interface ConversationViewProps {
@@ -61,11 +59,7 @@ export function ConversationView({
             </div>
 
             {/* Response */}
-            {message.type === "council" ? (
-              <CouncilChatView message={message} />
-            ) : message.type === "boardroom" ? (
-              <BoardroomView message={message} />
-            ) : message.isStreaming && !message.response && !message.generatedImage ? (
+            {message.isStreaming && !message.response && !message.generatedImage ? (
               <SkeletonSearch />
             ) : message.response || message.generatedImage ? (
               <div className="w-full max-w-3xl mx-auto">

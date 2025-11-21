@@ -25,5 +25,4 @@ export const CACHE_DURATIONS = {
 export const TIMEOUTS = {
   SEARCH: 30000, // 30 seconds
   IMAGE_GEN: 60000, // 60 seconds
-  BOARDROOM: 120000, // 2 minutes
 } as const

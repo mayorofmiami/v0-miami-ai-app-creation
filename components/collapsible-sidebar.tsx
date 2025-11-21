@@ -9,6 +9,7 @@ import MoonIcon from "@/components/icons/Moon"
 import Palmtree from "@/components/icons/Palmtree"
 import ShieldIcon from "@/components/icons/Shield"
 import BookmarkIcon from "@/components/icons/Bookmark"
+import ImageIcon from "@/components/icons/Image"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
@@ -185,67 +186,17 @@ export function CollapsibleSidebar({
           {!isCollapsed && <span>New Chat</span>}
         </Button>
 
-        {/* The Council navigation link */}
-        <Link href="/app/council">
+        {/* Image Generation */}
+        <Link href="/app/images">
           <Button
             variant="ghost"
-            className={`w-full justify-start h-10 ${isCollapsed ? "px-0 justify-center" : ""} text-miami-pink hover:text-miami-pink hover:bg-miami-pink/10`}
-            title="The Council"
+            className={`w-full justify-start h-10 ${isCollapsed ? "px-0 justify-center" : ""}`}
+            title="AI Image Generation"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`h-5 w-5 ${isCollapsed ? "" : "mr-3"}`}
-            >
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            {!isCollapsed && <span>The Council</span>}
+            <ImageIcon className={`h-5 w-5 ${isCollapsed ? "" : "mr-3"}`} />
+            {!isCollapsed && <span>Image Generator</span>}
           </Button>
         </Link>
-
-        {!isCollapsed && (
-          <div className="ml-8 space-y-1">
-            {/* Council sub-links */}
-            <Link href="/app/council/history">
-              <Button
-                variant="ghost"
-                className="w-full justify-start h-8 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              >
-                <ClockIcon className="h-4 w-4 mr-2" />
-                Debate History
-              </Button>
-            </Link>
-            <Link href="/app/council/predictions">
-              <Button
-                variant="ghost"
-                className="w-full justify-start h-8 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4 mr-2"
-                >
-                  <path d="M3 3v18h18" />
-                  <path d="m19 9-5 5-4-4-3 3" />
-                </svg>
-                Predictions
-              </Button>
-            </Link>
-          </div>
-        )}
 
         {isAdmin && (
           <Link href="/admin">
@@ -407,7 +358,7 @@ export function CollapsibleSidebar({
                     <button
                       key={thread.id}
                       onClick={() => onSearchSelect(thread.queries[0] || thread.title)}
-                      className={`w-full text-left rounded-lg hover:bg-muted/50 group ${
+                      className={`w-full text-left rounded-lg hover:bg-muted/50 group relative ${
                         isCollapsed ? "px-0 py-2 flex justify-center" : "px-3 py-2"
                       }`}
                       style={{ transition: "background-color var(--duration-fast) var(--easing-standard)" }}

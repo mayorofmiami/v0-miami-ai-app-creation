@@ -48,57 +48,14 @@ export interface GeneratedImage {
   createdAt: string
 }
 
-export interface BoardPersona {
-  name: string
-  role: string
-  avatar: string
-  model: string
-}
-
-export interface BoardResponse {
-  persona: string
-  round: number
-  content: string
-}
-
-export type BoardType = "startup" | "ethical" | "creative"
-
-export interface BoardroomMessage {
+export interface User {
   id: string
-  type: "boardroom"
-  query: string
-  sessionId: string
-  personas: BoardPersona[]
-  responses: BoardResponse[]
-  synthesis?: string
-  isStreaming?: boolean
-}
-
-export interface CouncilAdvisorResponse {
-  advisorArchetype: string
-  advisorName: string
-  round: number
-  content: string
-  modelUsed: string
-}
-
-export interface CouncilAdvisor {
-  archetype: string
-  name: string
-  model: string
-}
-
-export interface CouncilMessage {
-  id: string
-  type: "council"
-  query: string
-  debateId: string
-  councilId?: string
-  councilName?: string
-  advisors: CouncilAdvisor[]
-  responses: CouncilAdvisorResponse[]
-  verdict?: string
-  isStreaming?: boolean
+  email: string
+  firstName?: string | null
+  lastName?: string | null
+  profileImageUrl?: string | null
+  name?: string
+  role?: string
 }
 
 export type ConversationMessage =
@@ -121,14 +78,10 @@ export type ConversationMessage =
       generatedImage?: GeneratedImage
       isStreaming?: boolean
     }
-  | BoardroomMessage
-  | CouncilMessage
 
 export interface SearchState {
   mode: SearchMode
   contentType: ContentType
-  boardroomMode: boolean
-  boardType: BoardType
   isLoading: boolean
   messages: ConversationMessage[]
   hasSearched: boolean
@@ -147,41 +100,10 @@ export interface ImageRateLimit {
   remaining: number
 }
 
-export interface User {
-  id: string
-  email: string
-  firstName?: string | null
-  lastName?: string | null
-  profileImageUrl?: string | null
-  name?: string
-  role?: string
-}
-
 export type SearchAction =
   | { type: "START_SEARCH"; query: string; mode: SearchMode }
-  | { type: "START_BOARDROOM"; query: string; boardType: BoardType }
-  | { type: "SET_BOARDROOM_SESSION"; sessionId: string; personas: BoardPersona[] }
-  | { type: "START_COUNCIL"; query: string; councilId: string | null }
-  | {
-      type: "SET_COUNCIL_SESSION"
-      debateId: string
-      councilId: string | null
-      councilName: string | null
-      advisors: CouncilAdvisor[]
-    }
-  | {
-      type: "UPDATE_COUNCIL_RESPONSE"
-      advisorArchetype: string
-      advisorName: string
-      round: number
-      content: string
-      modelUsed: string
-    }
-  | { type: "SET_COUNCIL_VERDICT"; content: string }
   | { type: "START_IMAGE_GENERATION"; prompt: string }
   | { type: "UPDATE_CURRENT_RESPONSE"; response: string }
-  | { type: "UPDATE_BOARDROOM_RESPONSE"; persona: string; round: number; content: string }
-  | { type: "SET_BOARDROOM_SYNTHESIS"; content: string }
   | { type: "SET_CURRENT_CITATIONS"; citations: Citation[] }
   | { type: "SET_CURRENT_MODEL_INFO"; modelInfo: ModelInfo }
   | { type: "SET_CURRENT_RELATED_SEARCHES"; relatedSearches: string[] }
@@ -192,8 +114,6 @@ export type SearchAction =
   | { type: "CLEAR_SEARCH" }
   | { type: "SET_MODE"; mode: SearchMode }
   | { type: "SET_CONTENT_TYPE"; contentType: ContentType }
-  | { type: "SET_BOARDROOM_MODE"; enabled: boolean }
-  | { type: "SET_BOARD_TYPE"; boardType: BoardType }
   | { type: "LOAD_FROM_HISTORY"; history: any }
   | { type: "SET_SEARCH_ID"; searchId: string }
   | { type: "SET_SELECTED_MODEL"; selectedModel: ModelId }

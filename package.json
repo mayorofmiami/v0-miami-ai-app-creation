@@ -72,6 +72,7 @@
     "next": "16.0.0",
     "next-themes": "latest",
     "novel": "latest",
+    "postgres": "latest",
     "react": "latest",
     "react-day-picker": "latest",
     "react-dom": "19.2.0",

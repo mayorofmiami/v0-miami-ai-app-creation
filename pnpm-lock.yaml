@@ -197,6 +197,9 @@ importers:
       novel:
         specifier: latest
         version: 1.0.2(@tiptap/extension-code-block@3.11.0(@tiptap/core@3.11.0(@tiptap/pm@3.11.0))(@tiptap/pm@3.11.0))(@types/react-dom@19.0.0)(@types/react@19.0.0)(highlight.js@11.11.1)(immer@10.2.0)(lowlight@3.3.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      postgres:
+        specifier: latest
+        version: 3.4.7
       react:
         specifier: latest
         version: 19.2.0
@@ -3938,6 +3941,10 @@ packages:
 
   postgres-range@1.1.4:
     resolution: {integrity: sha512-i/hbxIE9803Alj/6ytL7UHQxRvZkI9O4Sy+J3HGc4F4oo/2eQAjTSNJ0bfxyse3bH0nuVesCk+3IRLaMtG3H6w==}
+
+  postgres@3.4.7:
+    resolution: {integrity: sha512-Jtc2612XINuBjIl/QTWsV5UvE8UHuNblcO3vVADSrKsrc6RqGX6lOW1cEo3CM2v0XG4Nat8nI+YM7/f26VxXLw==}
+    engines: {node: '>=12'}
 
   property-expr@2.0.6:
     resolution: {integrity: sha512-SVtmxhRE/CGkn3eZY1T6pC8Nln6Fr/lu1mKSgRud0eC73whjGfoAogbn78LkD8aFL0zz3bAFerKSnOl7NlErBA==}
@@ -8815,6 +8822,8 @@ snapshots:
   postgres-interval@3.0.0: {}
 
   postgres-range@1.1.4: {}
+
+  postgres@3.4.7: {}
 
   property-expr@2.0.6: {}
 
