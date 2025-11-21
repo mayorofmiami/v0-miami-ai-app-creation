@@ -1,5 +1,5 @@
 import { logger } from "./logger"
-import { sql } from "@neondatabase/serverless"
+import { sql } from "./db"
 
 // Model costs per 1M tokens (input / output)
 export const MODEL_COSTS = {
