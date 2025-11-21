@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless"
 import { logger } from "./logger"
+import crypto from "crypto"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -38,8 +39,7 @@ export async function getBookmarks(userId: string) {
         sh.id,
         sh.query,
         sh.response,
-        sh.citations,
-        sh.mode,
+        sh.model,
         sh.created_at,
         b.created_at as bookmarked_at
       FROM bookmarks b

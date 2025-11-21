@@ -9,6 +9,7 @@ interface KeyboardShortcutsProps {
   onToggleMode: () => void
   onToggleHistory: () => void
   onNewChat: () => void
+  onToggleBookmarks: () => void
 }
 
 export function KeyboardShortcuts({
@@ -17,6 +18,7 @@ export function KeyboardShortcuts({
   onToggleMode,
   onToggleHistory,
   onNewChat,
+  onToggleBookmarks,
 }: KeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,18 +52,24 @@ export function KeyboardShortcuts({
         onToggleHistory()
       }
 
+      // Cmd/Ctrl + B: Toggle bookmarks
+      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
+        e.preventDefault()
+        onToggleBookmarks()
+      }
+
       // Cmd/Ctrl + /: Show shortcuts
       if ((e.metaKey || e.ctrlKey) && e.key === "/") {
         e.preventDefault()
         toast.info("Keyboard Shortcuts", {
-          description: "⌘K: Focus search\n⌘N: New chat\n⌘D: Toggle mode\n⌘H: History\nEsc: Clear",
+          description: "⌘K: Focus search\n⌘N: New chat\n⌘D: Toggle mode\n⌘H: History\n⌘B: Bookmarks\nEsc: Clear",
         })
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [onSearch, onClear, onToggleMode, onToggleHistory, onNewChat])
+  }, [onSearch, onClear, onToggleMode, onToggleHistory, onNewChat, onToggleBookmarks])
 
   return null
 }

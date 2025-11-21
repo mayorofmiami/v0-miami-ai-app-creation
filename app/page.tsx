@@ -1,3 +1,5 @@
+console.log("[v0] HomePage rendering")
+
 import { UnauthenticatedLanding } from "@/components/landing/unauthenticated-landing"
 
 export const metadata = {
@@ -7,6 +9,7 @@ export const metadata = {
 }
 
 export default function HomePage() {
+  console.log("[v0] HomePage component executing")
   return (
     <div className="dark">
       <UnauthenticatedLanding />

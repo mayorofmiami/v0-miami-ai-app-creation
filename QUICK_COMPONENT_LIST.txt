@@ -1,0 +1,60 @@
+# Quick Copy List - All UI Components
+
+## Copy these files in order:
+
+1. app/globals.css
+2. public/videos/ (all 4 videos)
+3. lib/reducers/search-reducer.ts
+4. lib/types.ts
+5. components/landing/unauthenticated-landing.tsx
+6. components/landing/authenticated-landing.tsx
+7. components/landing/search-container.tsx
+8. components/search-input.tsx
+9. components/search-results.tsx
+10. components/search-page/conversation-view.tsx
+11. components/search-page/message-item.tsx
+12. components/model-selector.tsx
+13. components/model-display.tsx
+14. components/mode-selector.tsx
+15. components/mode-toggle.tsx
+16. components/example-queries.tsx
+17. components/logo.tsx
+18. components/fancy-glowing-button.tsx
+19. components/signup-benefits-card.tsx
+20. components/page-header.tsx
+21. components/collapsible-sidebar.tsx
+22. components/sidebar.tsx
+23. components/thread-sidebar.tsx
+24. components/thread-list.tsx
+25. components/user-menu.tsx
+26. components/user-avatar.tsx
+27. components/collections-panel.tsx
+28. components/collection-card.tsx
+29. components/bookmark-button.tsx
+30. components/bookmarks-panel.tsx
+31. components/message-actions.tsx
+32. components/file-upload-button.tsx
+33. components/image-preview.tsx
+34. components/thinking-animation.tsx
+35. components/copy-button.tsx
+36. components/markdown-renderer.tsx
+37. components/citation-badge.tsx
+38. components/hero-section.tsx
+39. components/animated-hero-background.tsx
+40. components/background-video.tsx
+41. components/feature-card.tsx
+42. components/trust-indicators.tsx
+43. components/toast.tsx
+44. components/error-message.tsx
+45. components/loading-spinner.tsx
+46. components/offline-indicator.tsx
+47. components/rate-limit-warning.tsx
+48. components/keyboard-shortcuts.tsx
+49. components/subscription-badge.tsx
+50. components/subscription-card.tsx
+51. components/prefetch-provider.tsx
+52. components/mobile-nav.tsx
+53. components/expandable-search.tsx
+54. lib/toast.ts
+55. lib/error-handling.ts
+56. lib/constants.ts

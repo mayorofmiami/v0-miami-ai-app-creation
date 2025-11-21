@@ -22,6 +22,7 @@ import { searchReducer } from "@/lib/reducers/search-reducer"
 const NON_AUTH_DEFAULT_MODEL: ModelId = "openai/gpt-4o-mini"
 
 export function UnauthenticatedLanding() {
+  console.log("[v0] UnauthenticatedLanding component rendering")
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false)
   const [connectionType, setConnectionType] = useState<"fast" | "medium" | "slow">("medium")
   const [videoLoaded, setVideoLoaded] = useState(false)
@@ -495,3 +496,5 @@ export function UnauthenticatedLanding() {
     </>
   )
 }
+
+console.log("[v0] UnauthenticatedLanding module loading")
