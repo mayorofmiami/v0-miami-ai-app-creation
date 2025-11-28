@@ -1,43 +1,41 @@
-export class OfflineHandler {
-  private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true
-  private listeners: Set<(online: boolean) => void> = new Set()
+type Subscriber = (isOnline: boolean) => void
+
+class OfflineHandler {
+  private subscribers: Set<Subscriber> = new Set()
+  private isOnline = true
 
   constructor() {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('online', this.handleOnline)
-      window.addEventListener('offline', this.handleOffline)
+    if (typeof window !== "undefined") {
+      this.isOnline = navigator.onLine
+
+      window.addEventListener("online", this.handleOnline)
+      window.addEventListener("offline", this.handleOffline)
     }
   }
 
   private handleOnline = () => {
     this.isOnline = true
-    this.notifyListeners()
+    this.notify()
   }
 
   private handleOffline = () => {
     this.isOnline = false
-    this.notifyListeners()
+    this.notify()
   }
 
-  private notifyListeners() {
-    this.listeners.forEach(listener => listener(this.isOnline))
+  private notify() {
+    this.subscribers.forEach((subscriber) => subscriber(this.isOnline))
   }
 
-  public subscribe(listener: (online: boolean) => void) {
-    this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
-  }
-
-  public getStatus() {
+  getStatus(): boolean {
     return this.isOnline
   }
 
-  public cleanup() {
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('online', this.handleOnline)
-      window.removeEventListener('offline', this.handleOffline)
+  subscribe(callback: Subscriber): () => void {
+    this.subscribers.add(callback)
+    return () => {
+      this.subscribers.delete(callback)
     }
-    this.listeners.clear()
   }
 }
 

@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback, useMemo } from "react"
-import XIcon from "@/components/icons/X"
 import type { ModelId } from "@/components/model-selector"
 import { AttachmentList } from "@/components/search-input/attachment-list"
 import { SearchSuggestions } from "@/components/search-input/search-suggestions"
@@ -272,12 +271,12 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
     setIsMenuOpen(false)
   }, [onHistoryClick])
 
+  // Removed file upload functionality - will be wired to backend later
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || [])
       if (files.length === 0) return
 
-      // Check attachment limit based on auth status
       const maxAttachments = user ? 5 : 1
       if (attachments.length + files.length > maxAttachments) {
         alert(`Maximum ${maxAttachments} attachment${maxAttachments > 1 ? "s" : ""} allowed`)
@@ -286,50 +285,29 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
       setIsUploading(true)
 
-      try {
+      // Placeholder - will be wired to backend upload API later
+      setTimeout(() => {
         for (const file of files) {
-          const formData = new FormData()
-          formData.append("file", file)
-          if (user?.id) {
-            formData.append("userId", user.id)
-          }
-
-          const res = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          })
-
-          if (!res.ok) {
-            const error = await res.json()
-            alert(error.error || "Upload failed")
-            continue
-          }
-
-          const data = await res.json()
-
           const attachment: Attachment = {
             id: Math.random().toString(36).substring(7),
-            name: data.filename,
-            type: data.type,
-            size: data.size,
-            url: data.url,
-            blobUrl: data.url,
-            preview: data.type.startsWith("image/") ? data.url : undefined,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            url: URL.createObjectURL(file),
+            blobUrl: URL.createObjectURL(file),
+            preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
           }
-
           setAttachments((prev) => [...prev, attachment])
         }
-      } catch (error) {
-        alert("Failed to upload file")
-      } finally {
         setIsUploading(false)
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
         }
-      }
+      }, 500)
     },
     [attachments.length, user],
   )
+  // End of removed file upload functionality
 
   const handleRemoveAttachment = useCallback((id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id))
@@ -365,7 +343,43 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
       <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} />
 
-      {/* Search Form */}
+      <div className="max-w-md mx-auto text-center py-8 px-4">
+        <h2 className="text-3xl font-bold text-white/95 mb-2">Coming Soon</h2>
+        <p className="text-base text-white/70 mb-6">
+          Be the first to know when we launch. Get early access and exclusive updates.
+        </p>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            const email = (e.currentTarget.elements.namedItem("email") as HTMLInputElement)?.value
+            if (email) {
+              console.log("[v0] Email submitted:", email)
+              alert("Thanks for signing up! We'll notify you soon.")
+              ;(e.currentTarget.elements.namedItem("email") as HTMLInputElement).value = ""
+            }
+          }}
+          className="flex flex-col sm:flex-row gap-3"
+        >
+          <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            required
+            className="flex-1 px-4 py-3 rounded-xl border border-white/20 bg-white/10 backdrop-blur-md text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all"
+          />
+          <button
+            type="submit"
+            className="px-6 py-3 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-all whitespace-nowrap"
+          >
+            Get Notified
+          </button>
+        </form>
+
+        <p className="text-xs text-white/50 mt-4">We respect your privacy. Unsubscribe at any time.</p>
+      </div>
+
+      {/* ORIGINAL FORM - SAVED FOR LATER
       <form onSubmit={handleSubmit} className="relative">
         <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md shadow-lg shadow-black/20 transition-all hover:border-white/30 hover:shadow-xl hover:shadow-black/30">
           <button
@@ -432,6 +446,7 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
           </div>
         </div>
       </form>
+      END ORIGINAL FORM */}
 
       {isMenuOpen && (
         <div className="absolute bottom-full left-0 mb-2 z-50">

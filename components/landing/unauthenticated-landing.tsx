@@ -8,8 +8,6 @@ import { toast } from "@/lib/toast"
 import type { SearchInputRef } from "@/components/search-input"
 import type { Attachment } from "@/types"
 import type { SearchMode, ContentType } from "@/types"
-import { handleSearchError } from "@/lib/error-handling"
-import { handleImageError } from "@/lib/error-handling"
 import { ConversationView } from "@/components/search-page/conversation-view"
 import { SearchFormContainer } from "@/components/search-page/search-form-container"
 import Link from "next/link"
@@ -76,151 +74,57 @@ export function UnauthenticatedLanding() {
         return
       }
 
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-
-      abortControllerRef.current = new AbortController()
-
-      let effectiveThreadId = currentThreadId
-      if (!effectiveThreadId) {
-        effectiveThreadId = `temp-thread-${Date.now()}`
-        setCurrentThreadId(effectiveThreadId)
-      }
-
       dispatchSearch({ type: "START_SEARCH", query, mode: searchMode })
 
+      const abortController = new AbortController()
+      abortControllerRef.current = abortController
+
       try {
-        const body: any = { query, mode: searchMode }
-
-        if (selectedModel !== "auto") {
-          body.selectedModel = selectedModel
-        }
-
-        if (attachments && attachments.length > 0) {
-          body.attachments = attachments
-        }
-
-        if (searchState.messages.length > 0 && currentThreadId) {
-          body.conversationHistory = searchState.messages
-            .slice(-5)
-            .map((msg) => ({
-              role: msg.type === "search" ? "user" : "assistant",
-              content: msg.type === "search" ? msg.query : msg.response || "",
-            }))
-            .filter((msg) => msg.content.trim().length > 0)
-        }
-
-        const res = await fetch("/api/search", {
+        const response = await fetch("/api/search", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-          signal: abortControllerRef.current.signal,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query,
+            mode: searchMode,
+          }),
+          signal: abortController.signal,
         })
 
-        if (res.status === 429) {
-          const errorData = await res.json()
-          const errorMessage = handleSearchError({
-            error: errorData,
-            user: null,
-            status: res.status,
-          })
-          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
-          return
+        if (!response.ok) {
+          throw new Error("Search failed")
         }
 
-        if (!res.ok) {
-          const errorData = await res.json()
-          const errorMessage = handleSearchError({
-            error: errorData,
-            user: null,
-            status: res.status,
-          })
-          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
-          return
-        }
+        const data = await response.json()
 
-        const remaining = res.headers.get("X-RateLimit-Remaining")
-        const limit = res.headers.get("X-RateLimit-Limit")
-        if (remaining && limit) {
+        dispatchSearch({
+          type: "UPDATE_CURRENT_RESPONSE",
+          response: data.response,
+        })
+
+        if (data.sources) {
           dispatchSearch({
-            type: "SET_RATE_LIMIT",
-            rateLimitInfo: { remaining: Number.parseInt(remaining), limit: Number.parseInt(limit) },
+            type: "SET_CURRENT_CITATIONS",
+            citations: data.sources,
           })
-        }
-
-        const reader = res.body?.getReader()
-        const decoder = new TextDecoder()
-
-        if (!reader) {
-          throw new Error("No response body")
-        }
-
-        let accumulatedResponse = ""
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          const chunk = decoder.decode(value)
-          const lines = chunk.split("\n")
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6)
-              if (data === "[DONE]") continue
-
-              try {
-                const parsed = JSON.parse(data)
-
-                if (parsed.type === "text") {
-                  accumulatedResponse += parsed.content
-                  dispatchSearch({ type: "UPDATE_CURRENT_RESPONSE", response: accumulatedResponse })
-                } else if (parsed.type === "citations") {
-                  dispatchSearch({ type: "SET_CURRENT_CITATIONS", citations: parsed.content || parsed.citations || [] })
-                } else if (parsed.type === "model") {
-                  dispatchSearch({
-                    type: "SET_CURRENT_MODEL_INFO",
-                    modelInfo: {
-                      model: parsed.content?.model || parsed.model,
-                      reason: parsed.content?.reason || parsed.reason,
-                      autoSelected: parsed.content?.autoSelected ?? parsed.autoSelected ?? true,
-                    },
-                  })
-                }
-              } catch (e) {
-                // Ignore parse errors
-              }
-            }
-          }
         }
 
         dispatchSearch({ type: "SEARCH_COMPLETE" })
-
-        const searchId = res.headers.get("X-Search-Id")
-        if (searchId) {
-          dispatchSearch({ type: "SET_SEARCH_ID", searchId })
-        }
-
-        if (searchMode === "deep") {
-          dispatchSearch({ type: "SET_MODE", mode: "quick" })
-        }
-
         searchInputRef.current?.clear()
-
         setRecentSearches((prev) => [query, ...prev.filter((q) => q !== query)].slice(0, 10))
       } catch (error: any) {
         if (error.name === "AbortError") {
           return
         }
-
-        toast.error("Search failed", error.message || "Please try again")
-        dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, something went wrong. Please try again." })
+        console.error("[Search Error]:", error)
+        toast.error("Search failed. Please try again.")
+        dispatchSearch({ type: "SEARCH_ERROR", error: "Search failed" })
       } finally {
         abortControllerRef.current = null
       }
     },
-    [selectedModel, searchState.isLoading, currentThreadId, searchState.messages],
+    [searchState.isLoading],
   )
 
   const handleImageGeneration = useCallback(
@@ -232,37 +136,34 @@ export function UnauthenticatedLanding() {
       dispatchSearch({ type: "START_IMAGE_GENERATION", prompt })
 
       try {
-        const body: any = { prompt }
-
-        const res = await fetch("/api/generate-image", {
+        const response = await fetch("/api/generate-image", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt,
+          }),
         })
 
-        if (!res.ok) {
-          const errorData = await res.json()
-          const errorMessage = handleImageError({
-            error: errorData,
-            status: res.status,
-          })
-          dispatchSearch({ type: "SEARCH_ERROR", error: errorMessage })
-          return
+        if (!response.ok) {
+          throw new Error("Image generation failed")
         }
 
-        const data = await res.json()
+        const data = await response.json()
 
         dispatchSearch({
           type: "SET_GENERATED_IMAGE",
-          image: data.image,
-          rateLimit: data.rateLimit,
+          image: data.imageUrl,
+          rateLimit: { remaining: 49, total: 50, resetAt: Date.now() + 24 * 60 * 60 * 1000 },
         })
 
-        toast.success("Image generated successfully!")
         searchInputRef.current?.clear()
-      } catch (error: any) {
-        toast.error("Image generation failed", error.message || "Please try again")
-        dispatchSearch({ type: "SEARCH_ERROR", error: "Sorry, image generation failed. Please try again." })
+        toast.success("Image generated successfully!")
+      } catch (error) {
+        console.error("[Image Generation Error]:", error)
+        toast.error("Image generation failed. Please try again.")
+        dispatchSearch({ type: "SEARCH_ERROR", error: "Image generation failed" })
       }
     },
     [searchState.isLoading],
