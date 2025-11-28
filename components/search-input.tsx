@@ -343,107 +343,39 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(function
 
       <AttachmentList attachments={attachments} onRemove={handleRemoveAttachment} />
 
-      <div className="max-w-md mx-auto text-center py-8 px-4">
-        <h2 className="text-3xl font-bold text-white/95 mb-2">Coming Soon</h2>
-        <p className="text-base text-white/70 mb-6">
-          Be the first to know when we launch. Get early access and exclusive updates.
-        </p>
-
+      <div className="max-w-md mx-auto text-center py-12 px-4">
         <form
           onSubmit={(e) => {
             e.preventDefault()
             const email = (e.currentTarget.elements.namedItem("email") as HTMLInputElement)?.value
             if (email) {
               console.log("[v0] Email submitted:", email)
-              alert("Thanks for signing up! We'll notify you soon.")
+              alert("Thanks! We'll let you know.")
               ;(e.currentTarget.elements.namedItem("email") as HTMLInputElement).value = ""
             }
           }}
-          className="flex flex-col sm:flex-row gap-3"
+          className="space-y-4"
         >
           <input
             type="email"
             name="email"
             placeholder="Enter your email"
             required
-            className="flex-1 px-4 py-3 rounded-xl border border-white/20 bg-white/10 backdrop-blur-md text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all"
+            className="w-full px-4 py-3 rounded-lg border border-white/20 bg-white/5 backdrop-blur-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all"
           />
           <button
             type="submit"
-            className="px-6 py-3 rounded-xl bg-white text-black font-medium hover:bg-white/90 transition-all whitespace-nowrap"
+            className="w-full px-6 py-3 rounded-lg bg-blue-500/10 backdrop-blur-sm text-white border border-white/20 hover:bg-blue-500/20 transition-all"
           >
             Get Notified
           </button>
         </form>
-
-        <p className="text-xs text-white/50 mt-4">We respect your privacy. Unsubscribe at any time.</p>
       </div>
 
       {/* ORIGINAL FORM - SAVED FOR LATER
       <form onSubmit={handleSubmit} className="relative">
         <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md shadow-lg shadow-black/20 transition-all hover:border-white/30 hover:shadow-xl hover:shadow-black/30">
-          <button
-            type="button"
-            onClick={handleMenuToggle}
-            className="p-1.5 rounded-lg hover:bg-muted/50 transition-all flex-shrink-0"
-            title="Options"
-            aria-label="Open options menu"
-          >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-
-          <textarea
-            ref={inputRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholderText}
-            disabled={isLoading}
-            rows={1}
-            className={`flex-1 px-2 py-1 text-white bg-transparent
-              transition-all outline-none ring-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base
-              relative z-10 resize-none overflow-y-auto border-0 ${
-                isLoading ? "opacity-50 cursor-not-allowed" : ""
-              } placeholder:text-white/50`}
-            style={{
-              outline: "none",
-              boxShadow: "none",
-              border: "none",
-              minHeight: "28px",
-              maxHeight: "160px",
-              lineHeight: "1.5",
-            }}
-          />
-
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {isLoading && onCancel ? (
-              <button
-                type="button"
-                onClick={onCancel}
-                className="p-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all"
-                title="Cancel"
-              >
-                <XIcon className="w-4 h-4" />
-              </button>
-            ) : (
-              query.trim() && (
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="p-1 rounded-full bg-white text-black hover:bg-white/90 transition-all disabled:opacity-50"
-                  title="Send"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                  </svg>
-                </button>
-              )
-            )}
-          </div>
+          ... original form code ...
         </div>
       </form>
       END ORIGINAL FORM */}

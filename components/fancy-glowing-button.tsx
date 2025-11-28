@@ -1,4 +1,12 @@
-export function FancyGlowingButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) {
+import type React from "react"
+
+export function FancyGlowingButton({
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) {
+  return null
+
+  /* SAVED ENTIRE BUTTON:
   return (
     <button
       {...props}
@@ -10,4 +18,5 @@ export function FancyGlowingButton({ children, ...props }: React.ButtonHTMLAttri
       </span>
     </button>
   )
+  */
 }

@@ -327,6 +327,12 @@ export function UnauthenticatedLanding() {
                 <Logo className="w-48" />
               </div>
 
+              <div className="absolute top-32 z-10 text-center">
+                <p className="text-2xl md:text-3xl italic font-serif text-white/95 drop-shadow-[0_2px_8px_rgba(255,255,255,0.3)]">
+                  Coming when Spencer feels like it
+                </p>
+              </div>
+
               <div className="w-full max-w-2xl z-10">
                 <SearchInput
                   ref={searchInputRef}
@@ -347,7 +353,7 @@ export function UnauthenticatedLanding() {
 
               <div className="absolute bottom-12 z-10 flex flex-col items-center gap-4">
                 <Link href="/login">
-                  <FancyGlowingButton>LOGIN / SIGN UP</FancyGlowingButton>
+                  <FancyGlowingButton>LOGIN</FancyGlowingButton>
                 </Link>
               </div>
             </div>
@@ -394,6 +400,17 @@ export function UnauthenticatedLanding() {
           />
         )}
       </div>
+
+      {/* <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
+        }
+      `}</style> */}
     </>
   )
 }
